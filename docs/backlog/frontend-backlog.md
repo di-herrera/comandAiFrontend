@@ -17,30 +17,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Ready
 
-### FE-001 Criar base Angular do painel administrativo
-
-**Objetivo**
-Criar o projeto Angular, estrutura base de rotas, layout e configurações essenciais.
-
-**Escopo**
-- Garantir que `npm install` e `npm start` funcionem.
-- Criar layout base com menu lateral.
-- Criar rotas iniciais para empresas, unidades, produtos, ingredientes, opções e composição.
-- Configurar environments com URL base da API.
-- Configurar aliases TypeScript.
-
-**Critérios de aceite**
-- `npm run build` passa.
-- `npm start` sobe o frontend em `localhost:4200`.
-- Todas as rotas iniciais carregam uma página placeholder.
-
-**Fora do escopo**
-- Consumo real da API.
-- Formulários finais.
-- Autenticação.
-
----
-
 ## Backlog
 
 ### FE-002 Contratos TypeScript e cliente HTTP base
@@ -195,6 +171,40 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-001 Criar base Angular do painel administrativo
+
+**Objetivo**
+Criar o projeto Angular, estrutura base de rotas, layout e configurações essenciais.
+
+**Escopo**
+- Garantir que `npm install` e `npm start` funcionem.
+- Criar layout base com menu lateral.
+- Criar rotas iniciais para empresas, unidades, produtos, ingredientes, opções e composição.
+- Configurar environments com URL base da API.
+- Configurar aliases TypeScript.
+
+**Critérios de aceite**
+- `npm run build` passa.
+- `npm start` sobe o frontend em `localhost:4200`.
+- Todas as rotas iniciais carregam uma página placeholder.
+
+**Fora do escopo**
+- Consumo real da API.
+- Formulários finais.
+- Autenticação.
+
+**Notas de implementação**
+- Base Angular standalone validada com rotas lazy para início, empresas, unidades, produtos, ingredientes, opções e composição de produto.
+- Layout administrativo com menu lateral e páginas placeholder já carrega pelas rotas básicas.
+- Environments mantêm `apiBaseUrl`, com desenvolvimento apontando para `http://localhost:5080`.
+- Aliases TypeScript configurados para `@core/*`, `@shared/*`, `@features/*` e `@env/*`.
+- Adicionados placeholders rastreáveis para `core/errors`, `core/layout` e `shared/utils`.
+- Ajustadas versões de `@angular/cli` e `@angular-devkit/build-angular` para `^21.2.10`, versão disponível no npm para o tooling Angular 21.
+- `npm install` executado com sucesso usando `npm.cmd install`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ## Done
 
