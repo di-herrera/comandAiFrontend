@@ -49,3 +49,22 @@ Antes de implementar telas definitivas, contratos HTTP devem estar documentados 
 
 Motivo:
 Permite trabalho paralelo entre backend e frontend com menor retrabalho.
+
+## ADR-FE-006 — Biblioteca de componentes Angular
+
+Status: Accepted
+
+Decisão:
+Usar PrimeNG com tema Aura como biblioteca principal de componentes UI do painel administrativo da ComandAI.
+
+Motivos:
+- Grande variedade de componentes prontos.
+- Forte para CRUDs, tabelas, filtros e dashboards.
+- Boa produtividade para MVP.
+- Ecossistema maduro no Angular.
+- Evita construir componentes administrativos do zero.
+
+Alternativas consideradas:
+- Angular Material: mais oficial e estável, mas menos completo para dashboards administrativos.
+- NG-ZORRO: visual enterprise forte, mas comunidade menor.
+- Kendo UI/Syncfusion: completos, porém com maior atenção a licenciamento/custo.
