@@ -1,0 +1,22 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <strong>ComandAI</strong>
+      <span>Admin</span>
+    </div>
+
+    <nav class="nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Início</a>
+      <a routerLink="/empresas" routerLinkActive="active">Empresas</a>
+      <a routerLink="/unidades" routerLinkActive="active">Unidades</a>
+      <a routerLink="/produtos" routerLinkActive="active">Produtos</a>
+      <a routerLink="/ingredientes" routerLinkActive="active">Ingredientes</a>
+      <a routerLink="/opcoes" routerLinkActive="active">Opções</a>
+      <a routerLink="/composicao-produto" routerLinkActive="active">Composição</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

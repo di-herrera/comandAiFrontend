@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "angular.ng-template",
+    "johnpapa.angular-essentials",
+    "dbaeumer.vscode-eslint",
+    "bierner.markdown-mermaid",
+    "yzhang.markdown-all-in-one",
+    "github.vscode-pull-request-github"
+  ]
+}
