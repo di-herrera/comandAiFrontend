@@ -19,25 +19,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
-### FE-004 Tela de unidades de negócio
-
-**Objetivo**
-Permitir listar, cadastrar e editar unidades vinculadas a uma empresa.
-
-**Escopo**
-- Selecionar empresa.
-- Listar unidades da empresa.
-- Criar unidade.
-- Editar unidade.
-- Campo de taxa fixa de entrega.
-- Status ativo/inativo.
-
-**Critérios de aceite**
-- Toda listagem exige TenantId.
-- Criação e edição enviam TenantId corretamente.
-
----
-
 ### FE-005 Tela de produtos
 
 **Objetivo**
@@ -130,6 +111,32 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-004 Tela de unidades de negócio
+
+**Objetivo**
+Permitir listar, cadastrar e editar unidades vinculadas a uma empresa.
+
+**Escopo**
+- Selecionar empresa.
+- Listar unidades da empresa.
+- Criar unidade.
+- Editar unidade.
+- Campo de taxa fixa de entrega.
+- Status ativo/inativo.
+
+**Critérios de aceite**
+- Toda listagem exige TenantId.
+- Criação e edição enviam TenantId corretamente.
+
+**Notas de implementação**
+- Tela de unidades carrega empresas e exige seleção de TenantId antes de listar ou salvar.
+- Listagem é filtrada via `BusinessUnitsApiService.list(tenantId)` e mostra o contexto ativo.
+- Formulário reativo cobre criação e edição com nome, telefone, endereço, taxa fixa de entrega e status.
+- Salvamento usa TenantId selecionado em criação e edição.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ### FE-003 Tela de empresas
 
