@@ -19,26 +19,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
-### FE-003 Tela de empresas
-
-**Objetivo**
-Permitir listar, cadastrar e editar empresas/tenants.
-
-**Escopo**
-- Listagem de empresas.
-- Formulário reativo de criação.
-- Formulário reativo de edição.
-- Validações client-side alinhadas ao contrato.
-- Feedback de carregamento, sucesso e erro.
-
-**Critérios de aceite**
-- Usuário lista empresas.
-- Usuário cria empresa.
-- Usuário edita empresa.
-- Campos obrigatórios são validados antes do envio.
-
----
-
 ### FE-004 Tela de unidades de negócio
 
 **Objetivo**
@@ -150,6 +130,33 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-003 Tela de empresas
+
+**Objetivo**
+Permitir listar, cadastrar e editar empresas/tenants.
+
+**Escopo**
+- Listagem de empresas.
+- Formulário reativo de criação.
+- Formulário reativo de edição.
+- Validações client-side alinhadas ao contrato.
+- Feedback de carregamento, sucesso e erro.
+
+**Critérios de aceite**
+- Usuário lista empresas.
+- Usuário cria empresa.
+- Usuário edita empresa.
+- Campos obrigatórios são validados antes do envio.
+
+**Notas de implementação**
+- Tela de empresas substitui o placeholder por listagem consumindo `TenantsApiService`.
+- Formulário reativo cobre criação e edição com razão social, nome comercial, documento e status.
+- Validação client-side impede envio sem razão social e nome comercial.
+- Estados de carregamento, salvamento, sucesso e erro são exibidos na própria tela.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ### FE-002 Contratos TypeScript e cliente HTTP base
 
