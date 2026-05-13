@@ -19,22 +19,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
-### FE-006 Tela de ingredientes
-
-**Objetivo**
-Permitir listar, cadastrar e editar ingredientes por empresa e unidade.
-
-**Escopo**
-- Selecionar empresa e unidade.
-- Listar ingredientes filtrados.
-- Criar ingrediente com código persistido, exemplo `I001`.
-- Editar nome e status.
-
-**Critérios de aceite**
-- Ingrediente sempre é criado com TenantId + BusinessUnitId + Code.
-
----
-
 ### FE-007 Tela de opções e adicionais
 
 **Objetivo**
@@ -93,6 +77,29 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-006 Tela de ingredientes
+
+**Objetivo**
+Permitir listar, cadastrar e editar ingredientes por empresa e unidade.
+
+**Escopo**
+- Selecionar empresa e unidade.
+- Listar ingredientes filtrados.
+- Criar ingrediente com código persistido, exemplo `I001`.
+- Editar nome e status.
+
+**Critérios de aceite**
+- Ingrediente sempre é criado com TenantId + BusinessUnitId + Code.
+
+**Notas de implementação**
+- Tela de ingredientes exige empresa e unidade antes de listar ou salvar.
+- Listagem usa TenantId + BusinessUnitId e mostra o filtro ativo.
+- Formulário reativo cobre criação e edição com código persistido, nome e status.
+- Salvamento envia TenantId e BusinessUnitId via `IngredientsApiService`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ### FE-005 Tela de produtos
 
