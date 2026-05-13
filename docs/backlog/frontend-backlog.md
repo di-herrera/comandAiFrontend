@@ -19,23 +19,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
-### FE-007 Tela de opções e adicionais
-
-**Objetivo**
-Permitir listar, cadastrar e editar opções/adicionais por empresa e unidade.
-
-**Escopo**
-- Selecionar empresa e unidade.
-- Listar opções filtradas.
-- Criar opção com código persistido, exemplo `O001`.
-- Editar nome, preço adicional e status.
-
-**Critérios de aceite**
-- Opção sempre é criada com TenantId + BusinessUnitId + Code.
-- Preço adicional é obrigatório e maior ou igual a zero.
-
----
-
 ### FE-008 Tela de composição do produto
 
 **Objetivo**
@@ -77,6 +60,30 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-007 Tela de opções e adicionais
+
+**Objetivo**
+Permitir listar, cadastrar e editar opções/adicionais por empresa e unidade.
+
+**Escopo**
+- Selecionar empresa e unidade.
+- Listar opções filtradas.
+- Criar opção com código persistido, exemplo `O001`.
+- Editar nome, preço adicional e status.
+
+**Critérios de aceite**
+- Opção sempre é criada com TenantId + BusinessUnitId + Code.
+- Preço adicional é obrigatório e maior ou igual a zero.
+
+**Notas de implementação**
+- Tela de opções exige empresa e unidade antes de listar ou salvar.
+- Listagem usa TenantId + BusinessUnitId e mostra o filtro ativo.
+- Formulário reativo cobre código persistido, nome, preço adicional e status.
+- Validação client-side exige preço adicional maior ou igual a zero.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ### FE-006 Tela de ingredientes
 
