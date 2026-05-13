@@ -10,3 +10,9 @@ export interface ApiError {
   message: string;
   details?: Record<string, string[]>;
 }
+
+export interface ApiFailure {
+  status: number;
+  url?: string | null;
+  error: ApiError;
+}

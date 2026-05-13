@@ -19,27 +19,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
-### FE-002 Contratos TypeScript e cliente HTTP base
-
-**Objetivo**
-Criar a camada base de comunicação com a API.
-
-**Escopo**
-- Criar modelos TypeScript alinhados a `docs/contracts/http-api.md`.
-- Criar serviço base para montar URLs da API.
-- Criar tratamento básico de erro.
-- Criar serviços iniciais: tenants, business units, products, ingredients, options.
-
-**Critérios de aceite**
-- Serviços tipados compilam.
-- Nenhum endpoint é chamado com URL hardcoded fora da camada de API.
-- Erros retornados pela API têm modelo tipado.
-
-**Fora do escopo**
-- Componentes finais de formulário.
-
----
-
 ### FE-003 Tela de empresas
 
 **Objetivo**
@@ -171,6 +150,34 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-002 Contratos TypeScript e cliente HTTP base
+
+**Objetivo**
+Criar a camada base de comunicação com a API.
+
+**Escopo**
+- Criar modelos TypeScript alinhados a `docs/contracts/http-api.md`.
+- Criar serviço base para montar URLs da API.
+- Criar tratamento básico de erro.
+- Criar serviços iniciais: tenants, business units, products, ingredients, options.
+
+**Critérios de aceite**
+- Serviços tipados compilam.
+- Nenhum endpoint é chamado com URL hardcoded fora da camada de API.
+- Erros retornados pela API têm modelo tipado.
+
+**Fora do escopo**
+- Componentes finais de formulário.
+
+**Notas de implementação**
+- Contratos compartilhados criados para tenants, unidades, produtos, ingredientes, opções e composição de produto.
+- `ApiEndpoints` centraliza os caminhos administrativos e monta rotas com `TenantId` e `BusinessUnitId` quando exigido.
+- Serviços HTTP tipados adicionados para tenants, business units, products, ingredients e options.
+- Interceptor normaliza erros para o modelo tipado `ApiFailure`/`ApiError`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ### FE-001 Criar base Angular do painel administrativo
 
