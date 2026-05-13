@@ -19,6 +19,10 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
+## Doing
+
+## Review
+
 ### FE-009 Revisão de usabilidade do painel
 
 **Objetivo**
@@ -35,11 +39,14 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 - Fluxo de cadastro é compreensível sem treinamento longo.
 - Cada tela deixa claro o que deve ser preenchido.
 
+**Notas de implementação**
+- Home revisada para orientar o fluxo de cadastro em ordem operacional.
+- Menu lateral agrupado em Base e Catálogo, com textos mais diretos.
+- Visual ajustado para painel simples, com raio de borda menor e espaçamentos mais contidos.
+- Telas operacionais mantêm empresa/unidade/produto visíveis nos filtros ativos quando aplicável.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
 ---
-
-## Doing
-
-## Review
 
 ### FE-008 Tela de composição do produto
 

@@ -5,7 +5,7 @@
 }
 
 .sidebar {
-  background: #111827;
+  background: #18202f;
   color: #fff;
   padding: 1.25rem;
   display: flex;
@@ -29,13 +29,22 @@
 
 .nav {
   display: grid;
-  gap: .35rem;
+  gap: .3rem;
+}
+
+.nav-label {
+  color: #94a3b8;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  margin: .75rem .8rem .15rem;
+  text-transform: uppercase;
 }
 
 .nav a {
   color: #d1d5db;
-  padding: .7rem .8rem;
-  border-radius: 10px;
+  padding: .62rem .8rem;
+  border-radius: 8px;
 }
 
 .nav a.active,
@@ -45,7 +54,7 @@
 }
 
 .content {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 @media (max-width: 820px) {
