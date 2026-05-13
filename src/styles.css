@@ -33,6 +33,8 @@ button, input, textarea, select { font: inherit; }
 .feedback.error { border-color: #f4b8b0; color: var(--danger); background: #fff4f2; }
 .context-panel { align-self: end; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-soft); padding: .75rem 1rem; display: grid; gap: .25rem; }
 .context-panel span { color: var(--muted); }
+.split-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.split-grid h3 { margin: 0 0 .75rem; font-size: 1rem; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
 .field { display: grid; gap: .35rem; }

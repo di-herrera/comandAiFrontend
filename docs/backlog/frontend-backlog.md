@@ -19,26 +19,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
-### FE-008 Tela de composição do produto
-
-**Objetivo**
-Permitir associar produtos a ingredientes e opções/adicionais.
-
-**Escopo**
-- Selecionar empresa, unidade e produto.
-- Exibir composição atual.
-- Associar ingredientes aplicáveis.
-- Definir se ingrediente pode ser removido.
-- Associar opções/adicionais aplicáveis.
-- Salvar composição via API.
-
-**Critérios de aceite**
-- Produto mostra seus ingredientes vinculados.
-- Produto mostra suas opções vinculadas.
-- A composição salva é carregada novamente com consistência.
-
----
-
 ### FE-009 Revisão de usabilidade do painel
 
 **Objetivo**
@@ -60,6 +40,34 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-008 Tela de composição do produto
+
+**Objetivo**
+Permitir associar produtos a ingredientes e opções/adicionais.
+
+**Escopo**
+- Selecionar empresa, unidade e produto.
+- Exibir composição atual.
+- Associar ingredientes aplicáveis.
+- Definir se ingrediente pode ser removido.
+- Associar opções/adicionais aplicáveis.
+- Salvar composição via API.
+
+**Critérios de aceite**
+- Produto mostra seus ingredientes vinculados.
+- Produto mostra suas opções vinculadas.
+- A composição salva é carregada novamente com consistência.
+
+**Notas de implementação**
+- Criado `ProductCompositionApiService` para obter e atualizar composição pelo contrato HTTP.
+- Tela exige empresa, unidade e produto antes de carregar a composição.
+- Ingredientes e opções da unidade são mesclados com a composição atual para marcar vínculos existentes.
+- Usuário pode marcar ingredientes, definir padrão/removível e marcar opções aplicáveis.
+- Após salvar, a composição é recarregada para refletir o retorno persistido.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ### FE-007 Tela de opções e adicionais
 
