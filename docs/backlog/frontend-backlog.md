@@ -19,24 +19,6 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Backlog
 
-### FE-005 Tela de produtos
-
-**Objetivo**
-Permitir listar, cadastrar e editar produtos por empresa e unidade.
-
-**Escopo**
-- Selecionar empresa e unidade.
-- Listar produtos filtrados.
-- Criar produto com código persistido, exemplo `P001`.
-- Editar nome, descrição, preço base, disponibilidade e status.
-
-**Critérios de aceite**
-- Produto sempre é criado com TenantId + BusinessUnitId + Code.
-- Preço é obrigatório e maior ou igual a zero.
-- Disponibilidade é editável.
-
----
-
 ### FE-006 Tela de ingredientes
 
 **Objetivo**
@@ -111,6 +93,31 @@ Garantir que o painel seja simples para pequenos negócios e não pareça um ERP
 ## Doing
 
 ## Review
+
+### FE-005 Tela de produtos
+
+**Objetivo**
+Permitir listar, cadastrar e editar produtos por empresa e unidade.
+
+**Escopo**
+- Selecionar empresa e unidade.
+- Listar produtos filtrados.
+- Criar produto com código persistido, exemplo `P001`.
+- Editar nome, descrição, preço base, disponibilidade e status.
+
+**Critérios de aceite**
+- Produto sempre é criado com TenantId + BusinessUnitId + Code.
+- Preço é obrigatório e maior ou igual a zero.
+- Disponibilidade é editável.
+
+**Notas de implementação**
+- Tela de produtos exige empresa e unidade antes de listar ou salvar.
+- Listagem usa TenantId + BusinessUnitId e deixa o contexto visível no filtro ativo.
+- Formulário reativo cobre código, nome, descrição, preço base, disponibilidade e status.
+- Validação client-side exige código, nome e preço maior ou igual a zero.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
 
 ### FE-004 Tela de unidades de negócio
 
