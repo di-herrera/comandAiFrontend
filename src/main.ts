@@ -1,3 +1,4 @@
+import { provideZoneChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -8,6 +9,7 @@ import { apiErrorInterceptor } from './app/core/http/api-error.interceptor';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([apiErrorInterceptor]))
   ]
