@@ -1,0 +1,29 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <strong>ComandAI</strong>
+      <span>Painel operacional</span>
+    </div>
+
+    <nav class="nav" aria-label="Navegacao principal">
+      <span class="nav-label">Base</span>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+      <a routerLink="/empresas" routerLinkActive="active">Empresas</a>
+      <a routerLink="/unidades" routerLinkActive="active">Unidades</a>
+
+      <span class="nav-label">Catalogo</span>
+      <a routerLink="/produtos" routerLinkActive="active">Produtos</a>
+      <a routerLink="/ingredientes" routerLinkActive="active">Ingredientes</a>
+      <a routerLink="/opcoes" routerLinkActive="active">Opcoes</a>
+      <a routerLink="/composicao-produto" routerLinkActive="active">Composicao</a>
+      <a routerLink="/cardapio" routerLinkActive="active">Cardapio</a>
+
+      <span class="nav-label">Teste</span>
+      <a routerLink="/simulador-chat" routerLinkActive="active">Simulador chat</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>
