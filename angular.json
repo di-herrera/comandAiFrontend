@@ -22,7 +22,7 @@
             "outputPath": "dist/comandai-admin",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": [],
+            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -79,7 +79,7 @@
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "tsConfig": "tsconfig.spec.json",
-            "polyfills": [],
+            "polyfills": ["zone.js"],
             "assets": [
               {
                 "glob": "**/*",
