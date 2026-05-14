@@ -23,7 +23,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div>
           <p class="eyebrow">Catálogo por unidade</p>
           <h1 class="page-title">Opções e adicionais</h1>
-          <p class="page-description">Cadastre adicionais e opções disponíveis por unidade.</p>
+          <p class="page-description">Cadastre adicionais globais da unidade e associe aos produtos na composição.</p>
         </div>
       </header>
 
@@ -138,6 +138,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                 <th>Código</th>
                 <th>Opção</th>
                 <th>Preço adicional</th>
+                <th>Disponível</th>
                 <th>Status</th>
                 <th>Ação</th>
               </tr>
@@ -148,6 +149,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                   <td>{{ option.code }}</td>
                   <td>{{ option.name }}</td>
                   <td>{{ formatCurrency(option.additionalPrice) }}</td>
+                  <td>{{ option.isAvailable ? 'Sim' : 'Não' }}</td>
                   <td><span class="status-pill">{{ statusLabel(option.status) }}</span></td>
                   <td>
                     <button class="btn btn-small" type="button" (click)="startEdit(option)">

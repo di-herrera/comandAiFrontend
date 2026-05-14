@@ -30,6 +30,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/product-composition/product-composition.page').then((m) => m.ProductCompositionPage)
   },
   {
+    path: 'cardapio',
+    loadComponent: () => import('./features/menu-preview/menu-preview.page').then((m) => m.MenuPreviewPage)
+  },
+  {
     path: 'simulador-chat',
     loadComponent: () => import('./features/chat-simulator/chat-simulator.page').then((m) => m.ChatSimulatorPage)
   },
