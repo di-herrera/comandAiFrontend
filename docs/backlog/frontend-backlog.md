@@ -23,6 +23,32 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Review
 
+### FE-010 Colapsar categorias no cardapio
+
+**Objetivo**
+Facilitar a leitura da tela de cardapio agrupando produtos em secoes recolhiveis por categoria.
+
+**Escopo**
+- Adicionar comportamento de expandir/recolher por categoria na tela de cardapio.
+- Manter categorias abertas por padrao apos carregar o cardapio.
+- Permitir alternar uma categoria individualmente.
+- Exibir quantidade de produtos por categoria.
+- Preservar filtros de empresa e unidade.
+
+**Criterios de aceite**
+- Cada categoria do cardapio pode ser recolhida e expandida.
+- Produtos, variantes, ingredientes e adicionais continuam visiveis quando a categoria esta aberta.
+- O build do Angular passa.
+
+**Notas de implementacao**
+- Tela de cardapio agora renderiza cada categoria como uma secao recolhivel.
+- Categorias carregam abertas por padrao e podem ser alternadas individualmente.
+- Cabecalho da categoria mostra a quantidade de produtos.
+- O estado de collapse e limpo ao trocar filtros ou recarregar o cardapio.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
 ### FE-009 Revisão de usabilidade do painel
 
 **Objetivo**

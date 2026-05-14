@@ -88,92 +88,104 @@ interface MenuProduct {
           <div class="menu-preview">
             @for (group of groupedMenu; track group.categoryName) {
               <section class="menu-category">
-                <h3>{{ group.categoryName }}</h3>
+                <button
+                  class="category-toggle"
+                  type="button"
+                  [attr.aria-expanded]="!isCategoryCollapsed(group.categoryName)"
+                  (click)="toggleCategory(group.categoryName)">
+                  <span>
+                    <strong>{{ group.categoryName }}</strong>
+                    <small>{{ group.items.length }} {{ group.items.length === 1 ? 'produto' : 'produtos' }}</small>
+                  </span>
+                  <span class="toggle-indicator">{{ isCategoryCollapsed(group.categoryName) ? '+' : '-' }}</span>
+                </button>
 
-                <div class="menu-items">
-                  @for (item of group.items; track item.product.id) {
-                    <article class="menu-item">
-                      <div class="menu-item-header">
-                        <div>
-                          <strong>{{ item.product.code }} - {{ item.product.name }}</strong>
-                          @if (item.product.description) {
-                            <p>{{ item.product.description }}</p>
-                          }
-                        </div>
-                        <span class="status-pill">{{ item.product.isAvailable ? 'Disponivel' : 'Indisponivel' }}</span>
-                      </div>
-
-                      <dl class="result-grid">
-                        <div>
-                          <dt>Preco base</dt>
-                          <dd>{{ formatCurrency(item.product.price) }}</dd>
-                        </div>
-                        <div>
-                          <dt>Status</dt>
-                          <dd>{{ item.product.status === 'Active' ? 'Ativo' : 'Inativo' }}</dd>
-                        </div>
-                      </dl>
-
-                      <div class="menu-columns">
-                        <div>
-                          <h4>Variantes</h4>
-                          @if (item.product.variants.length === 0) {
-                            <p class="muted">Sem variantes cadastradas.</p>
-                          } @else {
-                            <ul class="compact-list">
-                              @for (variant of item.product.variants; track variant.id) {
-                                <li>
-                                  {{ variant.code }} - {{ variant.name }}:
-                                  {{ formatCurrency(variant.price) }}
-                                  @if (!variant.isAvailable) {
-                                    <span class="muted">(indisponivel)</span>
-                                  }
-                                </li>
-                              }
-                            </ul>
-                          }
+                @if (!isCategoryCollapsed(group.categoryName)) {
+                  <div class="menu-items">
+                    @for (item of group.items; track item.product.id) {
+                      <article class="menu-item">
+                        <div class="menu-item-header">
+                          <div>
+                            <strong>{{ item.product.code }} - {{ item.product.name }}</strong>
+                            @if (item.product.description) {
+                              <p>{{ item.product.description }}</p>
+                            }
+                          </div>
+                          <span class="status-pill">{{ item.product.isAvailable ? 'Disponivel' : 'Indisponivel' }}</span>
                         </div>
 
-                        <div>
-                          <h4>Ingredientes</h4>
-                          @if (item.composition.ingredients.length === 0) {
-                            <p class="muted">Sem ingredientes vinculados.</p>
-                          } @else {
-                            <ul class="compact-list">
-                              @for (ingredient of item.composition.ingredients; track ingredient.ingredientId) {
-                                <li>
-                                  {{ ingredient.ingredientCode }} - {{ ingredient.ingredientName }}
-                                  @if (ingredient.canBeRemoved) {
-                                    <span class="muted">(removivel)</span>
-                                  }
-                                </li>
-                              }
-                            </ul>
-                          }
-                        </div>
+                        <dl class="result-grid">
+                          <div>
+                            <dt>Preco base</dt>
+                            <dd>{{ formatCurrency(item.product.price) }}</dd>
+                          </div>
+                          <div>
+                            <dt>Status</dt>
+                            <dd>{{ item.product.status === 'Active' ? 'Ativo' : 'Inativo' }}</dd>
+                          </div>
+                        </dl>
 
-                        <div>
-                          <h4>Adicionais</h4>
-                          @if (item.composition.options.length === 0) {
-                            <p class="muted">Sem adicionais vinculados.</p>
-                          } @else {
-                            <ul class="compact-list">
-                              @for (option of item.composition.options; track option.optionId) {
-                                <li>
-                                  {{ option.optionCode }} - {{ option.optionName }}:
-                                  {{ formatCurrency(option.additionalPrice) }}
-                                  @if (!option.isAvailable) {
-                                    <span class="muted">(indisponivel)</span>
-                                  }
-                                </li>
-                              }
-                            </ul>
-                          }
+                        <div class="menu-columns">
+                          <div>
+                            <h4>Variantes</h4>
+                            @if (item.product.variants.length === 0) {
+                              <p class="muted">Sem variantes cadastradas.</p>
+                            } @else {
+                              <ul class="compact-list">
+                                @for (variant of item.product.variants; track variant.id) {
+                                  <li>
+                                    {{ variant.code }} - {{ variant.name }}:
+                                    {{ formatCurrency(variant.price) }}
+                                    @if (!variant.isAvailable) {
+                                      <span class="muted">(indisponivel)</span>
+                                    }
+                                  </li>
+                                }
+                              </ul>
+                            }
+                          </div>
+
+                          <div>
+                            <h4>Ingredientes</h4>
+                            @if (item.composition.ingredients.length === 0) {
+                              <p class="muted">Sem ingredientes vinculados.</p>
+                            } @else {
+                              <ul class="compact-list">
+                                @for (ingredient of item.composition.ingredients; track ingredient.ingredientId) {
+                                  <li>
+                                    {{ ingredient.ingredientCode }} - {{ ingredient.ingredientName }}
+                                    @if (ingredient.canBeRemoved) {
+                                      <span class="muted">(removivel)</span>
+                                    }
+                                  </li>
+                                }
+                              </ul>
+                            }
+                          </div>
+
+                          <div>
+                            <h4>Adicionais</h4>
+                            @if (item.composition.options.length === 0) {
+                              <p class="muted">Sem adicionais vinculados.</p>
+                            } @else {
+                              <ul class="compact-list">
+                                @for (option of item.composition.options; track option.optionId) {
+                                  <li>
+                                    {{ option.optionCode }} - {{ option.optionName }}:
+                                    {{ formatCurrency(option.additionalPrice) }}
+                                    @if (!option.isAvailable) {
+                                      <span class="muted">(indisponivel)</span>
+                                    }
+                                  </li>
+                                }
+                              </ul>
+                            }
+                          </div>
                         </div>
-                      </div>
-                    </article>
-                  }
-                </div>
+                      </article>
+                    }
+                  </div>
+                }
               </section>
             }
           </div>
@@ -189,6 +201,7 @@ export class MenuPreviewPage {
   protected tenants: TenantListItem[] = [];
   protected businessUnits: BusinessUnitListItem[] = [];
   protected menuProducts: MenuProduct[] = [];
+  protected collapsedCategories = new Set<string>();
   protected loading = false;
   protected errorMessage = '';
 
@@ -266,6 +279,7 @@ export class MenuPreviewPage {
     const tenantId = this.tenantControl.value;
     const businessUnitId = this.businessUnitControl.value;
     this.menuProducts = [];
+    this.collapsedCategories.clear();
 
     if (!tenantId || !businessUnitId) {
       return;
@@ -289,6 +303,20 @@ export class MenuPreviewPage {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
 
+  protected isCategoryCollapsed(categoryName: string): boolean {
+    return this.collapsedCategories.has(this.categoryKey(categoryName));
+  }
+
+  protected toggleCategory(categoryName: string): void {
+    const key = this.categoryKey(categoryName);
+    if (this.collapsedCategories.has(key)) {
+      this.collapsedCategories.delete(key);
+      return;
+    }
+
+    this.collapsedCategories.add(key);
+  }
+
   private loadCompositions(tenantId: string, businessUnitId: string, products: ProductListItem[]): void {
     if (products.length === 0) {
       this.loading = false;
@@ -303,10 +331,15 @@ export class MenuPreviewPage {
             product,
             composition: compositions[index]
           }));
+          this.collapsedCategories.clear();
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
         }
       });
+  }
+
+  private categoryKey(categoryName: string): string {
+    return categoryName.trim().toLocaleLowerCase('pt-BR');
   }
 }

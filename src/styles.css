@@ -43,6 +43,10 @@ button, input, textarea, select { font: inherit; }
 .stacked-list { display: grid; gap: .2rem; }
 .menu-preview { display: grid; gap: 1rem; }
 .menu-category { display: grid; gap: .75rem; }
+.category-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-soft); padding: .8rem 1rem; color: var(--text); cursor: pointer; text-align: left; }
+.category-toggle span:first-child { display: grid; gap: .15rem; }
+.category-toggle small { color: var(--muted); font-weight: 600; }
+.toggle-indicator { width: 1.75rem; height: 1.75rem; display: inline-grid; place-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-weight: 700; }
 .menu-items { display: grid; gap: .75rem; }
 .menu-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; background: var(--surface); }
 .menu-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
