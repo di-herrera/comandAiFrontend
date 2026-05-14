@@ -29,5 +29,9 @@ export const routes: Routes = [
     path: 'composicao-produto',
     loadComponent: () => import('./features/product-composition/product-composition.page').then((m) => m.ProductCompositionPage)
   },
+  {
+    path: 'simulador-chat',
+    loadComponent: () => import('./features/chat-simulator/chat-simulator.page').then((m) => m.ChatSimulatorPage)
+  },
   { path: '**', redirectTo: '' }
 ];

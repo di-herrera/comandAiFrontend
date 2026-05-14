@@ -30,5 +30,8 @@ export const ApiEndpoints = {
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/options`,
     detail: (tenantId: string, businessUnitId: string, optionId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/options/${enc(optionId)}`
+  },
+  dev: {
+    simulateMessage: '/dev/simulate-message'
   }
 } as const;

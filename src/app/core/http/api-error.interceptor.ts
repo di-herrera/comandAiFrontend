@@ -22,9 +22,16 @@ function normalizeApiError(error: HttpErrorResponse): ApiError {
     return error.error;
   }
 
+  if (isSimpleError(error.error)) {
+    return {
+      code: error.status ? `Http${error.status}` : 'RequestError',
+      message: error.error.error
+    };
+  }
+
   return {
     code: error.status ? `Http${error.status}` : 'NetworkError',
-    message: error.message || 'Não foi possível concluir a requisição.'
+    message: error.message || 'Nao foi possivel concluir a requisicao.'
   };
 }
 
@@ -35,4 +42,12 @@ function isApiError(value: unknown): value is ApiError {
 
   const candidate = value as Partial<ApiError>;
   return typeof candidate.code === 'string' && typeof candidate.message === 'string';
+}
+
+function isSimpleError(value: unknown): value is { error: string } {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  return typeof (value as { error?: unknown }).error === 'string';
 }
