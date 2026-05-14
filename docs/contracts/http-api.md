@@ -166,12 +166,24 @@ Resposta:
       "id": "uuid",
       "tenantId": "uuid",
       "businessUnitId": "uuid",
+      "categoryId": "uuid",
+      "categoryName": "Lanches",
       "code": "P001",
       "name": "X-Bacon",
       "description": "Pão, hambúrguer, bacon, queijo e salada",
       "price": 28.9,
       "isAvailable": true,
-      "status": "Active"
+      "status": "Active",
+      "variants": [
+        {
+          "id": "uuid",
+          "code": "P001-G",
+          "name": "Grande",
+          "price": 34.9,
+          "isAvailable": true,
+          "displayOrder": 1
+        }
+      ]
     }
   ],
   "total": 1
@@ -193,7 +205,23 @@ Request:
   "description": "Pão, hambúrguer, bacon, queijo e salada",
   "price": 28.9,
   "isAvailable": true,
-  "status": "Active"
+  "status": "Active",
+  "variants": [
+    {
+      "code": "P001-G",
+      "name": "Grande",
+      "price": 34.9,
+      "isAvailable": true,
+      "displayOrder": 1
+    },
+    {
+      "code": "P001-M",
+      "name": "Medio",
+      "price": 28.9,
+      "isAvailable": true,
+      "displayOrder": 2
+    }
+  ]
 }
 ```
 
@@ -239,6 +267,26 @@ PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/ingredients/{i
 
 ```http
 GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/options
+```
+
+Resposta:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "tenantId": "uuid",
+      "businessUnitId": "uuid",
+      "code": "O001",
+      "name": "Bacon extra",
+      "additionalPrice": 5.0,
+      "isAvailable": true,
+      "status": "Active"
+    }
+  ],
+  "total": 1
+}
 ```
 
 ### Criar opção

@@ -35,6 +35,20 @@ button, input, textarea, select { font: inherit; }
 .context-panel span { color: var(--muted); }
 .split-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
 .split-grid h3 { margin: 0 0 .75rem; font-size: 1rem; }
+.nested-section { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; background: var(--surface-soft); }
+.nested-section .section-heading { margin-bottom: .75rem; }
+.nested-section h3, .menu-category h3, .menu-item h4 { margin: 0; }
+.variant-grid { display: grid; gap: .75rem; }
+.variant-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; align-items: end; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: .75rem; }
+.stacked-list { display: grid; gap: .2rem; }
+.menu-preview { display: grid; gap: 1rem; }
+.menu-category { display: grid; gap: .75rem; }
+.menu-items { display: grid; gap: .75rem; }
+.menu-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; background: var(--surface); }
+.menu-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.menu-item-header p { margin: .25rem 0 0; color: var(--muted); }
+.menu-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; }
+.menu-columns h4 { font-size: .9rem; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
 .field { display: grid; gap: .35rem; }

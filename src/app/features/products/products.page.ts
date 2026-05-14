@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
@@ -9,9 +9,18 @@ import {
   BusinessUnitListItem,
   ProductCreateRequest,
   ProductListItem,
+  ProductVariantRequest,
   TenantListItem
 } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
+
+type VariantForm = FormGroup<{
+  code: FormControl<string>;
+  name: FormControl<string>;
+  price: FormControl<number>;
+  isAvailable: FormControl<boolean>;
+  displayOrder: FormControl<number>;
+}>;
 
 @Component({
   selector: 'app-products',
@@ -21,9 +30,9 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
     <section class="page">
       <header class="page-header">
         <div>
-          <p class="eyebrow">Catálogo por unidade</p>
+          <p class="eyebrow">Catalogo por unidade</p>
           <h1 class="page-title">Produtos</h1>
-          <p class="page-description">Cadastre produtos com códigos persistidos, preços e disponibilidade.</p>
+          <p class="page-description">Cadastre produtos, categorias retornadas pela API e variantes como tamanhos ou sabores.</p>
         </div>
       </header>
 
@@ -70,10 +79,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
         <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
-            <span>Código</span>
+            <span>Codigo</span>
             <input type="text" formControlName="code" placeholder="P001" />
             @if (isInvalid('code')) {
-              <small>Informe o código persistido do produto.</small>
+              <small>Informe o codigo persistido do produto.</small>
             }
           </label>
 
@@ -86,10 +95,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           </label>
 
           <label class="field">
-            <span>Preço base</span>
+            <span>Preco base</span>
             <input type="number" min="0" step="0.01" formControlName="price" />
             @if (isInvalid('price')) {
-              <small>Informe um preço maior ou igual a zero.</small>
+              <small>Informe um preco maior ou igual a zero.</small>
             }
           </label>
 
@@ -102,22 +111,64 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           </label>
 
           <label class="field field-wide">
-            <span>Descrição</span>
+            <span>Descricao</span>
             <textarea rows="3" formControlName="description"></textarea>
           </label>
 
           <label class="check-field">
             <input type="checkbox" formControlName="isAvailable" />
-            <span>Disponível para venda</span>
+            <span>Disponivel para venda</span>
           </label>
+
+          <section class="field-wide nested-section" formArrayName="variants">
+            <div class="section-heading">
+              <div>
+                <h3>Variantes</h3>
+                <p>Use variantes para tamanhos, sabores ou apresentacoes que a IA deve reconhecer.</p>
+              </div>
+              <button class="btn btn-small" type="button" (click)="addVariant()">Adicionar variante</button>
+            </div>
+
+            @if (variants.length === 0) {
+              <p class="muted">Sem variantes informadas. A API criara uma variante unica automaticamente.</p>
+            } @else {
+              <div class="variant-grid">
+                @for (variant of variants.controls; track $index; let index = $index) {
+                  <div class="variant-card" [formGroupName]="index">
+                    <label class="field">
+                      <span>Codigo</span>
+                      <input type="text" formControlName="code" placeholder="P001-P" />
+                    </label>
+                    <label class="field">
+                      <span>Nome</span>
+                      <input type="text" formControlName="name" placeholder="Pequeno" />
+                    </label>
+                    <label class="field">
+                      <span>Preco</span>
+                      <input type="number" min="0" step="0.01" formControlName="price" />
+                    </label>
+                    <label class="field">
+                      <span>Ordem</span>
+                      <input type="number" min="1" step="1" formControlName="displayOrder" />
+                    </label>
+                    <label class="check-field">
+                      <input type="checkbox" formControlName="isAvailable" />
+                      <span>Disponivel</span>
+                    </label>
+                    <button class="btn btn-small" type="button" (click)="removeVariant(index)">Remover</button>
+                  </div>
+                }
+              </div>
+            }
+          </section>
 
           <div class="button-row form-actions">
             <button class="btn btn-primary" type="submit" [disabled]="saving || !canUseCatalogContext">
-              {{ saving ? 'Salvando...' : editingProductId ? 'Salvar edição' : 'Cadastrar produto' }}
+              {{ saving ? 'Salvando...' : editingProductId ? 'Salvar edicao' : 'Cadastrar produto' }}
             </button>
             @if (editingProductId) {
               <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edição
+                Cancelar edicao
               </button>
             }
           </div>
@@ -128,7 +179,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div class="section-heading">
           <div>
             <h2>Produtos cadastrados</h2>
-            <p>Filtro ativo: {{ selectedTenantName || 'empresa não selecionada' }} / {{ selectedBusinessUnitName || 'unidade não selecionada' }}.</p>
+            <p>Filtro ativo: {{ selectedTenantName || 'empresa nao selecionada' }} / {{ selectedBusinessUnitName || 'unidade nao selecionada' }}.</p>
           </div>
           <button class="btn" type="button" (click)="loadProducts()" [disabled]="loading || !canUseCatalogContext">
             Atualizar
@@ -145,12 +196,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <table class="table">
             <thead>
               <tr>
-                <th>Código</th>
+                <th>Codigo</th>
                 <th>Produto</th>
-                <th>Preço</th>
-                <th>Disponível</th>
+                <th>Categoria</th>
+                <th>Preco base</th>
+                <th>Variantes</th>
+                <th>Disponivel</th>
                 <th>Status</th>
-                <th>Ação</th>
+                <th>Acao</th>
               </tr>
             </thead>
             <tbody>
@@ -158,8 +211,20 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                 <tr>
                   <td>{{ product.code }}</td>
                   <td>{{ product.name }}</td>
+                  <td>{{ product.categoryName }}</td>
                   <td>{{ formatCurrency(product.price) }}</td>
-                  <td>{{ product.isAvailable ? 'Sim' : 'Não' }}</td>
+                  <td>
+                    @if (product.variants.length === 0) {
+                      <span class="muted">Nenhuma</span>
+                    } @else {
+                      <div class="stacked-list">
+                        @for (variant of product.variants; track variant.id) {
+                          <span>{{ variant.code }} - {{ variant.name }} ({{ formatCurrency(variant.price) }})</span>
+                        }
+                      </div>
+                    }
+                  </td>
+                  <td>{{ product.isAvailable ? 'Sim' : 'Nao' }}</td>
                   <td><span class="status-pill">{{ statusLabel(product.status) }}</span></td>
                   <td>
                     <button class="btn btn-small" type="button" (click)="startEdit(product)">
@@ -184,7 +249,8 @@ export class ProductsPage {
     description: new FormControl<string | null>(null, { validators: [Validators.maxLength(500)] }),
     price: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     isAvailable: new FormControl(true, { nonNullable: true }),
-    status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
+    status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] }),
+    variants: new FormArray<VariantForm>([])
   });
 
   protected tenants: TenantListItem[] = [];
@@ -213,6 +279,10 @@ export class ProductsPage {
       this.cancelEdit();
       this.loadProducts();
     });
+  }
+
+  protected get variants(): FormArray<VariantForm> {
+    return this.form.controls.variants;
   }
 
   protected get canUseCatalogContext(): boolean {
@@ -279,6 +349,23 @@ export class ProductsPage {
       });
   }
 
+  protected addVariant(value?: ProductVariantRequest): void {
+    this.variants.push(this.createVariantForm(value ?? {
+      code: '',
+      name: '',
+      price: this.form.controls.price.value,
+      isAvailable: this.form.controls.isAvailable.value,
+      displayOrder: this.variants.length + 1
+    }));
+  }
+
+  protected removeVariant(index: number): void {
+    this.variants.removeAt(index);
+    this.variants.controls.forEach((variant, variantIndex) => {
+      variant.controls.displayOrder.setValue(variantIndex + 1);
+    });
+  }
+
   protected submit(): void {
     const tenantId = this.tenantControl.value;
     const businessUnitId = this.businessUnitControl.value;
@@ -315,7 +402,17 @@ export class ProductsPage {
 
   protected startEdit(product: ProductListItem): void {
     this.editingProductId = product.id;
-    this.form.setValue({
+    this.variants.clear();
+    product.variants.forEach((variant) => {
+      this.addVariant({
+        code: variant.code,
+        name: variant.name,
+        price: variant.price,
+        isAvailable: variant.isAvailable,
+        displayOrder: variant.displayOrder
+      });
+    });
+    this.form.patchValue({
       code: product.code,
       name: product.name,
       description: product.description ?? null,
@@ -329,6 +426,7 @@ export class ProductsPage {
 
   protected cancelEdit(): void {
     this.editingProductId = null;
+    this.variants.clear();
     this.form.reset({
       code: '',
       name: '',
@@ -339,7 +437,7 @@ export class ProductsPage {
     });
   }
 
-  protected isInvalid(controlName: keyof typeof this.form.controls): boolean {
+  protected isInvalid(controlName: Exclude<keyof typeof this.form.controls, 'variants'>): boolean {
     const control = this.form.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
   }
@@ -352,6 +450,16 @@ export class ProductsPage {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
 
+  private createVariantForm(value: ProductVariantRequest): VariantForm {
+    return new FormGroup({
+      code: new FormControl(value.code, { nonNullable: true, validators: [Validators.required, Validators.maxLength(32)] }),
+      name: new FormControl(value.name, { nonNullable: true, validators: [Validators.required, Validators.maxLength(160)] }),
+      price: new FormControl(value.price, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      isAvailable: new FormControl(value.isAvailable, { nonNullable: true }),
+      displayOrder: new FormControl(value.displayOrder, { nonNullable: true, validators: [Validators.required, Validators.min(1)] })
+    });
+  }
+
   private buildRequest(): ProductCreateRequest {
     const value = this.form.getRawValue();
     const description = value.description?.trim();
@@ -362,7 +470,14 @@ export class ProductsPage {
       description: description ? description : null,
       price: Number(value.price),
       isAvailable: value.isAvailable,
-      status: value.status
+      status: value.status,
+      variants: value.variants.map((variant) => ({
+        code: variant.code.trim(),
+        name: variant.name.trim(),
+        price: Number(variant.price),
+        isAvailable: variant.isAvailable,
+        displayOrder: Number(variant.displayOrder)
+      }))
     };
   }
 }

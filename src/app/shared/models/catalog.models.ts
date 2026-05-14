@@ -41,12 +41,15 @@ export interface ProductListItem {
   id: string;
   tenantId: string;
   businessUnitId: string;
+  categoryId: string;
+  categoryName: string;
   code: string;
   name: string;
   description?: string | null;
   price: number;
   isAvailable: boolean;
   status: EntityStatus;
+  variants: ProductVariant[];
 }
 
 export interface ProductCreateRequest {
@@ -56,9 +59,27 @@ export interface ProductCreateRequest {
   price: number;
   isAvailable: boolean;
   status: EntityStatus;
+  variants: ProductVariantRequest[];
 }
 
 export interface ProductUpdateRequest extends ProductCreateRequest {}
+
+export interface ProductVariant {
+  id: string;
+  code: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  displayOrder: number;
+}
+
+export interface ProductVariantRequest {
+  code: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  displayOrder: number;
+}
 
 export interface IngredientListItem {
   id: string;
@@ -84,6 +105,7 @@ export interface ProductOptionListItem {
   code: string;
   name: string;
   additionalPrice: number;
+  isAvailable: boolean;
   status: EntityStatus;
 }
 
