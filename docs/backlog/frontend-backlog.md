@@ -23,6 +23,56 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Review
 
+### FE-011 Tela de acompanhamento de pedidos dos clientes
+
+**Objetivo**
+Permitir que a loja acompanhe comandas recebidas pelo WhatsApp, com detalhe operacional do pedido.
+
+**Escopo**
+- Lista de comandas por empresa e unidade.
+- Filtros por status, periodo e busca por cliente/telefone.
+- Destaque de pedidos prontos para execucao e sinalizacao de atencao humana.
+- Detalhe com itens, variantes, adicionais, ingredientes removidos, entrega e totais.
+
+**Critérios de aceite**
+- Rota `/pedidos` acessivel no painel.
+- Tela consome `OrdersApiService`.
+- Valores exibidos vêm dos contratos do backend.
+- Sem acoes de pagamento, desconto, cancelamento ou alteracao automatica.
+
+**Notas de implementação**
+- Criada tela standalone `OrdersPage` com selecao de empresa/unidade e filtros operacionais.
+- Lista exibe cliente, telefone, status, horario, quantidade de itens e total.
+- Detalhe mostra origem, entrega, pagamento informado, itens, adicionais, remocoes, observacoes e totais retornados pela API.
+- Estados de carregamento, erro, vazio e selecao vazia tratados visualmente.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-010 Modelos e servico para acompanhamento de pedidos
+
+**Objetivo**
+Criar a camada tipada para consumir os endpoints de acompanhamento de pedidos/comandas.
+
+**Escopo**
+- Modelos TypeScript para filtros, listagem e detalhe.
+- Servico HTTP para listagem e detalhe.
+- Endpoints centralizados em `ApiEndpoints`.
+
+**Critérios de aceite**
+- Contratos representam listagem, filtros, cliente, conversa, itens, opcoes, ingredientes removidos e totais.
+- Servico nao recalcula total nem taxa; apenas consome a API.
+- Implementacao pronta para uso pela tela operacional.
+
+**Notas de implementação**
+- Criado `src/app/shared/models/orders.models.ts`.
+- Criado `OrdersApiService` com `list` e `detail`.
+- `ApiEndpoints` recebeu rotas de `/orders`.
+- Documentacao de contratos HTTP e modelos TypeScript atualizada.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
 ### FE-009 Revisão de usabilidade do painel
 
 **Objetivo**

@@ -30,6 +30,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/product-composition/product-composition.page').then((m) => m.ProductCompositionPage)
   },
   {
+    path: 'pedidos',
+    loadComponent: () => import('./features/orders/orders.page').then((m) => m.OrdersPage)
+  },
+  {
     path: 'cardapio',
     loadComponent: () => import('./features/menu-preview/menu-preview.page').then((m) => m.MenuPreviewPage)
   },
