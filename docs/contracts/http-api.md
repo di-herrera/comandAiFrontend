@@ -367,6 +367,32 @@ Request:
 }
 ```
 
+## 7. Acompanhamento de pedidos
+
+### Listar pedidos
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/orders
+```
+
+Filtros opcionais:
+
+- `status`: `ReadyForExecution`, `HumanReviewRequired`, `Completed` ou `Cancelled`.
+- `createdFromUtc`: data/hora inicial em ISO 8601.
+- `createdToUtc`: data/hora final em ISO 8601.
+- `search`: nome ou telefone do cliente.
+
+### Obter detalhe da comanda
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/orders/{orderId}
+```
+
+A resposta inclui cliente, conversa, entrega, pagamento informado, itens,
+variantes, opcoes/adicionais, ingredientes removidos e totais calculados pelo
+backend. O frontend apenas exibe `subtotal`, `deliveryFee`, `total`, subtotais
+de item e totais de opcao retornados pela API.
+
 ## Decisões abertas
 
 - Confirmar se `status` será string `Active/Inactive` ou boolean `isActive`.

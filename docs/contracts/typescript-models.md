@@ -39,10 +39,49 @@ export interface ProductListItem {
   isAvailable: boolean;
   status: EntityStatus;
 }
+
+export type OrderStatus =
+  | 'ReadyForExecution'
+  | 'HumanReviewRequired'
+  | 'Completed'
+  | 'Cancelled';
+
+export interface OrderListFilters {
+  status?: OrderStatus | '';
+  createdFromUtc?: string | null;
+  createdToUtc?: string | null;
+  search?: string | null;
+}
+
+export interface OrderSummary {
+  orderId: string;
+  orderNumber: string;
+  tenantId: string;
+  businessUnitId: string;
+  status: OrderStatus;
+  customer: {
+    customerId: string;
+    name?: string | null;
+    phoneNumber: string;
+  };
+  createdAtUtc: string;
+  readyForExecutionAtUtc?: string | null;
+  itemCount: number;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  requiresHumanHandoff: boolean;
+}
 ```
 
 O arquivo inicial fica em:
 
 ```text
 src/app/shared/models/catalog.models.ts
+```
+
+Modelos de acompanhamento de pedidos ficam em:
+
+```text
+src/app/shared/models/orders.models.ts
 ```
