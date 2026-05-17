@@ -34,6 +34,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/orders/orders.page').then((m) => m.OrdersPage)
   },
   {
+    path: 'auditoria-ia',
+    loadComponent: () => import('./features/ai-audit/ai-audit.page').then((m) => m.AiAuditPage)
+  },
+  {
     path: 'cardapio',
     loadComponent: () => import('./features/menu-preview/menu-preview.page').then((m) => m.MenuPreviewPage)
   },

@@ -393,6 +393,51 @@ variantes, opcoes/adicionais, ingredientes removidos e totais calculados pelo
 backend. O frontend apenas exibe `subtotal`, `deliveryFee`, `total`, subtotais
 de item e totais de opcao retornados pela API.
 
+## 8. Auditoria de IA
+
+### Listar interacoes
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/ai-interactions
+```
+
+Filtros opcionais:
+
+- `conversationId`: identificador da conversa.
+- `incomingMessageId`: identificador da mensagem recebida.
+- `parsedSuccessfully`: `true` ou `false`.
+- `createdFromUtc`: data/hora inicial em ISO 8601.
+- `createdToUtc`: data/hora final em ISO 8601.
+
+Resposta:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "tenantId": "uuid",
+      "businessUnitId": "uuid",
+      "conversationId": "uuid",
+      "incomingMessageId": "uuid",
+      "provider": "Gemini",
+      "model": "gemini-flash-latest",
+      "customerMessage": "Quero um x-bacon",
+      "prompt": "Prompt enviado para a IA",
+      "responseText": "{\"actions\":[]}",
+      "parsedResultJson": "{\"message_type\":\"order\",\"confidence\":0.9,\"actions\":[]}",
+      "parsedSuccessfully": true,
+      "errorMessage": null,
+      "durationMs": 123,
+      "createdAtUtc": "2026-05-17T09:00:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+O backend nao retorna secrets, API keys ou headers sensiveis.
+
 ## Decisões abertas
 
 - Confirmar se `status` será string `Active/Inactive` ou boolean `isActive`.
