@@ -72,6 +72,32 @@ export interface OrderSummary {
   total: number;
   requiresHumanHandoff: boolean;
 }
+
+export interface AiInteractionFilters {
+  conversationId?: string | null;
+  incomingMessageId?: string | null;
+  parsedSuccessfully?: boolean | null;
+  createdFromUtc?: string | null;
+  createdToUtc?: string | null;
+}
+
+export interface AiInteractionListItem {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  conversationId: string;
+  incomingMessageId: string;
+  provider: string;
+  model: string;
+  customerMessage: string;
+  prompt: string;
+  responseText?: string | null;
+  parsedResultJson?: string | null;
+  parsedSuccessfully: boolean;
+  errorMessage?: string | null;
+  durationMs: number;
+  createdAtUtc: string;
+}
 ```
 
 O arquivo inicial fica em:
@@ -84,4 +110,10 @@ Modelos de acompanhamento de pedidos ficam em:
 
 ```text
 src/app/shared/models/orders.models.ts
+```
+
+Modelos de auditoria de IA ficam em:
+
+```text
+src/app/shared/models/ai-audit.models.ts
 ```

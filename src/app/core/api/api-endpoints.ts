@@ -37,6 +37,10 @@ export const ApiEndpoints = {
     detail: (tenantId: string, businessUnitId: string, orderId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}`
   },
+  aiAudit: {
+    list: (tenantId: string, businessUnitId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/ai-interactions`
+  },
   dev: {
     simulateMessage: '/dev/simulate-message'
   }

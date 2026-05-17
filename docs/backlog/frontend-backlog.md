@@ -23,6 +23,79 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Review
 
+### FE-003 Detalhe de interacao da IA
+
+**Objetivo**
+Mostrar detalhes de uma chamada da IA para debug, auditoria e refinamento de prompt.
+
+**Escopo**
+- Exibir mensagem original do cliente.
+- Exibir prompt enviado para a IA.
+- Exibir resposta bruta.
+- Exibir JSON parseado formatado.
+- Exibir erro quando houver falha.
+
+**Critérios de aceite**
+- Usuario consegue selecionar um registro e ver detalhes completos.
+- Textos longos ficam legiveis sem quebrar layout.
+- JSON e exibido formatado quando valido.
+- Dados sensiveis nao sao exibidos pelo contrato consumido.
+
+**Notas de implementação**
+- O detalhe foi implementado na tela `/auditoria-ia`, ao lado da listagem.
+- Prompt, resposta bruta e JSON parseado usam blocos monoespacados com scroll.
+- JSON valido e formatado com `JSON.stringify(JSON.parse(...), null, 2)`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-002 Tela de auditoria de IA
+
+**Objetivo**
+Permitir visualizar chamadas feitas para IA, prompts, respostas e status de interpretacao.
+
+**Escopo**
+- Rota `/auditoria-ia`.
+- Filtros por empresa, unidade, periodo, sucesso/falha, conversa e mensagem.
+- Lista com data, provider, model, mensagem do cliente, status de parse e erro.
+- Estados de loading, vazio e erro.
+
+**Critérios de aceite**
+- Tela lista auditorias usando o servico HTTP.
+- Filtros atualizam a consulta.
+- Estados visuais seguem o padrao simples do painel.
+
+**Notas de implementação**
+- Criada `AiAuditPage` standalone.
+- Adicionado item de menu em Operacao.
+- A tela exige contexto `tenantId + businessUnitId`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-001 Modelos e servico de auditoria de IA
+
+**Objetivo**
+Preparar o frontend para consumir a auditoria de IA exposta pelo backend.
+
+**Escopo**
+- Modelos TypeScript para filtros e itens de auditoria.
+- Servico HTTP para `GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/ai-interactions`.
+- Endpoints centralizados em `ApiEndpoints`.
+
+**Critérios de aceite**
+- Servico compila e consome endpoint definido pelo backend.
+- Modelos representam o contrato do backend.
+
+**Notas de implementação**
+- Criado `src/app/shared/models/ai-audit.models.ts`.
+- Criado `AiAuditApiService`.
+- `ApiEndpoints` recebeu rotas de auditoria de IA.
+- Documentacao de contratos HTTP e modelos TypeScript atualizada.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
 ### FE-011 Tela de acompanhamento de pedidos dos clientes
 
 **Objetivo**
