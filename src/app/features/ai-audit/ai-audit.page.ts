@@ -1,12 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AiAuditApiService } from '@core/api/ai-audit-api.service';
-import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
+import { CatalogContextService } from '@core/context/catalog-context.service';
+import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import { AiInteractionFilters, AiInteractionListItem } from '@shared/models/ai-audit.models';
-import { BusinessUnitListItem, TenantListItem } from '@shared/models/catalog.models';
 import { ApiFailure } from '@shared/models/common.models';
 
 type ParsedStatusFilter = '' | 'success' | 'failure';
@@ -14,7 +13,7 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
 @Component({
   selector: 'app-ai-audit',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -31,26 +30,6 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
 
       <section class="card">
         <form class="form-grid" [formGroup]="filtersForm" (ngSubmit)="loadInteractions()">
-          <label class="field">
-            <span>Empresa</span>
-            <select [formControl]="tenantControl">
-              <option value="">Selecione uma empresa</option>
-              @for (tenant of tenants; track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Unidade</span>
-            <select [formControl]="businessUnitControl">
-              <option value="">Selecione uma unidade</option>
-              @for (unit of businessUnits; track unit.id) {
-                <option [value]="unit.id">{{ unit.name }}</option>
-              }
-            </select>
-          </label>
-
           <label class="field">
             <span>Status de parse</span>
             <select formControlName="parsedStatus">
@@ -80,12 +59,6 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
             <input type="text" formControlName="incomingMessageId" placeholder="uuid" />
           </label>
 
-          <div class="context-panel">
-            <strong>Filtro ativo</strong>
-            <span>Empresa: {{ selectedTenantName || 'nenhuma selecionada' }}</span>
-            <span>Unidade: {{ selectedBusinessUnitName || 'nenhuma selecionada' }}</span>
-          </div>
-
           <div class="button-row form-actions">
             <button class="btn btn-primary" type="submit" [disabled]="loading || !canUseContext">
               {{ loading ? 'Carregando...' : 'Aplicar filtros' }}
@@ -94,6 +67,8 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
           </div>
         </form>
       </section>
+
+      <app-catalog-context-selector />
 
       <section class="audit-layout">
         <section class="card audit-list-card">
@@ -204,8 +179,6 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
   `
 })
 export class AiAuditPage {
-  protected readonly tenantControl = new FormControl('', { nonNullable: true });
-  protected readonly businessUnitControl = new FormControl('', { nonNullable: true });
   protected readonly filtersForm = new FormGroup({
     parsedStatus: new FormControl<ParsedStatusFilter>('', { nonNullable: true }),
     createdFrom: new FormControl('', { nonNullable: true }),
@@ -214,74 +187,30 @@ export class AiAuditPage {
     incomingMessageId: new FormControl('', { nonNullable: true })
   });
 
-  protected tenants: TenantListItem[] = [];
-  protected businessUnits: BusinessUnitListItem[] = [];
   protected interactions: AiInteractionListItem[] = [];
   protected selectedInteraction: AiInteractionListItem | null = null;
   protected loading = false;
   protected errorMessage = '';
 
   constructor(
-    private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly catalogContext: CatalogContextService,
     private readonly aiAuditApi: AiAuditApiService
   ) {
-    this.loadTenants();
-    this.tenantControl.valueChanges.subscribe(() => {
-      this.businessUnitControl.setValue('');
-      this.businessUnits = [];
-      this.resetInteractions();
-      this.loadBusinessUnits();
-    });
-    this.businessUnitControl.valueChanges.subscribe(() => {
+    effect(() => {
+      this.catalogContext.selectedTenantId();
+      this.catalogContext.selectedBusinessUnitId();
       this.resetInteractions();
       this.loadInteractions();
     });
   }
 
   protected get canUseContext(): boolean {
-    return Boolean(this.tenantControl.value && this.businessUnitControl.value);
-  }
-
-  protected get selectedTenantName(): string {
-    const tenant = this.tenants.find((item) => item.id === this.tenantControl.value);
-    return tenant?.tradeName || tenant?.name || '';
-  }
-
-  protected get selectedBusinessUnitName(): string {
-    return this.businessUnits.find((item) => item.id === this.businessUnitControl.value)?.name ?? '';
-  }
-
-  protected loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
-  }
-
-  protected loadBusinessUnits(): void {
-    const tenantId = this.tenantControl.value;
-    if (!tenantId) {
-      return;
-    }
-
-    this.businessUnitsApi.list(tenantId).subscribe({
-      next: (result) => {
-        this.businessUnits = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
+    return this.catalogContext.hasCatalogContext();
   }
 
   protected loadInteractions(): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     this.resetInteractions();
 
     if (!tenantId || !businessUnitId) {

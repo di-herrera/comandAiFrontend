@@ -1,16 +1,13 @@
-import { Component } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { Component, effect } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
 
-import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { ProductCompositionApiService } from '@core/api/product-composition-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
+import { CatalogContextService } from '@core/context/catalog-context.service';
+import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
-  BusinessUnitListItem,
   ProductComposition,
-  ProductListItem,
-  TenantListItem
+  ProductListItem
 } from '@shared/models/catalog.models';
 import { ApiFailure } from '@shared/models/common.models';
 
@@ -22,7 +19,7 @@ interface MenuProduct {
 @Component({
   selector: 'app-menu-preview',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [CatalogContextSelectorComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -37,35 +34,7 @@ interface MenuProduct {
         <p class="feedback error">{{ errorMessage }}</p>
       }
 
-      <section class="card">
-        <div class="form-grid">
-          <label class="field">
-            <span>Empresa</span>
-            <select [formControl]="tenantControl">
-              <option value="">Selecione uma empresa</option>
-              @for (tenant of tenants; track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Unidade</span>
-            <select [formControl]="businessUnitControl">
-              <option value="">Selecione uma unidade</option>
-              @for (unit of businessUnits; track unit.id) {
-                <option [value]="unit.id">{{ unit.name }}</option>
-              }
-            </select>
-          </label>
-
-          <div class="context-panel">
-            <strong>Filtro ativo</strong>
-            <span>Empresa: {{ selectedTenantName || 'nenhuma selecionada' }}</span>
-            <span>Unidade: {{ selectedBusinessUnitName || 'nenhuma selecionada' }}</span>
-          </div>
-        </div>
-      </section>
+      <app-catalog-context-selector />
 
       <section class="card">
         <div class="section-heading">
@@ -183,44 +152,24 @@ interface MenuProduct {
   `
 })
 export class MenuPreviewPage {
-  protected readonly tenantControl = new FormControl('', { nonNullable: true });
-  protected readonly businessUnitControl = new FormControl('', { nonNullable: true });
-
-  protected tenants: TenantListItem[] = [];
-  protected businessUnits: BusinessUnitListItem[] = [];
   protected menuProducts: MenuProduct[] = [];
   protected loading = false;
   protected errorMessage = '';
 
   constructor(
-    private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly catalogContext: CatalogContextService,
     private readonly productsApi: ProductsApiService,
     private readonly compositionApi: ProductCompositionApiService
   ) {
-    this.loadTenants();
-    this.tenantControl.valueChanges.subscribe(() => {
-      this.businessUnitControl.setValue('');
-      this.businessUnits = [];
-      this.menuProducts = [];
-      this.loadBusinessUnits();
-    });
-    this.businessUnitControl.valueChanges.subscribe(() => {
+    effect(() => {
+      this.catalogContext.selectedTenantId();
+      this.catalogContext.selectedBusinessUnitId();
       this.loadMenu();
     });
   }
 
   protected get canUseCatalogContext(): boolean {
-    return Boolean(this.tenantControl.value && this.businessUnitControl.value);
-  }
-
-  protected get selectedTenantName(): string {
-    const tenant = this.tenants.find((item) => item.id === this.tenantControl.value);
-    return tenant?.tradeName || tenant?.name || '';
-  }
-
-  protected get selectedBusinessUnitName(): string {
-    return this.businessUnits.find((item) => item.id === this.businessUnitControl.value)?.name ?? '';
+    return this.catalogContext.hasCatalogContext();
   }
 
   protected get groupedMenu(): { categoryName: string; items: MenuProduct[] }[] {
@@ -235,36 +184,9 @@ export class MenuPreviewPage {
       .sort((left, right) => left.categoryName.localeCompare(right.categoryName, 'pt-BR'));
   }
 
-  protected loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
-  }
-
-  protected loadBusinessUnits(): void {
-    const tenantId = this.tenantControl.value;
-    if (!tenantId) {
-      return;
-    }
-
-    this.businessUnitsApi.list(tenantId).subscribe({
-      next: (result) => {
-        this.businessUnits = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
-  }
-
   protected loadMenu(): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     this.menuProducts = [];
 
     if (!tenantId || !businessUnitId) {

@@ -1,16 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, effect } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
+import { CatalogContextService } from '@core/context/catalog-context.service';
+import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
-  BusinessUnitListItem,
   ProductCreateRequest,
   ProductListItem,
-  ProductVariantRequest,
-  TenantListItem
+  ProductVariantRequest
 } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
@@ -25,7 +23,7 @@ type VariantForm = FormGroup<{
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -44,35 +42,7 @@ type VariantForm = FormGroup<{
         <p class="feedback error">{{ errorMessage }}</p>
       }
 
-      <section class="card">
-        <div class="form-grid">
-          <label class="field">
-            <span>Empresa</span>
-            <select [formControl]="tenantControl">
-              <option value="">Selecione uma empresa</option>
-              @for (tenant of tenants; track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Unidade</span>
-            <select [formControl]="businessUnitControl">
-              <option value="">Selecione uma unidade</option>
-              @for (unit of businessUnits; track unit.id) {
-                <option [value]="unit.id">{{ unit.name }}</option>
-              }
-            </select>
-          </label>
-
-          <div class="context-panel">
-            <strong>Filtro ativo</strong>
-            <span>Empresa: {{ selectedTenantName || 'nenhuma selecionada' }}</span>
-            <span>Unidade: {{ selectedBusinessUnitName || 'nenhuma selecionada' }}</span>
-          </div>
-        </div>
-      </section>
+      <app-catalog-context-selector />
 
       <section class="card">
         <h2>{{ editingProductId ? 'Editar produto' : 'Novo produto' }}</h2>
@@ -179,7 +149,7 @@ type VariantForm = FormGroup<{
         <div class="section-heading">
           <div>
             <h2>Produtos cadastrados</h2>
-            <p>Filtro ativo: {{ selectedTenantName || 'empresa nao selecionada' }} / {{ selectedBusinessUnitName || 'unidade nao selecionada' }}.</p>
+            <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}.</p>
           </div>
           <button class="btn" type="button" (click)="loadProducts()" [disabled]="loading || !canUseCatalogContext">
             Atualizar
@@ -241,8 +211,6 @@ type VariantForm = FormGroup<{
   `
 })
 export class ProductsPage {
-  protected readonly tenantControl = new FormControl('', { nonNullable: true });
-  protected readonly businessUnitControl = new FormControl('', { nonNullable: true });
   protected readonly form = new FormGroup({
     code: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(32)] }),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(160)] }),
@@ -253,8 +221,6 @@ export class ProductsPage {
     variants: new FormArray<VariantForm>([])
   });
 
-  protected tenants: TenantListItem[] = [];
-  protected businessUnits: BusinessUnitListItem[] = [];
   protected products: ProductListItem[] = [];
   protected editingProductId: string | null = null;
   protected loading = false;
@@ -263,19 +229,12 @@ export class ProductsPage {
   protected errorMessage = '';
 
   constructor(
-    private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly catalogContext: CatalogContextService,
     private readonly productsApi: ProductsApiService
   ) {
-    this.loadTenants();
-    this.tenantControl.valueChanges.subscribe(() => {
-      this.businessUnitControl.setValue('');
-      this.businessUnits = [];
-      this.products = [];
-      this.cancelEdit();
-      this.loadBusinessUnits();
-    });
-    this.businessUnitControl.valueChanges.subscribe(() => {
+    effect(() => {
+      this.catalogContext.selectedTenantId();
+      this.catalogContext.selectedBusinessUnitId();
       this.cancelEdit();
       this.loadProducts();
     });
@@ -286,48 +245,12 @@ export class ProductsPage {
   }
 
   protected get canUseCatalogContext(): boolean {
-    return Boolean(this.tenantControl.value && this.businessUnitControl.value);
-  }
-
-  protected get selectedTenantName(): string {
-    const tenant = this.tenants.find((item) => item.id === this.tenantControl.value);
-    return tenant?.tradeName || tenant?.name || '';
-  }
-
-  protected get selectedBusinessUnitName(): string {
-    return this.businessUnits.find((item) => item.id === this.businessUnitControl.value)?.name ?? '';
-  }
-
-  protected loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
-  }
-
-  protected loadBusinessUnits(): void {
-    const tenantId = this.tenantControl.value;
-    if (!tenantId) {
-      return;
-    }
-
-    this.businessUnitsApi.list(tenantId).subscribe({
-      next: (result) => {
-        this.businessUnits = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
+    return this.catalogContext.hasCatalogContext();
   }
 
   protected loadProducts(): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     this.products = [];
 
     if (!tenantId || !businessUnitId) {
@@ -367,8 +290,8 @@ export class ProductsPage {
   }
 
   protected submit(): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     if (!tenantId || !businessUnitId) {
       this.errorMessage = 'Selecione empresa e unidade antes de salvar o produto.';
       return;

@@ -1,18 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { OrdersApiService } from '@core/api/orders-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
-import { BusinessUnitListItem, TenantListItem } from '@shared/models/catalog.models';
+import { CatalogContextService } from '@core/context/catalog-context.service';
+import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import { ApiFailure } from '@shared/models/common.models';
 import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@shared/models/orders.models';
 
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -29,26 +28,6 @@ import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@share
 
       <section class="card">
         <form class="form-grid" [formGroup]="filtersForm" (ngSubmit)="loadOrders()">
-          <label class="field">
-            <span>Empresa</span>
-            <select [formControl]="tenantControl">
-              <option value="">Selecione uma empresa</option>
-              @for (tenant of tenants; track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Unidade</span>
-            <select [formControl]="businessUnitControl">
-              <option value="">Selecione uma unidade</option>
-              @for (unit of businessUnits; track unit.id) {
-                <option [value]="unit.id">{{ unit.name }}</option>
-              }
-            </select>
-          </label>
-
           <label class="field">
             <span>Status</span>
             <select formControlName="status">
@@ -75,12 +54,6 @@ import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@share
             <input type="search" formControlName="search" placeholder="Maria ou +5517..." />
           </label>
 
-          <div class="context-panel">
-            <strong>Filtro ativo</strong>
-            <span>Empresa: {{ selectedTenantName || 'nenhuma selecionada' }}</span>
-            <span>Unidade: {{ selectedBusinessUnitName || 'nenhuma selecionada' }}</span>
-          </div>
-
           <div class="button-row form-actions">
             <button class="btn btn-primary" type="submit" [disabled]="loading || !canUseContext">
               {{ loading ? 'Carregando...' : 'Aplicar filtros' }}
@@ -91,6 +64,8 @@ import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@share
           </div>
         </form>
       </section>
+
+      <app-catalog-context-selector />
 
       <section class="orders-layout">
         <section class="card orders-list-card">
@@ -236,8 +211,6 @@ import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@share
   `
 })
 export class OrdersPage {
-  protected readonly tenantControl = new FormControl('', { nonNullable: true });
-  protected readonly businessUnitControl = new FormControl('', { nonNullable: true });
   protected readonly filtersForm = new FormGroup({
     status: new FormControl<OrderStatus | ''>('', { nonNullable: true }),
     createdFrom: new FormControl('', { nonNullable: true }),
@@ -245,8 +218,6 @@ export class OrdersPage {
     search: new FormControl('', { nonNullable: true })
   });
 
-  protected tenants: TenantListItem[] = [];
-  protected businessUnits: BusinessUnitListItem[] = [];
   protected orders: OrderSummary[] = [];
   protected selectedOrderId = '';
   protected selectedDetail: OrderDetail | null = null;
@@ -255,66 +226,24 @@ export class OrdersPage {
   protected errorMessage = '';
 
   constructor(
-    private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly catalogContext: CatalogContextService,
     private readonly ordersApi: OrdersApiService
   ) {
-    this.loadTenants();
-    this.tenantControl.valueChanges.subscribe(() => {
-      this.businessUnitControl.setValue('');
-      this.businessUnits = [];
-      this.resetOrders();
-      this.loadBusinessUnits();
-    });
-    this.businessUnitControl.valueChanges.subscribe(() => {
+    effect(() => {
+      this.catalogContext.selectedTenantId();
+      this.catalogContext.selectedBusinessUnitId();
       this.resetOrders();
       this.loadOrders();
     });
   }
 
   protected get canUseContext(): boolean {
-    return Boolean(this.tenantControl.value && this.businessUnitControl.value);
-  }
-
-  protected get selectedTenantName(): string {
-    const tenant = this.tenants.find((item) => item.id === this.tenantControl.value);
-    return tenant?.tradeName || tenant?.name || '';
-  }
-
-  protected get selectedBusinessUnitName(): string {
-    return this.businessUnits.find((item) => item.id === this.businessUnitControl.value)?.name ?? '';
-  }
-
-  protected loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
-  }
-
-  protected loadBusinessUnits(): void {
-    const tenantId = this.tenantControl.value;
-    if (!tenantId) {
-      return;
-    }
-
-    this.businessUnitsApi.list(tenantId).subscribe({
-      next: (result) => {
-        this.businessUnits = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
+    return this.catalogContext.hasCatalogContext();
   }
 
   protected loadOrders(): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     this.resetOrders();
 
     if (!tenantId || !businessUnitId) {
@@ -340,8 +269,8 @@ export class OrdersPage {
   }
 
   protected selectOrder(order: OrderSummary): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     if (!tenantId || !businessUnitId) {
       return;
     }

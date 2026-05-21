@@ -1,11 +1,10 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { ChatSimulatorApiService } from '@core/api/chat-simulator-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
-import { BusinessUnitListItem, TenantListItem } from '@shared/models/catalog.models';
+import { CatalogContextService } from '@core/context/catalog-context.service';
+import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import { SimulateMessageResult } from '@shared/models/chat-simulator.models';
 import { ApiFailure } from '@shared/models/common.models';
 
@@ -18,7 +17,7 @@ interface ChatMessage {
 @Component({
   selector: 'app-chat-simulator',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -33,29 +32,11 @@ interface ChatMessage {
         <p class="feedback error">{{ errorMessage() }}</p>
       }
 
+      <app-catalog-context-selector />
+
       <section class="card">
         <div class="form-grid">
-          <label class="field">
-            <span>Empresa</span>
-            <select [formControl]="tenantControl">
-              <option value="">Usar padrão do backend</option>
-              @for (tenant of tenants(); track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Unidade</span>
-            <select [formControl]="businessUnitControl">
-              <option value="">Usar padrão do backend</option>
-              @for (unit of businessUnits(); track unit.id) {
-                <option [value]="unit.id">{{ unit.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
+<label class="field">
             <span>Telefone do cliente</span>
             <input type="text" [formControl]="phoneControl" placeholder="+5517999999999" />
           </label>
@@ -67,8 +48,8 @@ interface ChatMessage {
 
           <div class="context-panel">
             <strong>Contexto do teste</strong>
-            <span>Empresa: {{ selectedTenantName() || 'padrão do backend' }}</span>
-            <span>Unidade: {{ selectedBusinessUnitName() || 'padrão do backend' }}</span>
+            <span>Empresa: {{ catalogContext.selectedTenantName() || 'padrão do backend' }}</span>
+            <span>Unidade: {{ catalogContext.selectedBusinessUnitName() || 'padrão do backend' }}</span>
             <span>Telefone: {{ phoneControl.value || 'não informado' }}</span>
           </div>
         </div>
@@ -165,8 +146,6 @@ interface ChatMessage {
   `
 })
 export class ChatSimulatorPage {
-  protected readonly tenantControl = new FormControl('', { nonNullable: true });
-  protected readonly businessUnitControl = new FormControl('', { nonNullable: true });
   protected readonly phoneControl = new FormControl('+5517999999999', {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(32)]
@@ -179,35 +158,16 @@ export class ChatSimulatorPage {
     text: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(1000)] })
   });
 
-  protected readonly tenants = signal<TenantListItem[]>([]);
-  protected readonly businessUnits = signal<BusinessUnitListItem[]>([]);
   protected readonly messages = signal<ChatMessage[]>([]);
   protected readonly sending = signal(false);
   protected readonly errorMessage = signal('');
 
-  protected readonly selectedTenantName = computed(() => {
-    const tenant = this.tenants().find((item) => item.id === this.tenantControl.value);
-    return tenant?.tradeName || tenant?.name || '';
-  });
 
-  protected readonly selectedBusinessUnitName = computed(() => {
-    return this.businessUnits().find((item) => item.id === this.businessUnitControl.value)?.name ?? '';
-  });
 
   constructor(
-    private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly catalogContext: CatalogContextService,
     private readonly chatSimulatorApi: ChatSimulatorApiService
-  ) {
-    this.loadTenants();
-    this.tenantControl.valueChanges.subscribe((tenantId) => {
-      this.businessUnitControl.setValue('');
-      this.businessUnits.set([]);
-      if (tenantId) {
-        this.loadBusinessUnits(tenantId);
-      }
-    });
-  }
+  ) {}
 
   protected sendMessage(): void {
     if (this.phoneControl.invalid) {
@@ -227,8 +187,8 @@ export class ChatSimulatorPage {
     this.messages.update((messages) => [...messages, { role: 'customer', text }]);
 
     this.chatSimulatorApi.send({
-      tenantId: this.emptyToNull(this.tenantControl.value),
-      businessUnitId: this.emptyToNull(this.businessUnitControl.value),
+      tenantId: this.emptyToNull(this.catalogContext.selectedTenantId()),
+      businessUnitId: this.emptyToNull(this.catalogContext.selectedBusinessUnitId()),
       channelId: null,
       channelIdentifier: this.emptyToNull(this.channelIdentifierControl.value),
       phoneNumber: this.phoneControl.value.trim(),
@@ -263,27 +223,6 @@ export class ChatSimulatorPage {
     return detail ? `${action.type} ${status}: ${detail}` : `${action.type} ${status}`;
   }
 
-  private loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants.set(result.items);
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage.set(failure.error.message);
-      }
-    });
-  }
-
-  private loadBusinessUnits(tenantId: string): void {
-    this.businessUnitsApi.list(tenantId).subscribe({
-      next: (result) => {
-        this.businessUnits.set(result.items);
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage.set(failure.error.message);
-      }
-    });
-  }
 
   private emptyToNull(value: string): string | null {
     const trimmed = value.trim();
