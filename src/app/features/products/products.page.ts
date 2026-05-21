@@ -30,7 +30,7 @@ type VariantForm = FormGroup<{
         <div>
           <p class="eyebrow">Catalogo por unidade</p>
           <h1 class="page-title">Produtos</h1>
-          <p class="page-description">Cadastre produtos, categorias retornadas pela API e variantes como tamanhos ou sabores.</p>
+          <p class="page-description">Cadastre produtos e vincule variantes globais com preco por produto.</p>
         </div>
       </header>
 
@@ -94,13 +94,13 @@ type VariantForm = FormGroup<{
             <div class="section-heading">
               <div>
                 <h3>Variantes</h3>
-                <p>Use variantes para tamanhos, sabores ou apresentacoes que a IA deve reconhecer.</p>
+                <p>Informe o codigo e nome da variante global; o preco e disponibilidade valem apenas para este produto.</p>
               </div>
               <button class="btn btn-small" type="button" (click)="addVariant()">Adicionar variante</button>
             </div>
 
             @if (variants.length === 0) {
-              <p class="muted">Sem variantes informadas. A API criara uma variante unica automaticamente.</p>
+              <p class="muted">Sem variantes informadas. A API criara ou reutilizara a variante global Unico automaticamente.</p>
             } @else {
               <div class="variant-grid">
                 @for (variant of variants.controls; track $index; let index = $index) {
@@ -111,10 +111,10 @@ type VariantForm = FormGroup<{
                     </label>
                     <label class="field">
                       <span>Nome</span>
-                      <input type="text" formControlName="name" placeholder="Pequeno" />
+                      <input type="text" formControlName="name" placeholder="Grande" />
                     </label>
                     <label class="field">
-                      <span>Preco</span>
+                      <span>Preco neste produto</span>
                       <input type="number" min="0" step="0.01" formControlName="price" />
                     </label>
                     <label class="field">
@@ -170,7 +170,7 @@ type VariantForm = FormGroup<{
                 <th>Produto</th>
                 <th>Categoria</th>
                 <th>Preco base</th>
-                <th>Variantes</th>
+                <th>Variantes do produto</th>
                 <th>Disponivel</th>
                 <th>Status</th>
                 <th>Acao</th>
@@ -189,7 +189,7 @@ type VariantForm = FormGroup<{
                     } @else {
                       <div class="stacked-list">
                         @for (variant of product.variants; track variant.id) {
-                          <span>{{ variant.code }} - {{ variant.name }} ({{ formatCurrency(variant.price) }})</span>
+                          <span>{{ variant.code }} - {{ variant.name }} neste produto: {{ formatCurrency(variant.price) }}</span>
                         }
                       </div>
                     }

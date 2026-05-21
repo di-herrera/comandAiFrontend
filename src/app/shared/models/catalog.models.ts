@@ -66,16 +66,22 @@ export interface ProductUpdateRequest extends ProductCreateRequest {}
 
 export interface ProductVariant {
   id: string;
+  /** Codigo da variante global reutilizada pela unidade, como G, M, P ou COCA. */
   code: string;
+  /** Nome da variante global. */
   name: string;
+  /** Preco do vinculo produto-variante. */
   price: number;
+  /** Disponibilidade do vinculo produto-variante. */
   isAvailable: boolean;
   displayOrder: number;
 }
 
 export interface ProductVariantRequest {
+  /** Codigo da variante global. Se ja existir na unidade, o backend reutiliza. */
   code: string;
   name: string;
+  /** Preco da variante neste produto. */
   price: number;
   isAvailable: boolean;
   displayOrder: number;

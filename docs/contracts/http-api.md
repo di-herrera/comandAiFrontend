@@ -177,7 +177,7 @@ Resposta:
       "variants": [
         {
           "id": "uuid",
-          "code": "P001-G",
+          "code": "G",
           "name": "Grande",
           "price": 34.9,
           "isAvailable": true,
@@ -189,6 +189,8 @@ Resposta:
   "total": 1
 }
 ```
+
+Variantes sao globais por unidade; o produto informa o preco e disponibilidade do vinculo produto-variante.
 
 ### Criar produto
 
@@ -208,14 +210,14 @@ Request:
   "status": "Active",
   "variants": [
     {
-      "code": "P001-G",
+      "code": "G",
       "name": "Grande",
       "price": 34.9,
       "isAvailable": true,
       "displayOrder": 1
     },
     {
-      "code": "P001-M",
+      "code": "M",
       "name": "Medio",
       "price": 28.9,
       "isAvailable": true,
