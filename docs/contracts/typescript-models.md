@@ -32,11 +32,23 @@ export interface ProductListItem {
   id: string;
   tenantId: string;
   businessUnitId: string;
+  categoryId: string;
+  categoryName: string;
   code: string;
   name: string;
   description?: string | null;
   price: number;
   isAvailable: boolean;
+  status: EntityStatus;
+}
+
+export interface ProductCategoryListItem {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  name: string;
+  description?: string | null;
+  displayOrder: number;
   status: EntityStatus;
 }
 

@@ -92,7 +92,7 @@ interface MenuProduct {
                             <ul class="compact-list">
                               @for (variant of item.product.variants; track variant.id) {
                                 <li>
-                                  {{ variant.code }} - {{ variant.name }}:
+                                  {{ variant.code }} - {{ variant.name }} neste produto:
                                   {{ formatCurrency(variant.price) }}
                                   @if (!variant.isAvailable) {
                                     <span class="muted">(indisponivel)</span>

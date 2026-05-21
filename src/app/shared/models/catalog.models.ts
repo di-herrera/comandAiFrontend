@@ -53,6 +53,7 @@ export interface ProductListItem {
 }
 
 export interface ProductCreateRequest {
+  categoryId?: string | null;
   code: string;
   name: string;
   description?: string | null;
@@ -64,18 +65,43 @@ export interface ProductCreateRequest {
 
 export interface ProductUpdateRequest extends ProductCreateRequest {}
 
+export interface ProductCategoryListItem {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  name: string;
+  description?: string | null;
+  displayOrder: number;
+  status: EntityStatus;
+}
+
+export interface ProductCategoryCreateRequest {
+  name: string;
+  description?: string | null;
+  displayOrder: number;
+  status: EntityStatus;
+}
+
+export interface ProductCategoryUpdateRequest extends ProductCategoryCreateRequest {}
+
 export interface ProductVariant {
   id: string;
+  /** Codigo da variante global reutilizada pela unidade, como G, M, P ou COCA. */
   code: string;
+  /** Nome da variante global. */
   name: string;
+  /** Preco do vinculo produto-variante. */
   price: number;
+  /** Disponibilidade do vinculo produto-variante. */
   isAvailable: boolean;
   displayOrder: number;
 }
 
 export interface ProductVariantRequest {
+  /** Codigo da variante global. Se ja existir na unidade, o backend reutiliza. */
   code: string;
   name: string;
+  /** Preco da variante neste produto. */
   price: number;
   isAvailable: boolean;
   displayOrder: number;

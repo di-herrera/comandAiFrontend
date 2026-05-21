@@ -2,11 +2,13 @@ import { Component, effect } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
+import { ProductCategoriesApiService } from '@core/api/product-categories-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
 import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
   ProductCreateRequest,
+  ProductCategoryListItem,
   ProductListItem,
   ProductVariantRequest
 } from '@shared/models/catalog.models';
@@ -30,7 +32,7 @@ type VariantForm = FormGroup<{
         <div>
           <p class="eyebrow">Catalogo por unidade</p>
           <h1 class="page-title">Produtos</h1>
-          <p class="page-description">Cadastre produtos, categorias retornadas pela API e variantes como tamanhos ou sabores.</p>
+          <p class="page-description">Cadastre produtos e vincule variantes globais com preco por produto.</p>
         </div>
       </header>
 
@@ -65,6 +67,16 @@ type VariantForm = FormGroup<{
           </label>
 
           <label class="field">
+            <span>Categoria</span>
+            <select formControlName="categoryId">
+              <option [ngValue]="null">Geral</option>
+              @for (category of categories; track category.id) {
+                <option [ngValue]="category.id">{{ category.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="field">
             <span>Preco base</span>
             <input type="number" min="0" step="0.01" formControlName="price" />
             @if (isInvalid('price')) {
@@ -94,27 +106,27 @@ type VariantForm = FormGroup<{
             <div class="section-heading">
               <div>
                 <h3>Variantes</h3>
-                <p>Use variantes para tamanhos, sabores ou apresentacoes que a IA deve reconhecer.</p>
+                <p>Informe o codigo e nome da variante global; o preco e disponibilidade valem apenas para este produto.</p>
               </div>
               <button class="btn btn-small" type="button" (click)="addVariant()">Adicionar variante</button>
             </div>
 
             @if (variants.length === 0) {
-              <p class="muted">Sem variantes informadas. A API criara uma variante unica automaticamente.</p>
+              <p class="muted">Sem variantes informadas. A API criara ou reutilizara a variante global Unico automaticamente.</p>
             } @else {
               <div class="variant-grid">
                 @for (variant of variants.controls; track $index; let index = $index) {
                   <div class="variant-card" [formGroupName]="index">
                     <label class="field">
                       <span>Codigo</span>
-                      <input type="text" formControlName="code" placeholder="P001-P" />
+                      <input type="text" formControlName="code" placeholder="G" />
                     </label>
                     <label class="field">
                       <span>Nome</span>
-                      <input type="text" formControlName="name" placeholder="Pequeno" />
+                      <input type="text" formControlName="name" placeholder="Grande" />
                     </label>
                     <label class="field">
-                      <span>Preco</span>
+                      <span>Preco neste produto</span>
                       <input type="number" min="0" step="0.01" formControlName="price" />
                     </label>
                     <label class="field">
@@ -170,7 +182,7 @@ type VariantForm = FormGroup<{
                 <th>Produto</th>
                 <th>Categoria</th>
                 <th>Preco base</th>
-                <th>Variantes</th>
+                <th>Variantes do produto</th>
                 <th>Disponivel</th>
                 <th>Status</th>
                 <th>Acao</th>
@@ -189,7 +201,7 @@ type VariantForm = FormGroup<{
                     } @else {
                       <div class="stacked-list">
                         @for (variant of product.variants; track variant.id) {
-                          <span>{{ variant.code }} - {{ variant.name }} ({{ formatCurrency(variant.price) }})</span>
+                          <span>{{ variant.code }} - {{ variant.name }} neste produto: {{ formatCurrency(variant.price) }}</span>
                         }
                       </div>
                     }
@@ -212,6 +224,7 @@ type VariantForm = FormGroup<{
 })
 export class ProductsPage {
   protected readonly form = new FormGroup({
+    categoryId: new FormControl<string | null>(null),
     code: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(32)] }),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(160)] }),
     description: new FormControl<string | null>(null, { validators: [Validators.maxLength(500)] }),
@@ -222,6 +235,7 @@ export class ProductsPage {
   });
 
   protected products: ProductListItem[] = [];
+  protected categories: ProductCategoryListItem[] = [];
   protected editingProductId: string | null = null;
   protected loading = false;
   protected saving = false;
@@ -230,12 +244,14 @@ export class ProductsPage {
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
+    private readonly productCategoriesApi: ProductCategoriesApiService,
     private readonly productsApi: ProductsApiService
   ) {
     effect(() => {
       this.catalogContext.selectedTenantId();
       this.catalogContext.selectedBusinessUnitId();
       this.cancelEdit();
+      this.loadCategories();
       this.loadProducts();
     });
   }
@@ -270,6 +286,25 @@ export class ProductsPage {
           this.errorMessage = failure.error.message;
         }
       });
+  }
+
+  protected loadCategories(): void {
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
+    this.categories = [];
+
+    if (!tenantId || !businessUnitId) {
+      return;
+    }
+
+    this.productCategoriesApi.list(tenantId, businessUnitId).subscribe({
+      next: (result) => {
+        this.categories = result.items.filter((category) => category.status === 'Active');
+      },
+      error: (failure: ApiFailure) => {
+        this.errorMessage = failure.error.message;
+      }
+    });
   }
 
   protected addVariant(value?: ProductVariantRequest): void {
@@ -336,6 +371,7 @@ export class ProductsPage {
       });
     });
     this.form.patchValue({
+      categoryId: product.categoryId,
       code: product.code,
       name: product.name,
       description: product.description ?? null,
@@ -352,6 +388,7 @@ export class ProductsPage {
     this.variants.clear();
     this.form.reset({
       code: '',
+      categoryId: null,
       name: '',
       description: null,
       price: 0,
@@ -388,6 +425,7 @@ export class ProductsPage {
     const description = value.description?.trim();
 
     return {
+      categoryId: value.categoryId,
       code: value.code.trim(),
       name: value.name.trim(),
       description: description ? description : null,
