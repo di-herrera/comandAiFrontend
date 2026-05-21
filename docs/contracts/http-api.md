@@ -149,7 +149,57 @@ Request:
 PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}
 ```
 
-## 3. Produtos
+## 3. Categorias de Produto
+
+### Listar categorias
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories
+```
+
+Resposta:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "tenantId": "uuid",
+      "businessUnitId": "uuid",
+      "name": "Lanches",
+      "description": "Produtos principais do cardapio",
+      "displayOrder": 1,
+      "status": "Active"
+    }
+  ],
+  "total": 1
+}
+```
+
+### Criar categoria
+
+```http
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories
+```
+
+Request:
+
+```json
+{
+  "name": "Lanches",
+  "description": "Produtos principais do cardapio",
+  "displayOrder": 1,
+  "status": "Active"
+}
+```
+
+### Atualizar categoria
+
+```http
+PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories/{categoryId}
+```
+
+## 4. Produtos
 
 ### Listar produtos
 
@@ -202,6 +252,7 @@ Request:
 
 ```json
 {
+  "categoryId": "uuid",
   "code": "P001",
   "name": "X-Bacon",
   "description": "Pão, hambúrguer, bacon, queijo e salada",
@@ -227,13 +278,15 @@ Request:
 }
 ```
 
+Se `categoryId` nao for enviado, a API cria ou reutiliza a categoria padrao `Geral`.
+
 ### Atualizar produto
 
 ```http
 PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}
 ```
 
-## 4. Ingredientes
+## 5. Ingredientes
 
 ### Listar ingredientes
 
