@@ -1,3 +1,6 @@
+@if (router.url.startsWith('/login')) {
+  <router-outlet />
+} @else {
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
@@ -5,11 +8,22 @@
       <span>Painel operacional</span>
     </div>
 
+    @if (authSession.user(); as user) {
+      <div class="user-box">
+        <strong>{{ user.displayName }}</strong>
+        <span>{{ user.email }}</span>
+        <button class="btn btn-small" type="button" (click)="logout()" [disabled]="loggingOut">
+          {{ loggingOut ? 'Saindo...' : 'Sair' }}
+        </button>
+      </div>
+    }
+
     <nav class="nav" aria-label="Navegacao principal">
       <span class="nav-label">Base</span>
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
       <a routerLink="/empresas" routerLinkActive="active">Empresas</a>
       <a routerLink="/unidades" routerLinkActive="active">Unidades</a>
+      <a routerLink="/usuarios" routerLinkActive="active">Usuarios</a>
 
       <span class="nav-label">Catalogo</span>
       <a routerLink="/categorias" routerLinkActive="active">Categorias</a>
@@ -32,3 +46,4 @@
     <router-outlet />
   </main>
 </div>
+}

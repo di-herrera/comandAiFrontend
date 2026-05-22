@@ -7,6 +7,11 @@ export const ApiEndpoints = {
     session: '/api/auth/session',
     logout: '/api/auth/logout'
   },
+  adminUsers: {
+    list: `${adminPrefix}/users`,
+    detail: (userId: string) => `${adminPrefix}/users/${enc(userId)}`,
+    password: (userId: string) => `${adminPrefix}/users/${enc(userId)}/password`
+  },
   tenants: {
     list: `${adminPrefix}/tenants`,
     detail: (tenantId: string) => `${adminPrefix}/tenants/${enc(tenantId)}`

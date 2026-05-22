@@ -23,6 +23,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/business-units/business-units.page').then((m) => m.BusinessUnitsPage)
   },
   {
+    path: 'usuarios',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage)
+  },
+  {
     path: 'produtos',
     canActivate: [authGuard],
     loadComponent: () => import('./features/products/products.page').then((m) => m.ProductsPage)
