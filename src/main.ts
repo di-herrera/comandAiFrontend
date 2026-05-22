@@ -6,11 +6,12 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { apiErrorInterceptor } from './app/core/http/api-error.interceptor';
+import { authInterceptor } from './app/core/http/auth.interceptor';
 
 bootstrapApplication(AppComponent, {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([apiErrorInterceptor]))
+    provideHttpClient(withInterceptors([authInterceptor, apiErrorInterceptor]))
   ]
 }).catch((error) => console.error(error));

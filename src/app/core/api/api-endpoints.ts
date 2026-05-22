@@ -2,6 +2,11 @@ const adminPrefix = '/api/admin';
 const enc = encodeURIComponent;
 
 export const ApiEndpoints = {
+  auth: {
+    login: '/api/auth/login',
+    session: '/api/auth/session',
+    logout: '/api/auth/logout'
+  },
   tenants: {
     list: `${adminPrefix}/tenants`,
     detail: (tenantId: string) => `${adminPrefix}/tenants/${enc(tenantId)}`
