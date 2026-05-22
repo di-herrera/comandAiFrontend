@@ -18,6 +18,10 @@ Prefixo administrativo:
 /api/admin
 ```
 
+As chamadas administrativas exigem cookie de autenticacao emitido por
+`POST /api/auth/login`. O frontend deve enviar credenciais/cookies nas chamadas
+para a API.
+
 Formato de erro recomendado:
 
 ```json
@@ -41,6 +45,66 @@ Status HTTP esperados:
 | 404 | Recurso não encontrado |
 | 409 | Conflito de unicidade |
 | 500 | Erro inesperado |
+
+## 0. Autenticacao e Usuarios
+
+```http
+POST /api/auth/login
+GET /api/auth/session
+POST /api/auth/logout
+GET /api/admin/users
+POST /api/admin/users
+PUT /api/admin/users/{userId}
+PUT /api/admin/users/{userId}/password
+DELETE /api/admin/users/{userId}
+```
+
+Login:
+
+```json
+{
+  "email": "admin@comandai.local",
+  "password": "ComandAI123"
+}
+```
+
+Usuario:
+
+```json
+{
+  "id": "identity-user-id",
+  "email": "admin@comandai.local",
+  "userName": "admin@comandai.local",
+  "displayName": "Administrador",
+  "isActive": true,
+  "createdAt": "2026-05-22T00:00:00Z",
+  "updatedAt": null
+}
+```
+
+Criacao de usuario:
+
+```json
+{
+  "email": "operador@comandai.local",
+  "displayName": "Operador",
+  "password": "ComandAI123",
+  "isActive": true
+}
+```
+
+Atualizacao de usuario:
+
+```json
+{
+  "email": "operador@comandai.local",
+  "displayName": "Operador",
+  "isActive": true
+}
+```
+
+Respostas `401` indicam sessao ausente ou expirada. Respostas `403` indicam
+usuario autenticado sem acesso.
 
 ## 1. Empresas / Tenants
 

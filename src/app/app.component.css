@@ -27,6 +27,28 @@
   font-size: .9rem;
 }
 
+.user-box {
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 8px;
+  padding: .75rem;
+  display: grid;
+  gap: .35rem;
+  background: rgba(255, 255, 255, .06);
+}
+
+.user-box span {
+  color: #cbd5e1;
+  font-size: .82rem;
+  overflow-wrap: anywhere;
+}
+
+.user-box .btn {
+  color: #fff;
+  border-color: rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .08);
+  justify-self: start;
+}
+
 .nav {
   display: grid;
   gap: .3rem;
