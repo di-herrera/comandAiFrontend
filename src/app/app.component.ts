@@ -13,11 +13,20 @@ import { AuthSessionService } from '@core/auth/auth-session.service';
 })
 export class AppComponent {
   protected loggingOut = false;
+  protected mobileMenuOpen = false;
 
   constructor(
     protected readonly authSession: AuthSessionService,
     protected readonly router: Router
   ) {}
+
+  protected toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  protected closeMobileMenu(): void {
+    this.mobileMenuOpen = false;
+  }
 
   protected logout(): void {
     this.loggingOut = true;

@@ -23,6 +23,35 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 
 ## Review
 
+### FE-012 Ajuste responsivo do menu mobile
+
+**Objetivo**
+Corrigir o menu principal para uso em telas de celular.
+
+**Escopo**
+- Transformar o menu lateral em cabecalho compacto no mobile.
+- Permitir abrir e fechar a navegacao por botao.
+- Fechar o menu apos selecionar uma rota.
+- Manter o menu lateral no desktop.
+- Ajustar formularios, cabecalhos, botoes e tabelas para telas estreitas.
+
+**Critérios de aceite**
+- Menu nao ocupa toda a primeira dobra quando fechado no celular.
+- Links continuam acessiveis em telas estreitas.
+- Conteudo principal inicia abaixo do cabecalho mobile.
+- Telas de cadastro nao geram overflow horizontal por cabecalho, formulario ou tabela.
+- Rotas basicas continuam funcionando.
+
+**Notas de implementação**
+- Adicionado estado local para abrir e fechar o menu mobile no `AppComponent`.
+- O menu mobile fica recolhido por padrao e fecha ao clicar em um item de navegacao.
+- Estilos responsivos ajustados em `app.component.css` para cabecalho compacto ate 820px.
+- Corrigido o icone do menu para empilhar as linhas sem sobreposicao.
+- Ajustados estilos globais em `styles.css` para cabecalhos, grids, botoes e tabelas em telas pequenas.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
 ### FE-003 Detalhe de interacao da IA
 
 **Objetivo**

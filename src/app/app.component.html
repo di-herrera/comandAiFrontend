@@ -2,10 +2,25 @@
   <router-outlet />
 } @else {
 <div class="shell">
-  <aside class="sidebar">
-    <div class="brand">
-      <strong>ComandAI</strong>
-      <span>Painel operacional</span>
+  <aside class="sidebar" [class.sidebar-open]="mobileMenuOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <strong>ComandAI</strong>
+        <span>Painel operacional</span>
+      </div>
+
+      <button
+        class="menu-toggle"
+        type="button"
+        (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="mobileMenuOpen"
+        aria-controls="main-navigation"
+        aria-label="Abrir ou fechar menu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
 
     @if (authSession.user(); as user) {
@@ -18,27 +33,27 @@
       </div>
     }
 
-    <nav class="nav" aria-label="Navegacao principal">
+    <nav class="nav" id="main-navigation" aria-label="Navegacao principal">
       <span class="nav-label">Base</span>
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
-      <a routerLink="/empresas" routerLinkActive="active">Empresas</a>
-      <a routerLink="/unidades" routerLinkActive="active">Unidades</a>
-      <a routerLink="/usuarios" routerLinkActive="active">Usuarios</a>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">Inicio</a>
+      <a routerLink="/empresas" routerLinkActive="active" (click)="closeMobileMenu()">Empresas</a>
+      <a routerLink="/unidades" routerLinkActive="active" (click)="closeMobileMenu()">Unidades</a>
+      <a routerLink="/usuarios" routerLinkActive="active" (click)="closeMobileMenu()">Usuarios</a>
 
       <span class="nav-label">Catalogo</span>
-      <a routerLink="/categorias" routerLinkActive="active">Categorias</a>
-      <a routerLink="/produtos" routerLinkActive="active">Produtos</a>
-      <a routerLink="/ingredientes" routerLinkActive="active">Ingredientes</a>
-      <a routerLink="/opcoes" routerLinkActive="active">Opcoes</a>
-      <a routerLink="/composicao-produto" routerLinkActive="active">Composicao</a>
-      <a routerLink="/cardapio" routerLinkActive="active">Cardapio</a>
+      <a routerLink="/categorias" routerLinkActive="active" (click)="closeMobileMenu()">Categorias</a>
+      <a routerLink="/produtos" routerLinkActive="active" (click)="closeMobileMenu()">Produtos</a>
+      <a routerLink="/ingredientes" routerLinkActive="active" (click)="closeMobileMenu()">Ingredientes</a>
+      <a routerLink="/opcoes" routerLinkActive="active" (click)="closeMobileMenu()">Opcoes</a>
+      <a routerLink="/composicao-produto" routerLinkActive="active" (click)="closeMobileMenu()">Composicao</a>
+      <a routerLink="/cardapio" routerLinkActive="active" (click)="closeMobileMenu()">Cardapio</a>
 
       <span class="nav-label">Operacao</span>
-      <a routerLink="/pedidos" routerLinkActive="active">Pedidos</a>
-      <a routerLink="/auditoria-ia" routerLinkActive="active">Auditoria IA</a>
+      <a routerLink="/pedidos" routerLinkActive="active" (click)="closeMobileMenu()">Pedidos</a>
+      <a routerLink="/auditoria-ia" routerLinkActive="active" (click)="closeMobileMenu()">Auditoria IA</a>
 
       <span class="nav-label">Teste</span>
-      <a routerLink="/simulador-chat" routerLinkActive="active">Simulador chat</a>
+      <a routerLink="/simulador-chat" routerLinkActive="active" (click)="closeMobileMenu()">Simulador chat</a>
     </nav>
   </aside>
 
