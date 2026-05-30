@@ -1,6 +1,6 @@
-# Contratos HTTP — ComandAI Admin
+# Contratos HTTP — ComandIA Admin
 
-Este documento define os contratos esperados entre o frontend Angular e a API `ComandAI.Api`.
+Este documento define os contratos esperados entre o frontend Angular e a API `ComandIA.Api`.
 
 A API é a fonte da verdade. O frontend deve seguir estes contratos e registrar qualquer mudança em documentação antes de implementar telas definitivas.
 
@@ -63,8 +63,8 @@ Login:
 
 ```json
 {
-  "email": "admin@comandai.local",
-  "password": "ComandAI123"
+  "email": "admin@comandia.local",
+  "password": "ComandIA123"
 }
 ```
 
@@ -73,8 +73,8 @@ Usuario:
 ```json
 {
   "id": "identity-user-id",
-  "email": "admin@comandai.local",
-  "userName": "admin@comandai.local",
+  "email": "admin@comandia.local",
+  "userName": "admin@comandia.local",
   "displayName": "Administrador",
   "isActive": true,
   "createdAt": "2026-05-22T00:00:00Z",
@@ -86,9 +86,9 @@ Criacao de usuario:
 
 ```json
 {
-  "email": "operador@comandai.local",
+  "email": "operador@comandia.local",
   "displayName": "Operador",
-  "password": "ComandAI123",
+  "password": "ComandIA123",
   "isActive": true
 }
 ```
@@ -97,7 +97,7 @@ Atualizacao de usuario:
 
 ```json
 {
-  "email": "operador@comandai.local",
+  "email": "operador@comandia.local",
   "displayName": "Operador",
   "isActive": true
 }

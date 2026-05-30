@@ -5,7 +5,7 @@
 Status: Accepted
 
 Decisão:
-O painel administrativo será um projeto Angular separado da API `ComandAI.Api`.
+O painel administrativo será um projeto Angular separado da API `ComandIA.Api`.
 
 Motivo:
 Permite evoluir frontend e backend de forma independente, mantendo o backend como fonte da verdade.
@@ -55,7 +55,7 @@ Permite trabalho paralelo entre backend e frontend com menor retrabalho.
 Status: Accepted
 
 Decisão:
-Usar PrimeNG com tema Aura como biblioteca principal de componentes UI do painel administrativo da ComandAI.
+Usar PrimeNG com tema Aura como biblioteca principal de componentes UI do painel administrativo da ComandIA.
 
 Motivos:
 - Grande variedade de componentes prontos.
@@ -68,3 +68,13 @@ Alternativas consideradas:
 - Angular Material: mais oficial e estável, mas menos completo para dashboards administrativos.
 - NG-ZORRO: visual enterprise forte, mas comunidade menor.
 - Kendo UI/Syncfusion: completos, porém com maior atenção a licenciamento/custo.
+
+## ADR-FE-007 — Nome do produto e domínio
+
+Status: Accepted
+
+Decisão:
+Usar `ComandIA` como nome do produto e `https://www.comandia.com.br` como domínio público reservado.
+
+Motivo:
+O nome `ComandIA` e o domínio `www.comandia.com.br` estão disponíveis para o projeto.

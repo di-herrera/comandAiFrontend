@@ -1,6 +1,6 @@
 # Contexto de produto
 
-A ComandAI não pretende competir inicialmente como sistema completo de restaurante.
+A ComandIA não pretende competir inicialmente como sistema completo de restaurante.
 
 Ela é uma camada inteligente que transforma conversas do WhatsApp em pedidos organizados, validados e prontos para execução.
 

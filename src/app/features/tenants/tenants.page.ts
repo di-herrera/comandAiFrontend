@@ -16,7 +16,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div>
           <p class="eyebrow">Cadastro operacional</p>
           <h1 class="page-title">Empresas</h1>
-          <p class="page-description">Cadastre e mantenha as empresas atendidas pela ComandAI.</p>
+          <p class="page-description">Cadastre e mantenha as empresas atendidas pela ComandIA.</p>
         </div>
         <button class="btn" type="button" (click)="loadTenants()" [disabled]="loading">
           Atualizar

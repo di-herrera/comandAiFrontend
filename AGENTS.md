@@ -2,9 +2,9 @@
 
 ## Projeto
 
-Este repositório contém o frontend administrativo Angular da ComandAI.
+Este repositório contém o frontend administrativo Angular da ComandIA.
 
-A ComandAI é uma camada inteligente que transforma conversas do WhatsApp em pedidos organizados, validados e prontos para execução.
+A ComandIA é uma camada inteligente que transforma conversas do WhatsApp em pedidos organizados, validados e prontos para execução.
 
 O frontend não é o produto principal para o cliente final. Ele é um painel operacional simples para cadastrar os dados mínimos que permitem ao backend validar mensagens recebidas do WhatsApp.
 
@@ -17,7 +17,7 @@ O frontend não é o produto principal para o cliente final. Ele é um painel op
 - Usar Reactive Forms.
 - Usar HttpClient para comunicação com API.
 - Manter tipagem forte para contratos HTTP.
-- O backend `ComandAI.Api` continua sendo a fonte da verdade.
+- O backend `ComandIA.Api` continua sendo a fonte da verdade.
 - Não implementar autenticação completa neste MVP.
 - Não implementar PDV, ERP, financeiro, pagamentos ou marketplace.
 - Não implementar disparo em massa.

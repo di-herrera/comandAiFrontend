@@ -1,4 +1,4 @@
-# Frontend Backlog — ComandAI Admin
+# Frontend Backlog — ComandIA Admin
 
 Este backlog separa a parte de frontend do painel administrativo Angular.
 

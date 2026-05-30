@@ -14,7 +14,7 @@ import { ApiFailure } from '@shared/models/common.models';
     <section class="auth-page">
       <form class="auth-panel" [formGroup]="form" (ngSubmit)="submit()">
         <div>
-          <p class="eyebrow">ComandAI</p>
+          <p class="eyebrow">ComandIA</p>
           <h1 class="page-title">Acesso administrativo</h1>
           <p class="page-description">Entre para manter os dados operacionais da loja.</p>
         </div>
