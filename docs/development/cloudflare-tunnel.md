@@ -21,13 +21,13 @@ $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:ASPNETCORE_URLS = "http://localhost:5080"
 $env:ADMIN_FRONTEND_ORIGINS = "https://<frontend>.trycloudflare.com"
 $env:ADMIN_COOKIE_CROSS_SITE = "true"
-dotnet run --project C:\Repos\comandAI\src\ComandAI.Api\ComandAI.Api.csproj --launch-profile http
+dotnet run --project C:\Repos\comandIA\src\ComandIA.Api\ComandIA.Api.csproj --launch-profile http
 ```
 
 No frontend:
 
 ```powershell
-Set-Location C:\Repos\comandAiFrontend
+Set-Location C:\Repos\comandIAFrontend
 npm start
 ```
 

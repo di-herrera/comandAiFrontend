@@ -4,8 +4,8 @@ import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { TenantsApiService } from '@core/api/tenants-api.service';
 import { BusinessUnitListItem, TenantListItem } from '@shared/models/catalog.models';
 
-const tenantStorageKey = 'comandai.admin.catalogContext.tenantId';
-const businessUnitStorageKey = 'comandai.admin.catalogContext.businessUnitId';
+const tenantStorageKey = 'comandia.admin.catalogContext.tenantId';
+const businessUnitStorageKey = 'comandia.admin.catalogContext.businessUnitId';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogContextService {

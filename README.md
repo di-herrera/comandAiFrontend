@@ -1,12 +1,18 @@
-# ComandAI Admin Frontend
+# ComandIA Admin Frontend
 
-Painel administrativo Angular da **ComandAI**.
+Painel administrativo Angular da **ComandIA**.
 
-A ComandAI é uma camada inteligente que transforma conversas do WhatsApp em pedidos organizados, validados e prontos para execução. Este frontend existe apenas para cadastrar e manter os dados mínimos que o backend precisa para interpretar mensagens, validar catálogo e montar comandas.
+A ComandIA é uma camada inteligente que transforma conversas do WhatsApp em pedidos organizados, validados e prontos para execução. Este frontend existe apenas para cadastrar e manter os dados mínimos que o backend precisa para interpretar mensagens, validar catálogo e montar comandas.
+
+Domínio público reservado para o produto:
+
+```text
+https://www.comandia.com.br
+```
 
 ## Escopo deste projeto
 
-Este projeto é o **frontend administrativo** separado da API `ComandAI.Api`.
+Este projeto é o **frontend administrativo** separado da API `ComandIA.Api`.
 
 Ele cobre:
 

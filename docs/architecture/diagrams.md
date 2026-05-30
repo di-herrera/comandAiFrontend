@@ -20,7 +20,7 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    A[ComandAI Admin Angular] -->|HTTP JSON| B[ComandAI.Api]
+    A[ComandIA Admin Angular] -->|HTTP JSON| B[ComandIA.Api]
     B --> C[Application Use Cases]
     C --> D[Domain]
     C --> E[Infrastructure EF Core]

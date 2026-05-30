@@ -24,7 +24,7 @@ interface ChatMessage {
         <div>
           <p class="eyebrow">Teste sem WhatsApp</p>
           <h1 class="page-title">Simulador de chat</h1>
-          <p class="page-description">Envie mensagens como se fossem recebidas pelo WhatsApp e veja como a ComandAI responde.</p>
+          <p class="page-description">Envie mensagens como se fossem recebidas pelo WhatsApp e veja como a ComandIA responde.</p>
         </div>
       </header>
 
@@ -65,7 +65,7 @@ interface ChatMessage {
           } @else {
             @for (message of messages(); track $index) {
               <article class="chat-bubble" [class.customer]="message.role === 'customer'" [class.system]="message.role === 'system'">
-                <strong>{{ message.role === 'customer' ? 'Cliente' : 'ComandAI' }}</strong>
+                <strong>{{ message.role === 'customer' ? 'Cliente' : 'ComandIA' }}</strong>
                 <p>{{ message.text }}</p>
 
                 @if (message.result) {

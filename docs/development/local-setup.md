@@ -4,7 +4,7 @@
 
 - Node.js compatível com a versão do Angular instalada.
 - npm.
-- Backend `ComandAI.Api` rodando localmente, quando for consumir API real.
+- Backend `ComandIA.Api` rodando localmente, quando for consumir API real.
 
 ## Instalar dependências
 

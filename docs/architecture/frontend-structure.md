@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-O frontend Angular da ComandAI é um painel administrativo simples para manter cadastros essenciais do MVP.
+O frontend Angular da ComandIA é um painel administrativo simples para manter cadastros essenciais do MVP.
 
 ## Estrutura
 
