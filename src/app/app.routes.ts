@@ -15,16 +15,19 @@ export const routes: Routes = [
   {
     path: 'empresas',
     canActivate: [authGuard],
+    data: { roles: ['SystemAdmin', 'CompanyAdmin'] },
     loadComponent: () => import('./features/tenants/tenants.page').then((m) => m.TenantsPage)
   },
   {
     path: 'unidades',
     canActivate: [authGuard],
+    data: { roles: ['SystemAdmin', 'CompanyAdmin', 'UnitAdmin'] },
     loadComponent: () => import('./features/business-units/business-units.page').then((m) => m.BusinessUnitsPage)
   },
   {
     path: 'usuarios',
     canActivate: [authGuard],
+    data: { roles: ['SystemAdmin'] },
     loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage)
   },
   {
@@ -70,6 +73,7 @@ export const routes: Routes = [
   {
     path: 'simulador-chat',
     canActivate: [authGuard],
+    data: { roles: ['SystemAdmin'] },
     loadComponent: () => import('./features/chat-simulator/chat-simulator.page').then((m) => m.ChatSimulatorPage)
   },
   { path: '**', redirectTo: '' }

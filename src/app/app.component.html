@@ -27,6 +27,7 @@
       <div class="user-box">
         <strong>{{ user.displayName }}</strong>
         <span>{{ user.email }}</span>
+        <span>{{ user.roles.join(', ') }}</span>
         <button class="btn btn-small" type="button" (click)="logout()" [disabled]="loggingOut">
           {{ loggingOut ? 'Saindo...' : 'Sair' }}
         </button>
@@ -36,9 +37,15 @@
     <nav class="nav" id="main-navigation" aria-label="Navegacao principal">
       <span class="nav-label">Base</span>
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">Inicio</a>
-      <a routerLink="/empresas" routerLinkActive="active" (click)="closeMobileMenu()">Empresas</a>
-      <a routerLink="/unidades" routerLinkActive="active" (click)="closeMobileMenu()">Unidades</a>
-      <a routerLink="/usuarios" routerLinkActive="active" (click)="closeMobileMenu()">Usuarios</a>
+      @if (authSession.canManageTenants()) {
+        <a routerLink="/empresas" routerLinkActive="active" (click)="closeMobileMenu()">Empresas</a>
+      }
+      @if (authSession.canManageBusinessUnits()) {
+        <a routerLink="/unidades" routerLinkActive="active" (click)="closeMobileMenu()">Unidades</a>
+      }
+      @if (authSession.canManageUsers()) {
+        <a routerLink="/usuarios" routerLinkActive="active" (click)="closeMobileMenu()">Usuarios</a>
+      }
 
       <span class="nav-label">Catalogo</span>
       <a routerLink="/categorias" routerLinkActive="active" (click)="closeMobileMenu()">Categorias</a>
@@ -52,8 +59,10 @@
       <a routerLink="/pedidos" routerLinkActive="active" (click)="closeMobileMenu()">Pedidos</a>
       <a routerLink="/auditoria-ia" routerLinkActive="active" (click)="closeMobileMenu()">Auditoria IA</a>
 
-      <span class="nav-label">Teste</span>
-      <a routerLink="/simulador-chat" routerLinkActive="active" (click)="closeMobileMenu()">Simulador chat</a>
+      @if (authSession.canUseChatSimulator()) {
+        <span class="nav-label">Teste</span>
+        <a routerLink="/simulador-chat" routerLinkActive="active" (click)="closeMobileMenu()">Simulador chat</a>
+      }
     </nav>
   </aside>
 

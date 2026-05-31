@@ -12,7 +12,7 @@ import { CatalogContextService } from '@core/context/catalog-context.service';
       <div class="form-grid">
         <label class="field">
           <span>Empresa</span>
-          <select [formControl]="tenantControl">
+          <select [formControl]="tenantControl" [disabled]="context.tenantSelectionLocked()">
             <option value="">Selecione uma empresa</option>
             @for (tenant of context.tenants(); track tenant.id) {
               <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
@@ -22,7 +22,10 @@ import { CatalogContextService } from '@core/context/catalog-context.service';
 
         <label class="field">
           <span>Unidade</span>
-          <select [formControl]="businessUnitControl" [disabled]="!context.hasTenant() || context.loadingBusinessUnits()">
+          <select
+            [formControl]="businessUnitControl"
+            [disabled]="!context.hasTenant() || context.loadingBusinessUnits() || context.businessUnitSelectionLocked()"
+          >
             <option value="">Selecione uma unidade</option>
             @for (unit of context.businessUnits(); track unit.id) {
               <option [value]="unit.id">{{ unit.name }}</option>
