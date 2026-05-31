@@ -26,12 +26,18 @@ export interface CreateAdminUserRequest {
   email: string;
   displayName: string;
   password: string;
+  role: AdminRole;
+  tenantId?: string | null;
+  businessUnitId?: string | null;
   isActive: boolean;
 }
 
 export interface UpdateAdminUserRequest {
   email: string;
   displayName: string;
+  role: AdminRole;
+  tenantId?: string | null;
+  businessUnitId?: string | null;
   isActive: boolean;
 }
 

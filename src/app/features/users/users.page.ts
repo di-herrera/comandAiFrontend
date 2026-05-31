@@ -3,11 +3,15 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { finalize } from 'rxjs';
 
 import { AdminUsersApiService } from '@core/api/admin-users-api.service';
+import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
+import { TenantsApiService } from '@core/api/tenants-api.service';
 import {
+  AdminRole,
   AdminUser,
   CreateAdminUserRequest,
   UpdateAdminUserRequest
 } from '@shared/models/auth.models';
+import { BusinessUnitListItem, TenantListItem } from '@shared/models/catalog.models';
 import { ApiFailure } from '@shared/models/common.models';
 
 @Component({
@@ -59,6 +63,45 @@ import { ApiFailure } from '@shared/models/common.models';
               <input type="password" formControlName="password" autocomplete="new-password" />
               @if (isInvalid('password')) {
                 <small>Informe uma senha com pelo menos 8 caracteres.</small>
+              }
+            </label>
+          }
+
+          <label class="field">
+            <span>Role</span>
+            <select formControlName="role">
+              @for (role of roleOptions; track role) {
+                <option [value]="role">{{ roleLabel(role) }}</option>
+              }
+            </select>
+          </label>
+
+          @if (requiresTenantScope()) {
+            <label class="field">
+              <span>Empresa</span>
+              <select formControlName="tenantId">
+                <option value="">Selecione uma empresa</option>
+                @for (tenant of tenants; track tenant.id) {
+                  <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
+                }
+              </select>
+              @if (isInvalid('tenantId')) {
+                <small>Selecione uma empresa.</small>
+              }
+            </label>
+          }
+
+          @if (requiresBusinessUnitScope()) {
+            <label class="field">
+              <span>Unidade</span>
+              <select formControlName="businessUnitId">
+                <option value="">Selecione uma unidade</option>
+                @for (unit of businessUnits; track unit.id) {
+                  <option [value]="unit.id">{{ unit.name }}</option>
+                }
+              </select>
+              @if (isInvalid('businessUnitId')) {
+                <small>Selecione uma unidade.</small>
               }
             </label>
           }
@@ -121,6 +164,8 @@ import { ApiFailure } from '@shared/models/common.models';
               <tr>
                 <th>Usuario</th>
                 <th>Email</th>
+                <th>Role</th>
+                <th>Escopo</th>
                 <th>Status</th>
                 <th>Criado em</th>
                 <th>Acoes</th>
@@ -131,6 +176,8 @@ import { ApiFailure } from '@shared/models/common.models';
                 <tr>
                   <td>{{ user.displayName }}</td>
                   <td>{{ user.email }}</td>
+                  <td>{{ roleLabel(primaryRole(user)) }}</td>
+                  <td>{{ scopeLabel(user) }}</td>
                   <td><span class="status-pill">{{ user.isActive ? 'Ativo' : 'Inativo' }}</span></td>
                   <td>{{ formatDate(user.createdAt) }}</td>
                   <td>
@@ -151,10 +198,14 @@ import { ApiFailure } from '@shared/models/common.models';
   `
 })
 export class UsersPage {
+  protected readonly roleOptions: AdminRole[] = ['SystemAdmin', 'CompanyAdmin', 'UnitAdmin'];
   protected readonly form = new FormGroup({
     displayName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(120)] }),
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email, Validators.maxLength(256)] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),
+    role: new FormControl<AdminRole>('SystemAdmin', { nonNullable: true, validators: [Validators.required] }),
+    tenantId: new FormControl('', { nonNullable: true }),
+    businessUnitId: new FormControl('', { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true })
   });
 
@@ -163,6 +214,8 @@ export class UsersPage {
   });
 
   protected users: AdminUser[] = [];
+  protected tenants: TenantListItem[] = [];
+  protected businessUnits: BusinessUnitListItem[] = [];
   protected editingUserId: string | null = null;
   protected loading = false;
   protected saving = false;
@@ -170,8 +223,19 @@ export class UsersPage {
   protected successMessage = '';
   protected errorMessage = '';
 
-  constructor(private readonly usersApi: AdminUsersApiService) {
+  constructor(
+    private readonly usersApi: AdminUsersApiService,
+    private readonly tenantsApi: TenantsApiService,
+    private readonly businessUnitsApi: BusinessUnitsApiService
+  ) {
+    this.loadTenants();
     this.loadUsers();
+    this.form.controls.role.valueChanges.subscribe(() => this.syncScopeControls());
+    this.form.controls.tenantId.valueChanges.subscribe((tenantId) => {
+      if (this.requiresBusinessUnitScope()) {
+        this.loadBusinessUnits(tenantId);
+      }
+    });
   }
 
   protected loadUsers(): void {
@@ -224,8 +288,12 @@ export class UsersPage {
       displayName: user.displayName,
       email: user.email,
       password: '',
+      role: this.primaryRole(user),
+      tenantId: user.tenantId ?? '',
+      businessUnitId: user.businessUnitId ?? '',
       isActive: user.isActive
     });
+    this.syncScopeControls(user.businessUnitId ?? '');
     this.passwordForm.reset({ password: '' });
     this.successMessage = '';
     this.errorMessage = '';
@@ -238,9 +306,13 @@ export class UsersPage {
       displayName: '',
       email: '',
       password: '',
+      role: 'SystemAdmin',
+      tenantId: '',
+      businessUnitId: '',
       isActive: true
     });
     this.form.controls.password.updateValueAndValidity();
+    this.syncScopeControls();
     this.passwordForm.reset({ password: '' });
   }
 
@@ -302,12 +374,48 @@ export class UsersPage {
     }).format(new Date(value));
   }
 
+  protected requiresTenantScope(): boolean {
+    return this.form.controls.role.value !== 'SystemAdmin';
+  }
+
+  protected requiresBusinessUnitScope(): boolean {
+    return this.form.controls.role.value === 'UnitAdmin';
+  }
+
+  protected primaryRole(user: AdminUser): AdminRole {
+    return user.roles[0] ?? 'SystemAdmin';
+  }
+
+  protected roleLabel(role: AdminRole): string {
+    return {
+      SystemAdmin: 'Admin do sistema',
+      CompanyAdmin: 'Admin da empresa',
+      UnitAdmin: 'Admin da unidade'
+    }[role];
+  }
+
+  protected scopeLabel(user: AdminUser): string {
+    const role = this.primaryRole(user);
+    if (role === 'SystemAdmin') {
+      return 'Todas';
+    }
+
+    if (role === 'CompanyAdmin') {
+      return `Empresa ${user.tenantId ?? '-'}`;
+    }
+
+    return `Unidade ${user.businessUnitId ?? '-'}`;
+  }
+
   private buildCreateRequest(): CreateAdminUserRequest {
     const value = this.form.getRawValue();
     return {
       displayName: value.displayName.trim(),
       email: value.email.trim(),
       password: value.password,
+      role: value.role,
+      tenantId: this.requiresTenantScope() ? value.tenantId : null,
+      businessUnitId: this.requiresBusinessUnitScope() ? value.businessUnitId : null,
       isActive: value.isActive
     };
   }
@@ -317,7 +425,68 @@ export class UsersPage {
     return {
       displayName: value.displayName.trim(),
       email: value.email.trim(),
+      role: value.role,
+      tenantId: this.requiresTenantScope() ? value.tenantId : null,
+      businessUnitId: this.requiresBusinessUnitScope() ? value.businessUnitId : null,
       isActive: value.isActive
     };
+  }
+
+  private loadTenants(): void {
+    this.tenantsApi.list().subscribe({
+      next: (result) => {
+        this.tenants = result.items;
+      },
+      error: (failure: ApiFailure) => {
+        this.errorMessage = failure.error.message;
+      }
+    });
+  }
+
+  private loadBusinessUnits(tenantId: string, selectedBusinessUnitId = ''): void {
+    this.businessUnits = [];
+    this.form.controls.businessUnitId.setValue('');
+
+    if (!tenantId) {
+      return;
+    }
+
+    this.businessUnitsApi.list(tenantId).subscribe({
+      next: (result) => {
+        this.businessUnits = result.items;
+        if (selectedBusinessUnitId && result.items.some((unit) => unit.id === selectedBusinessUnitId)) {
+          this.form.controls.businessUnitId.setValue(selectedBusinessUnitId);
+        }
+      },
+      error: (failure: ApiFailure) => {
+        this.errorMessage = failure.error.message;
+      }
+    });
+  }
+
+  private syncScopeControls(selectedBusinessUnitId = ''): void {
+    const tenantControl = this.form.controls.tenantId;
+    const businessUnitControl = this.form.controls.businessUnitId;
+
+    tenantControl.clearValidators();
+    businessUnitControl.clearValidators();
+
+    if (!this.requiresTenantScope()) {
+      tenantControl.setValue('');
+      businessUnitControl.setValue('');
+      this.businessUnits = [];
+    } else {
+      tenantControl.setValidators([Validators.required]);
+    }
+
+    if (!this.requiresBusinessUnitScope()) {
+      businessUnitControl.setValue('');
+    } else {
+      businessUnitControl.setValidators([Validators.required]);
+      this.loadBusinessUnits(tenantControl.value, selectedBusinessUnitId || businessUnitControl.value);
+    }
+
+    tenantControl.updateValueAndValidity();
+    businessUnitControl.updateValueAndValidity();
   }
 }

@@ -103,9 +103,33 @@ Criacao de usuario:
   "email": "operador@comandia.local",
   "displayName": "Operador",
   "password": "ComandIA123",
+  "role": "UnitAdmin",
+  "tenantId": "uuid",
+  "businessUnitId": "uuid",
   "isActive": true
 }
 ```
+
+Atualizacao de usuario:
+
+```json
+{
+  "email": "operador@comandia.local",
+  "displayName": "Operador",
+  "role": "CompanyAdmin",
+  "tenantId": "uuid",
+  "businessUnitId": null,
+  "isActive": true
+}
+```
+
+Combinacoes validas:
+
+| Role | tenantId | businessUnitId |
+|---|---|---|
+| `SystemAdmin` | `null` | `null` |
+| `CompanyAdmin` | obrigatorio | `null` |
+| `UnitAdmin` | obrigatorio | obrigatorio |
 
 Atualizacao de usuario:
 
