@@ -37,6 +37,18 @@ export interface BusinessUnitCreateRequest {
 
 export interface BusinessUnitUpdateRequest extends BusinessUnitCreateRequest {}
 
+export interface BusinessUnitWhatsAppChannel {
+  channelId?: string | null;
+  tenantId: string;
+  businessUnitId: string;
+  provider: string;
+  instanceId: string;
+  channelStatus: string;
+  connectionStatus: string;
+  qrCode?: string | null;
+  pairingCode?: string | null;
+}
+
 export interface ProductListItem {
   id: string;
   tenantId: string;

@@ -19,7 +19,13 @@ export const ApiEndpoints = {
   businessUnits: {
     list: (tenantId: string) => `${adminPrefix}/tenants/${enc(tenantId)}/business-units`,
     detail: (tenantId: string, businessUnitId: string) =>
-      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}`
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}`,
+    whatsapp: (tenantId: string, businessUnitId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/whatsapp`,
+    whatsappConnect: (tenantId: string, businessUnitId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/whatsapp/connect`,
+    whatsappStatus: (tenantId: string, businessUnitId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/whatsapp/status`
   },
   products: {
     list: (tenantId: string, businessUnitId: string) =>

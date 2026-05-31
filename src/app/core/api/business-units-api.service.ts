@@ -6,6 +6,7 @@ import { ApiConfigService } from '@core/config/api-config.service';
 import {
   BusinessUnitCreateRequest,
   BusinessUnitListItem,
+  BusinessUnitWhatsAppChannel,
   BusinessUnitUpdateRequest
 } from '@shared/models/catalog.models';
 import { PagedResult } from '@shared/models/common.models';
@@ -29,6 +30,25 @@ export class BusinessUnitsApiService {
     return this.http.put<BusinessUnitListItem>(
       this.url(ApiEndpoints.businessUnits.detail(tenantId, businessUnitId)),
       request
+    );
+  }
+
+  getWhatsApp(tenantId: string, businessUnitId: string): Observable<BusinessUnitWhatsAppChannel> {
+    return this.http.get<BusinessUnitWhatsAppChannel>(
+      this.url(ApiEndpoints.businessUnits.whatsapp(tenantId, businessUnitId))
+    );
+  }
+
+  connectWhatsApp(tenantId: string, businessUnitId: string): Observable<BusinessUnitWhatsAppChannel> {
+    return this.http.post<BusinessUnitWhatsAppChannel>(
+      this.url(ApiEndpoints.businessUnits.whatsappConnect(tenantId, businessUnitId)),
+      {}
+    );
+  }
+
+  getWhatsAppStatus(tenantId: string, businessUnitId: string): Observable<BusinessUnitWhatsAppChannel> {
+    return this.http.get<BusinessUnitWhatsAppChannel>(
+      this.url(ApiEndpoints.businessUnits.whatsappStatus(tenantId, businessUnitId))
     );
   }
 
