@@ -7,6 +7,7 @@ import { TenantsApiService } from '@core/api/tenants-api.service';
 import {
   BusinessUnitCreateRequest,
   BusinessUnitListItem,
+  BusinessUnitWhatsAppChannel,
   TenantListItem
 } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
@@ -130,6 +131,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                 <th>Endereço</th>
                 <th>Taxa entrega</th>
                 <th>Status</th>
+                <th>WhatsApp</th>
                 <th>Ação</th>
               </tr>
             </thead>
@@ -142,9 +144,40 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                   <td>{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
                   <td><span class="status-pill">{{ statusLabel(unit.status) }}</span></td>
                   <td>
-                    <button class="btn btn-small" type="button" (click)="startEdit(unit)">
-                      Editar
-                    </button>
+                    <div class="whatsapp-cell">
+                      <span class="status-pill">{{ whatsappStatusLabel(unit.id) }}</span>
+                      @if (whatsappChannels[unit.id]?.instanceId) {
+                        <small>{{ whatsappChannels[unit.id]?.instanceId }}</small>
+                      }
+                      @if (whatsappQrCodeSource(unit.id)) {
+                        <img class="qr-code" [src]="whatsappQrCodeSource(unit.id)" alt="QR Code do WhatsApp" />
+                      } @else if (hasWhatsAppQrCode(unit.id)) {
+                        <small class="qr-code-error">QR Code recebido em formato nÃ£o suportado para imagem.</small>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    <div class="button-row">
+                      <button class="btn btn-small" type="button" (click)="startEdit(unit)">
+                        Editar
+                      </button>
+                      <button
+                        class="btn btn-small"
+                        type="button"
+                        (click)="connectWhatsApp(unit)"
+                        [disabled]="connectingWhatsAppId === unit.id"
+                      >
+                        {{ connectingWhatsAppId === unit.id ? 'Gerando...' : 'Conectar WhatsApp' }}
+                      </button>
+                      <button
+                        class="btn btn-small"
+                        type="button"
+                        (click)="refreshWhatsAppStatus(unit)"
+                        [disabled]="loadingWhatsAppStatusId === unit.id || !whatsappChannels[unit.id]"
+                      >
+                        Status
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
@@ -167,9 +200,12 @@ export class BusinessUnitsPage {
 
   protected tenants: TenantListItem[] = [];
   protected businessUnits: BusinessUnitListItem[] = [];
+  protected whatsappChannels: Record<string, BusinessUnitWhatsAppChannel> = {};
   protected editingBusinessUnitId: string | null = null;
   protected loading = false;
   protected saving = false;
+  protected connectingWhatsAppId: string | null = null;
+  protected loadingWhatsAppStatusId: string | null = null;
   protected successMessage = '';
   protected errorMessage = '';
 
@@ -203,6 +239,7 @@ export class BusinessUnitsPage {
   protected loadBusinessUnits(): void {
     const tenantId = this.tenantControl.value;
     this.businessUnits = [];
+    this.whatsappChannels = {};
 
     if (!tenantId) {
       return;
@@ -216,6 +253,7 @@ export class BusinessUnitsPage {
       .subscribe({
         next: (result) => {
           this.businessUnits = result.items;
+          this.loadWhatsAppChannels(result.items);
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -289,6 +327,88 @@ export class BusinessUnitsPage {
     return status === 'Active' ? 'Ativa' : 'Inativa';
   }
 
+  protected connectWhatsApp(unit: BusinessUnitListItem): void {
+    const tenantId = this.tenantControl.value;
+    if (!tenantId) {
+      return;
+    }
+
+    this.connectingWhatsAppId = unit.id;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.businessUnitsApi.connectWhatsApp(tenantId, unit.id)
+      .pipe(finalize(() => (this.connectingWhatsAppId = null)))
+      .subscribe({
+        next: (channel) => {
+          this.whatsappChannels = {
+            ...this.whatsappChannels,
+            [unit.id]: channel
+          };
+          this.successMessage = this.isWhatsAppOpen(channel)
+            ? 'WhatsApp conectado para a unidade.'
+            : 'Instância criada. Escaneie o QR Code para conectar o WhatsApp.';
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
+  protected refreshWhatsAppStatus(unit: BusinessUnitListItem): void {
+    const tenantId = this.tenantControl.value;
+    if (!tenantId) {
+      return;
+    }
+
+    this.loadingWhatsAppStatusId = unit.id;
+    this.errorMessage = '';
+
+    this.businessUnitsApi.getWhatsAppStatus(tenantId, unit.id)
+      .pipe(finalize(() => (this.loadingWhatsAppStatusId = null)))
+      .subscribe({
+        next: (channel) => {
+          this.whatsappChannels = {
+            ...this.whatsappChannels,
+            [unit.id]: this.mergeWhatsAppChannel(unit.id, channel)
+          };
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
+  protected whatsappStatusLabel(unitId: string): string {
+    const channel = this.whatsappChannels[unitId];
+    if (!channel) {
+      return 'Não configurado';
+    }
+
+    if (this.isWhatsAppOpen(channel)) {
+      return 'Conectado';
+    }
+
+    if (channel.qrCode) {
+      return 'Aguardando QR Code';
+    }
+
+    return channel.connectionStatus || 'Pendente';
+  }
+
+  protected hasWhatsAppQrCode(unitId: string): boolean {
+    return Boolean(this.whatsappChannels[unitId]?.qrCode?.trim());
+  }
+
+  protected whatsappQrCodeSource(unitId: string): string | null {
+    const qrCode = this.whatsappChannels[unitId]?.qrCode;
+    if (!qrCode) {
+      return null;
+    }
+
+    return this.normalizeQrCodeImageSource(qrCode);
+  }
+
   protected formatCurrency(value: number): string {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
@@ -305,5 +425,87 @@ export class BusinessUnitsPage {
       fixedDeliveryFee: Number(value.fixedDeliveryFee),
       status: value.status
     };
+  }
+
+  private loadWhatsAppChannels(units: BusinessUnitListItem[]): void {
+    const tenantId = this.tenantControl.value;
+    if (!tenantId) {
+      return;
+    }
+
+    for (const unit of units) {
+      this.businessUnitsApi.getWhatsApp(tenantId, unit.id).subscribe({
+        next: (channel) => {
+          this.whatsappChannels = {
+            ...this.whatsappChannels,
+            [unit.id]: channel
+          };
+        },
+        error: () => {
+          // Unidade sem canal configurado ainda.
+        }
+      });
+    }
+  }
+
+  private isWhatsAppOpen(channel: BusinessUnitWhatsAppChannel): boolean {
+    return channel.connectionStatus.toLowerCase() === 'open';
+  }
+
+  private mergeWhatsAppChannel(unitId: string, channel: BusinessUnitWhatsAppChannel): BusinessUnitWhatsAppChannel {
+    const previous = this.whatsappChannels[unitId];
+    if (!previous || channel.qrCode || this.isWhatsAppOpen(channel)) {
+      return channel;
+    }
+
+    return {
+      ...channel,
+      qrCode: previous.qrCode
+    };
+  }
+
+  private normalizeQrCodeImageSource(qrCode: string): string | null {
+    const value = qrCode.trim().replace(/^["']|["']$/g, '');
+    if (!value) {
+      return null;
+    }
+
+    if (/^data:image\//i.test(value) || /^(https?:|blob:)/i.test(value)) {
+      return value;
+    }
+
+    if (value.startsWith('<svg')) {
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}`;
+    }
+
+    const base64Value = value.replace(/^base64,/i, '').replace(/\s/g, '');
+    if (!this.looksLikeBase64Image(base64Value)) {
+      return null;
+    }
+
+    return `data:image/${this.detectBase64ImageType(base64Value)};base64,${base64Value}`;
+  }
+
+  private looksLikeBase64Image(value: string): boolean {
+    return value.length > 24 &&
+      value.length % 4 === 0 &&
+      /^[A-Za-z0-9+/]+={0,2}$/.test(value) &&
+      /^(iVBORw0KGgo|\/9j\/|R0lGOD|UklGR)/.test(value);
+  }
+
+  private detectBase64ImageType(value: string): 'png' | 'jpeg' | 'gif' | 'webp' {
+    if (value.startsWith('/9j/')) {
+      return 'jpeg';
+    }
+
+    if (value.startsWith('R0lGOD')) {
+      return 'gif';
+    }
+
+    if (value.startsWith('UklGR')) {
+      return 'webp';
+    }
+
+    return 'png';
   }
 }

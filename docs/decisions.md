@@ -78,3 +78,13 @@ Usar `ComandIA` como nome do produto e `https://www.comandia.com.br` como domín
 
 Motivo:
 O nome `ComandIA` e o domínio `www.comandia.com.br` estão disponíveis para o projeto.
+
+## ADR-FE-008 - Overrides para vulnerabilidades transitivas do tooling
+
+Status: Accepted
+
+Decisao:
+Usar `overrides` no `package.json` para corrigir vulnerabilidades transitivas de dependencias de desenvolvimento quando o pacote direto do Angular ainda nao disponibilizar a resolucao.
+
+Motivo:
+Permite manter o tooling Angular atual e corrigir o `npm audit` sem adicionar novas bibliotecas nem alterar codigo de produto. Os overrides devem ser removidos quando as dependencias diretas passarem a resolver versoes seguras por conta propria.

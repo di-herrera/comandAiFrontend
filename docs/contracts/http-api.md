@@ -213,6 +213,36 @@ Request:
 PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}
 ```
 
+### WhatsApp da unidade
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/whatsapp
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/whatsapp/connect
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/whatsapp/status
+```
+
+Resposta:
+
+```json
+{
+  "channelId": "uuid",
+  "tenantId": "uuid",
+  "businessUnitId": "uuid",
+  "provider": "Evolution",
+  "instanceId": "cmdia-2222222222222222",
+  "channelStatus": "Active",
+  "connectionStatus": "open",
+  "qrCode": null,
+  "pairingCode": null
+}
+```
+
+Quando `qrCode` vier preenchido, o painel deve exibir a imagem para o lojista
+conectar o WhatsApp da unidade. O valor esperado deve ser uma imagem
+renderizavel pelo navegador: data URI `data:image/...`, URL HTTP/HTTPS, SVG cru
+ou base64 puro de PNG/JPEG/GIF/WebP. Se a API retornar apenas o payload textual
+do QR Code, o frontend nao consegue renderizar a imagem sem gerar o QR Code.
+
 ## 3. Categorias de Produto
 
 ### Listar categorias
