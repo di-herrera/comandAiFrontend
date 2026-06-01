@@ -2,6 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { TenantsApiService } from '@core/api/tenants-api.service';
+import { AuthSessionService } from '@core/auth/auth-session.service';
 import { BusinessUnitListItem, TenantListItem } from '@shared/models/catalog.models';
 
 const tenantStorageKey = 'comandia.admin.catalogContext.tenantId';
@@ -35,22 +36,29 @@ export class CatalogContextService {
   readonly selectedBusinessUnitName = computed(() => this.selectedBusinessUnit()?.name ?? '');
   readonly hasTenant = computed(() => Boolean(this.selectedTenantId()));
   readonly hasCatalogContext = computed(() => Boolean(this.selectedTenantId() && this.selectedBusinessUnitId()));
+  readonly tenantSelectionLocked = computed(() => Boolean(this.scopedTenantId()));
+  readonly businessUnitSelectionLocked = computed(() => Boolean(this.scopedBusinessUnitId()));
 
   constructor(
     private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService
+    private readonly businessUnitsApi: BusinessUnitsApiService,
+    private readonly authSession: AuthSessionService
   ) {
     this.loadTenants();
   }
 
   selectTenant(tenantId: string): void {
+    const scopedTenantId = this.scopedTenantId();
+    if (scopedTenantId && tenantId !== scopedTenantId) {
+      return;
+    }
+
     if (tenantId === this.selectedTenantId()) {
       return;
     }
 
-    this.selectedTenantId.set(tenantId);
+    this.setSelectedTenant(tenantId);
     this.selectedBusinessUnitId.set('');
-    this.writeStorage(tenantStorageKey, tenantId);
     this.writeStorage(businessUnitStorageKey, '');
     this.businessUnits.set([]);
 
@@ -60,8 +68,12 @@ export class CatalogContextService {
   }
 
   selectBusinessUnit(businessUnitId: string): void {
-    this.selectedBusinessUnitId.set(businessUnitId);
-    this.writeStorage(businessUnitStorageKey, businessUnitId);
+    const scopedBusinessUnitId = this.scopedBusinessUnitId();
+    if (scopedBusinessUnitId && businessUnitId !== scopedBusinessUnitId) {
+      return;
+    }
+
+    this.setSelectedBusinessUnit(businessUnitId);
   }
 
   refresh(): void {
@@ -74,7 +86,10 @@ export class CatalogContextService {
 
     this.tenantsApi.list().subscribe({
       next: (result) => {
-        this.tenants.set(result.items);
+        const scopedTenantId = this.scopedTenantId();
+        this.tenants.set(scopedTenantId
+          ? result.items.filter((tenant) => tenant.id === scopedTenantId)
+          : result.items);
         this.loadingTenants.set(false);
         this.syncTenantSelection();
       },
@@ -91,7 +106,10 @@ export class CatalogContextService {
 
     this.businessUnitsApi.list(tenantId).subscribe({
       next: (result) => {
-        this.businessUnits.set(result.items);
+        const scopedBusinessUnitId = this.scopedBusinessUnitId();
+        this.businessUnits.set(scopedBusinessUnitId
+          ? result.items.filter((unit) => unit.id === scopedBusinessUnitId)
+          : result.items);
         this.loadingBusinessUnits.set(false);
         this.syncBusinessUnitSelection();
       },
@@ -103,6 +121,18 @@ export class CatalogContextService {
   }
 
   private syncTenantSelection(): void {
+    const scopedTenantId = this.scopedTenantId();
+    if (scopedTenantId) {
+      if (this.selectedTenantId() !== scopedTenantId) {
+        this.setSelectedTenant(scopedTenantId);
+        this.selectedBusinessUnitId.set('');
+        this.writeStorage(businessUnitStorageKey, '');
+      }
+
+      this.loadBusinessUnits(scopedTenantId);
+      return;
+    }
+
     const tenantId = this.selectedTenantId();
     if (!tenantId) {
       this.businessUnits.set([]);
@@ -119,6 +149,13 @@ export class CatalogContextService {
   }
 
   private syncBusinessUnitSelection(): void {
+    const scopedBusinessUnitId = this.scopedBusinessUnitId();
+    if (scopedBusinessUnitId) {
+      const scopedUnitExists = this.businessUnits().some((unit) => unit.id === scopedBusinessUnitId);
+      this.setSelectedBusinessUnit(scopedUnitExists ? scopedBusinessUnitId : '');
+      return;
+    }
+
     const businessUnitId = this.selectedBusinessUnitId();
     if (!businessUnitId) {
       return;
@@ -128,6 +165,24 @@ export class CatalogContextService {
     if (!businessUnitExists) {
       this.selectBusinessUnit('');
     }
+  }
+
+  private scopedTenantId(): string {
+    return this.authSession.user()?.tenantId ?? '';
+  }
+
+  private scopedBusinessUnitId(): string {
+    return this.authSession.user()?.businessUnitId ?? '';
+  }
+
+  private setSelectedTenant(tenantId: string): void {
+    this.selectedTenantId.set(tenantId);
+    this.writeStorage(tenantStorageKey, tenantId);
+  }
+
+  private setSelectedBusinessUnit(businessUnitId: string): void {
+    this.selectedBusinessUnitId.set(businessUnitId);
+    this.writeStorage(businessUnitStorageKey, businessUnitId);
   }
 
   private readStorage(key: string): string {

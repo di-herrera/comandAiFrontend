@@ -4,9 +4,14 @@ export interface AdminUser {
   userName: string;
   displayName: string;
   isActive: boolean;
+  roles: AdminRole[];
+  tenantId?: string | null;
+  businessUnitId?: string | null;
   createdAt: string;
   updatedAt?: string | null;
 }
+
+export type AdminRole = 'SystemAdmin' | 'CompanyAdmin' | 'UnitAdmin';
 
 export interface AdminSession {
   user: AdminUser;
@@ -21,12 +26,18 @@ export interface CreateAdminUserRequest {
   email: string;
   displayName: string;
   password: string;
+  role: AdminRole;
+  tenantId?: string | null;
+  businessUnitId?: string | null;
   isActive: boolean;
 }
 
 export interface UpdateAdminUserRequest {
   email: string;
   displayName: string;
+  role: AdminRole;
+  tenantId?: string | null;
+  businessUnitId?: string | null;
   isActive: boolean;
 }
 

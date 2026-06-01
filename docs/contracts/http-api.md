@@ -43,6 +43,7 @@ Status HTTP esperados:
 | 204 | Remoção ou atualização sem corpo, se adotado |
 | 400 | Validação inválida |
 | 404 | Recurso não encontrado |
+| 403 | Usuario autenticado sem permissao para o recurso |
 | 409 | Conflito de unicidade |
 | 500 | Erro inesperado |
 
@@ -77,10 +78,23 @@ Usuario:
   "userName": "admin@comandia.local",
   "displayName": "Administrador",
   "isActive": true,
+  "roles": ["SystemAdmin"],
+  "tenantId": null,
+  "businessUnitId": null,
   "createdAt": "2026-05-22T00:00:00Z",
   "updatedAt": null
 }
 ```
+
+Roles administrativas:
+
+- `SystemAdmin`: acesso global ao painel.
+- `CompanyAdmin`: acesso ao proprio `tenantId` e unidades da empresa.
+- `UnitAdmin`: acesso ao proprio `tenantId` e `businessUnitId`.
+
+O frontend usa `roles`, `tenantId` e `businessUnitId` para ajustar menu,
+guards e seletor de contexto. O backend continua sendo a fonte da verdade e
+retorna `403 Forbidden` quando o usuario tenta acessar recurso fora do escopo.
 
 Criacao de usuario:
 
@@ -89,9 +103,33 @@ Criacao de usuario:
   "email": "operador@comandia.local",
   "displayName": "Operador",
   "password": "ComandIA123",
+  "role": "UnitAdmin",
+  "tenantId": "uuid",
+  "businessUnitId": "uuid",
   "isActive": true
 }
 ```
+
+Atualizacao de usuario:
+
+```json
+{
+  "email": "operador@comandia.local",
+  "displayName": "Operador",
+  "role": "CompanyAdmin",
+  "tenantId": "uuid",
+  "businessUnitId": null,
+  "isActive": true
+}
+```
+
+Combinacoes validas:
+
+| Role | tenantId | businessUnitId |
+|---|---|---|
+| `SystemAdmin` | `null` | `null` |
+| `CompanyAdmin` | obrigatorio | `null` |
+| `UnitAdmin` | obrigatorio | obrigatorio |
 
 Atualizacao de usuario:
 
