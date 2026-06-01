@@ -5,8 +5,11 @@ import { Observable } from 'rxjs';
 import { ApiConfigService } from '@core/config/api-config.service';
 import {
   ProductComposition,
-  ProductCompositionUpdateRequest
+  ProductCompositionUpdateRequest,
+  ProductOptionGroup,
+  ProductOptionGroupRequest
 } from '@shared/models/catalog.models';
+import { PagedResult } from '@shared/models/common.models';
 
 import { ApiEndpoints } from './api-endpoints';
 
@@ -30,6 +33,43 @@ export class ProductCompositionApiService {
     return this.http.put<ProductComposition>(
       this.url(ApiEndpoints.products.composition(tenantId, businessUnitId, productId)),
       request
+    );
+  }
+
+  listOptionGroups(tenantId: string, businessUnitId: string, productId: string): Observable<PagedResult<ProductOptionGroup>> {
+    return this.http.get<PagedResult<ProductOptionGroup>>(
+      this.url(ApiEndpoints.products.optionGroups(tenantId, businessUnitId, productId))
+    );
+  }
+
+  createOptionGroup(
+    tenantId: string,
+    businessUnitId: string,
+    productId: string,
+    request: ProductOptionGroupRequest
+  ): Observable<ProductOptionGroup> {
+    return this.http.post<ProductOptionGroup>(
+      this.url(ApiEndpoints.products.optionGroups(tenantId, businessUnitId, productId)),
+      request
+    );
+  }
+
+  updateOptionGroup(
+    tenantId: string,
+    businessUnitId: string,
+    productId: string,
+    optionGroupId: string,
+    request: ProductOptionGroupRequest
+  ): Observable<ProductOptionGroup> {
+    return this.http.put<ProductOptionGroup>(
+      this.url(ApiEndpoints.products.optionGroup(tenantId, businessUnitId, productId, optionGroupId)),
+      request
+    );
+  }
+
+  deleteOptionGroup(tenantId: string, businessUnitId: string, productId: string, optionGroupId: string): Observable<void> {
+    return this.http.delete<void>(
+      this.url(ApiEndpoints.products.optionGroup(tenantId, businessUnitId, productId, optionGroupId))
     );
   }
 

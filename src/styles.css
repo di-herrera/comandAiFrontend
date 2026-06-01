@@ -67,8 +67,18 @@ button, input, textarea, select { font: inherit; }
 .button-row { display: flex; gap: .75rem; flex-wrap: wrap; }
 .btn { border: 1px solid var(--border); border-radius: 999px; padding: .65rem 1rem; background: var(--surface); cursor: pointer; }
 .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn-danger { border-color: #f4b8b0; color: var(--danger); background: #fff4f2; }
 .btn-small { padding: .4rem .7rem; font-size: .85rem; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
+.button-row.compact { gap: .4rem; }
+.icon-button { width: 2.5rem; height: 2.5rem; display: inline-grid; place-items: center; padding: 0; }
+.panel-form { display: grid; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; background: var(--surface-soft); }
+.compact-heading { margin-bottom: 0; }
+.compact-field { min-width: 96px; }
+.option-editor { display: grid; gap: .75rem; }
+.option-row { display: grid; grid-template-columns: minmax(105px, .65fr) minmax(150px, 1fr) minmax(96px, .5fr) minmax(84px, .4fr) auto auto; gap: .75rem; align-items: end; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: .75rem; }
+.inline-chip, .status-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: .2rem .55rem; font-size: .8rem; background: var(--primary-soft); margin: .1rem .25rem .1rem 0; white-space: nowrap; }
+.status-chip.active { color: var(--success); background: #ecfdf3; }
 
 .table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; }
 .table th, .table td { border-bottom: 1px solid var(--border); padding: .75rem; text-align: left; }
@@ -193,6 +203,14 @@ button, input, textarea, select { font: inherit; }
 
   .button-row .btn,
   .form-actions .btn {
+    width: 100%;
+  }
+
+  .option-row {
+    grid-template-columns: 1fr;
+  }
+
+  .icon-button {
     width: 100%;
   }
 

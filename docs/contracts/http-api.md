@@ -554,6 +554,88 @@ Request:
 }
 ```
 
+## 6.1 Grupos de escolha do produto
+
+Grupos de escolha configuram perguntas especificas do produto, como `Tipo de
+pao`, `Tipo de hamburguer` e `Adicionais`.
+
+### Listar grupos
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups
+```
+
+Resposta:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "tenantId": "uuid",
+      "businessUnitId": "uuid",
+      "productId": "uuid",
+      "name": "Tipo de pao",
+      "minSelected": 1,
+      "maxSelected": 1,
+      "isRequired": true,
+      "options": [
+        {
+          "id": "uuid",
+          "code": "PAO-FR",
+          "name": "Pao frances",
+          "additionalPrice": 0.0,
+          "isAvailable": true,
+          "displayOrder": 1
+        }
+      ]
+    }
+  ],
+  "total": 1
+}
+```
+
+### Criar grupo
+
+```http
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups
+```
+
+### Atualizar grupo
+
+```http
+PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
+```
+
+Request de criacao/atualizacao:
+
+```json
+{
+  "name": "Tipo de pao",
+  "minSelected": 1,
+  "maxSelected": 1,
+  "isRequired": true,
+  "options": [
+    {
+      "code": "PAO-HAMB",
+      "name": "Pao de hamburguer",
+      "additionalPrice": 0.0,
+      "isAvailable": true,
+      "displayOrder": 1
+    }
+  ]
+}
+```
+
+### Remover grupo
+
+```http
+DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
+```
+
+O backend rejeita a remocao quando alguma opcao do grupo ja foi usada em
+rascunho ou comanda. O frontend apenas exibe a mensagem retornada.
+
 ## 7. Acompanhamento de pedidos
 
 ### Listar pedidos
@@ -628,5 +710,4 @@ O backend nao retorna secrets, API keys ou headers sensiveis.
 ## Decisões abertas
 
 - Confirmar se `status` será string `Active/Inactive` ou boolean `isActive`.
-- Confirmar se `options` terá grupos no MVP ou será lista simples de adicionais por unidade.
 - Confirmar se endpoints terão paginação real ou apenas `items + total` inicialmente.

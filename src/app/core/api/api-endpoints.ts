@@ -33,7 +33,11 @@ export const ApiEndpoints = {
     detail: (tenantId: string, businessUnitId: string, productId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}`,
     composition: (tenantId: string, businessUnitId: string, productId: string) =>
-      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/composition`
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/composition`,
+    optionGroups: (tenantId: string, businessUnitId: string, productId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/option-groups`,
+    optionGroup: (tenantId: string, businessUnitId: string, productId: string, optionGroupId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/option-groups/${enc(optionGroupId)}`
   },
   productCategories: {
     list: (tenantId: string, businessUnitId: string) =>
