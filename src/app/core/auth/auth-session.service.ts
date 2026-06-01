@@ -19,7 +19,7 @@ export class AuthSessionService {
   readonly isUnitAdmin = computed(() => this.hasRole('UnitAdmin'));
   readonly canManageTenants = computed(() => this.isSystemAdmin() || this.isCompanyAdmin());
   readonly canManageBusinessUnits = computed(() => this.isSystemAdmin() || this.isCompanyAdmin() || this.isUnitAdmin());
-  readonly canManageUsers = computed(() => this.isSystemAdmin());
+  readonly canManageUsers = computed(() => this.isSystemAdmin() || this.isCompanyAdmin());
   readonly canUseChatSimulator = computed(() => this.isSystemAdmin());
   readonly hasCheckedSession = this.checkedState.asReadonly();
 

@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 import { AdminUsersApiService } from '@core/api/admin-users-api.service';
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { TenantsApiService } from '@core/api/tenants-api.service';
+import { AuthSessionService } from '@core/auth/auth-session.service';
 import {
   AdminRole,
   AdminUser,
@@ -70,7 +71,7 @@ import { ApiFailure } from '@shared/models/common.models';
           <label class="field">
             <span>Role</span>
             <select formControlName="role">
-              @for (role of roleOptions; track role) {
+              @for (role of availableRoleOptions(); track role) {
                 <option [value]="role">{{ roleLabel(role) }}</option>
               }
             </select>
@@ -79,7 +80,7 @@ import { ApiFailure } from '@shared/models/common.models';
           @if (requiresTenantScope()) {
             <label class="field">
               <span>Empresa</span>
-              <select formControlName="tenantId">
+              <select formControlName="tenantId" [disabled]="hasScopedTenant()">
                 <option value="">Selecione uma empresa</option>
                 @for (tenant of tenants; track tenant.id) {
                   <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
@@ -94,7 +95,7 @@ import { ApiFailure } from '@shared/models/common.models';
           @if (requiresBusinessUnitScope()) {
             <label class="field">
               <span>Unidade</span>
-              <select formControlName="businessUnitId">
+              <select formControlName="businessUnitId" [disabled]="hasScopedBusinessUnit()">
                 <option value="">Selecione uma unidade</option>
                 @for (unit of businessUnits; track unit.id) {
                   <option [value]="unit.id">{{ unit.name }}</option>
@@ -226,7 +227,8 @@ export class UsersPage {
   constructor(
     private readonly usersApi: AdminUsersApiService,
     private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService
+    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly authSession: AuthSessionService
   ) {
     this.loadTenants();
     this.loadUsers();
@@ -246,7 +248,7 @@ export class UsersPage {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (result) => {
-          this.users = result.items;
+          this.users = this.filterUsersByScope(result.items);
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -306,7 +308,7 @@ export class UsersPage {
       displayName: '',
       email: '',
       password: '',
-      role: 'SystemAdmin',
+      role: this.authSession.isSystemAdmin() ? 'SystemAdmin' : 'UnitAdmin',
       tenantId: '',
       businessUnitId: '',
       isActive: true
@@ -407,6 +409,20 @@ export class UsersPage {
     return `Unidade ${user.businessUnitId ?? '-'}`;
   }
 
+  protected availableRoleOptions(): AdminRole[] {
+    return this.authSession.isSystemAdmin()
+      ? this.roleOptions
+      : ['CompanyAdmin', 'UnitAdmin'];
+  }
+
+  protected hasScopedTenant(): boolean {
+    return Boolean(this.authSession.user()?.tenantId);
+  }
+
+  protected hasScopedBusinessUnit(): boolean {
+    return Boolean(this.authSession.user()?.businessUnitId);
+  }
+
   private buildCreateRequest(): CreateAdminUserRequest {
     const value = this.form.getRawValue();
     return {
@@ -414,7 +430,7 @@ export class UsersPage {
       email: value.email.trim(),
       password: value.password,
       role: value.role,
-      tenantId: this.requiresTenantScope() ? value.tenantId : null,
+      tenantId: this.resolveRequestTenantId(value.tenantId),
       businessUnitId: this.requiresBusinessUnitScope() ? value.businessUnitId : null,
       isActive: value.isActive
     };
@@ -426,7 +442,7 @@ export class UsersPage {
       displayName: value.displayName.trim(),
       email: value.email.trim(),
       role: value.role,
-      tenantId: this.requiresTenantScope() ? value.tenantId : null,
+      tenantId: this.resolveRequestTenantId(value.tenantId),
       businessUnitId: this.requiresBusinessUnitScope() ? value.businessUnitId : null,
       isActive: value.isActive
     };
@@ -435,7 +451,8 @@ export class UsersPage {
   private loadTenants(): void {
     this.tenantsApi.list().subscribe({
       next: (result) => {
-        this.tenants = result.items;
+        this.tenants = this.filterTenantsByScope(result.items);
+        this.syncTenantControl();
       },
       error: (failure: ApiFailure) => {
         this.errorMessage = failure.error.message;
@@ -453,8 +470,8 @@ export class UsersPage {
 
     this.businessUnitsApi.list(tenantId).subscribe({
       next: (result) => {
-        this.businessUnits = result.items;
-        if (selectedBusinessUnitId && result.items.some((unit) => unit.id === selectedBusinessUnitId)) {
+        this.businessUnits = this.filterBusinessUnitsByScope(result.items);
+        if (selectedBusinessUnitId && this.businessUnits.some((unit) => unit.id === selectedBusinessUnitId)) {
           this.form.controls.businessUnitId.setValue(selectedBusinessUnitId);
         }
       },
@@ -477,6 +494,7 @@ export class UsersPage {
       this.businessUnits = [];
     } else {
       tenantControl.setValidators([Validators.required]);
+      this.syncTenantControl();
     }
 
     if (!this.requiresBusinessUnitScope()) {
@@ -488,5 +506,41 @@ export class UsersPage {
 
     tenantControl.updateValueAndValidity();
     businessUnitControl.updateValueAndValidity();
+  }
+
+  private filterUsersByScope(users: AdminUser[]): AdminUser[] {
+    if (this.authSession.isSystemAdmin()) {
+      return users;
+    }
+
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    return users.filter((user) =>
+      user.tenantId === scopedTenantId &&
+      !user.roles.includes('SystemAdmin'));
+  }
+
+  private filterTenantsByScope(tenants: TenantListItem[]): TenantListItem[] {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    return scopedTenantId ? tenants.filter((tenant) => tenant.id === scopedTenantId) : tenants;
+  }
+
+  private filterBusinessUnitsByScope(units: BusinessUnitListItem[]): BusinessUnitListItem[] {
+    const scopedBusinessUnitId = this.authSession.user()?.businessUnitId;
+    return scopedBusinessUnitId ? units.filter((unit) => unit.id === scopedBusinessUnitId) : units;
+  }
+
+  private syncTenantControl(): void {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    if (scopedTenantId && this.form.controls.tenantId.value !== scopedTenantId) {
+      this.form.controls.tenantId.setValue(scopedTenantId);
+    }
+  }
+
+  private resolveRequestTenantId(selectedTenantId: string): string | null {
+    if (!this.requiresTenantScope()) {
+      return null;
+    }
+
+    return this.authSession.user()?.tenantId ?? selectedTenantId;
   }
 }

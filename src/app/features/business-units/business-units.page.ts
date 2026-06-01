@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { TenantsApiService } from '@core/api/tenants-api.service';
+import { AuthSessionService } from '@core/auth/auth-session.service';
 import {
   BusinessUnitCreateRequest,
   BusinessUnitListItem,
@@ -38,7 +39,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div class="form-grid">
           <label class="field">
             <span>Empresa</span>
-            <select [formControl]="tenantControl">
+            <select [formControl]="tenantControl" [disabled]="tenantSelectionLocked()">
               <option value="">Selecione uma empresa</option>
               @for (tenant of tenants; track tenant.id) {
                 <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
@@ -54,6 +55,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         </div>
       </section>
 
+      @if (canEditBusinessUnits()) {
       <section class="card">
         <h2>{{ editingBusinessUnitId ? 'Editar unidade' : 'Nova unidade' }}</h2>
 
@@ -104,6 +106,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           </div>
         </form>
       </section>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -211,7 +214,8 @@ export class BusinessUnitsPage {
 
   constructor(
     private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService
+    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly authSession: AuthSessionService
   ) {
     this.loadTenants();
     this.tenantControl.valueChanges.subscribe(() => {
@@ -228,7 +232,8 @@ export class BusinessUnitsPage {
   protected loadTenants(): void {
     this.tenantsApi.list().subscribe({
       next: (result) => {
-        this.tenants = result.items;
+        this.tenants = this.filterTenantsByScope(result.items);
+        this.syncTenantSelection();
       },
       error: (failure: ApiFailure) => {
         this.errorMessage = failure.error.message;
@@ -252,8 +257,8 @@ export class BusinessUnitsPage {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (result) => {
-          this.businessUnits = result.items;
-          this.loadWhatsAppChannels(result.items);
+          this.businessUnits = this.filterBusinessUnitsByScope(result.items);
+          this.loadWhatsAppChannels(this.businessUnits);
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -262,6 +267,11 @@ export class BusinessUnitsPage {
   }
 
   protected submit(): void {
+    if (!this.canEditBusinessUnits()) {
+      this.errorMessage = 'Seu usuario nao tem permissao para alterar unidades.';
+      return;
+    }
+
     const tenantId = this.tenantControl.value;
     if (!tenantId) {
       this.errorMessage = 'Selecione uma empresa antes de salvar a unidade.';
@@ -295,6 +305,11 @@ export class BusinessUnitsPage {
   }
 
   protected startEdit(unit: BusinessUnitListItem): void {
+    if (!this.canEditBusinessUnits()) {
+      this.errorMessage = 'Seu usuario nao tem permissao para editar unidades.';
+      return;
+    }
+
     this.editingBusinessUnitId = unit.id;
     this.form.setValue({
       name: unit.name,
@@ -446,6 +461,36 @@ export class BusinessUnitsPage {
         }
       });
     }
+  }
+
+  protected tenantSelectionLocked(): boolean {
+    return Boolean(this.authSession.user()?.tenantId);
+  }
+
+  protected canEditBusinessUnits(): boolean {
+    return this.authSession.isSystemAdmin() || this.authSession.isCompanyAdmin();
+  }
+
+  private syncTenantSelection(): void {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    if (scopedTenantId) {
+      this.tenantControl.setValue(scopedTenantId);
+      return;
+    }
+
+    if (!this.tenantControl.value && this.tenants.length === 1) {
+      this.tenantControl.setValue(this.tenants[0].id);
+    }
+  }
+
+  private filterTenantsByScope(tenants: TenantListItem[]): TenantListItem[] {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    return scopedTenantId ? tenants.filter((tenant) => tenant.id === scopedTenantId) : tenants;
+  }
+
+  private filterBusinessUnitsByScope(units: BusinessUnitListItem[]): BusinessUnitListItem[] {
+    const scopedBusinessUnitId = this.authSession.user()?.businessUnitId;
+    return scopedBusinessUnitId ? units.filter((unit) => unit.id === scopedBusinessUnitId) : units;
   }
 
   private isWhatsAppOpen(channel: BusinessUnitWhatsAppChannel): boolean {

@@ -86,7 +86,10 @@ export class CatalogContextService {
 
     this.tenantsApi.list().subscribe({
       next: (result) => {
-        this.tenants.set(result.items);
+        const scopedTenantId = this.scopedTenantId();
+        this.tenants.set(scopedTenantId
+          ? result.items.filter((tenant) => tenant.id === scopedTenantId)
+          : result.items);
         this.loadingTenants.set(false);
         this.syncTenantSelection();
       },
@@ -103,7 +106,10 @@ export class CatalogContextService {
 
     this.businessUnitsApi.list(tenantId).subscribe({
       next: (result) => {
-        this.businessUnits.set(result.items);
+        const scopedBusinessUnitId = this.scopedBusinessUnitId();
+        this.businessUnits.set(scopedBusinessUnitId
+          ? result.items.filter((unit) => unit.id === scopedBusinessUnitId)
+          : result.items);
         this.loadingBusinessUnits.set(false);
         this.syncBusinessUnitSelection();
       },

@@ -3,6 +3,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { finalize } from 'rxjs';
 
 import { TenantsApiService } from '@core/api/tenants-api.service';
+import { AuthSessionService } from '@core/auth/auth-session.service';
 import { TenantCreateRequest, TenantListItem } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
@@ -31,6 +32,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <p class="feedback error">{{ errorMessage }}</p>
       }
 
+      @if (authSession.isSystemAdmin() || editingTenantId) {
       <section class="card">
         <h2>{{ editingTenantId ? 'Editar empresa' : 'Nova empresa' }}</h2>
 
@@ -76,6 +78,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           </div>
         </form>
       </section>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -136,7 +139,10 @@ export class TenantsPage {
   protected successMessage = '';
   protected errorMessage = '';
 
-  constructor(private readonly tenantsApi: TenantsApiService) {
+  constructor(
+    private readonly tenantsApi: TenantsApiService,
+    protected readonly authSession: AuthSessionService
+  ) {
     this.loadTenants();
   }
 
@@ -148,7 +154,7 @@ export class TenantsPage {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (result) => {
-          this.tenants = result.items;
+          this.tenants = this.filterTenantsByScope(result.items);
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -157,6 +163,11 @@ export class TenantsPage {
   }
 
   protected submit(): void {
+    if (!this.editingTenantId && !this.authSession.isSystemAdmin()) {
+      this.errorMessage = 'Seu usuario nao tem permissao para cadastrar empresas.';
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -184,6 +195,11 @@ export class TenantsPage {
   }
 
   protected startEdit(tenant: TenantListItem): void {
+    if (!this.canEditTenant(tenant)) {
+      this.errorMessage = 'Seu usuario nao tem permissao para editar esta empresa.';
+      return;
+    }
+
     this.editingTenantId = tenant.id;
     this.form.setValue({
       name: tenant.name,
@@ -224,5 +240,14 @@ export class TenantsPage {
       document: document ? document : null,
       status: value.status
     };
+  }
+
+  private filterTenantsByScope(tenants: TenantListItem[]): TenantListItem[] {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    return scopedTenantId ? tenants.filter((tenant) => tenant.id === scopedTenantId) : tenants;
+  }
+
+  private canEditTenant(tenant: TenantListItem): boolean {
+    return this.authSession.isSystemAdmin() || this.authSession.user()?.tenantId === tenant.id;
   }
 }
