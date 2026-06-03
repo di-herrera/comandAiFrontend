@@ -193,7 +193,6 @@ export interface ProductOptionGroup {
   id: string;
   tenantId: string;
   businessUnitId: string;
-  productId: string;
   name: string;
   minSelected: number;
   maxSelected: number;
@@ -203,6 +202,7 @@ export interface ProductOptionGroup {
 
 export interface ProductOptionGroupOption {
   id: string;
+  optionId: string;
   code: string;
   name: string;
   additionalPrice: number;
@@ -219,9 +219,7 @@ export interface ProductOptionGroupRequest {
 }
 
 export interface ProductOptionGroupOptionRequest {
-  code: string;
-  name: string;
-  additionalPrice: number;
+  optionId: string;
   isAvailable: boolean;
   displayOrder: number;
 }

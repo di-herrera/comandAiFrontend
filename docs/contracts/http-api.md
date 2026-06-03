@@ -554,12 +554,19 @@ Request:
 }
 ```
 
-## 6.1 Grupos de escolha do produto
+## 6.1 Grupos de escolha
 
-Grupos de escolha configuram perguntas especificas do produto, como `Tipo de
-pao`, `Tipo de hamburguer` e `Adicionais`.
+Grupos de escolha configuram perguntas como `Tipo de pao`, `Tipo de hamburguer`
+e `Adicionais`. Eles pertencem a unidade, usam opcoes ja cadastradas e podem ser
+vinculados a varios produtos.
 
-### Listar grupos
+### Listar grupos da unidade
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups
+```
+
+### Listar grupos vinculados ao produto
 
 ```http
 GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups
@@ -574,7 +581,6 @@ Resposta:
       "id": "uuid",
       "tenantId": "uuid",
       "businessUnitId": "uuid",
-      "productId": "uuid",
       "name": "Tipo de pao",
       "minSelected": 1,
       "maxSelected": 1,
@@ -582,6 +588,7 @@ Resposta:
       "options": [
         {
           "id": "uuid",
+          "optionId": "uuid",
           "code": "PAO-FR",
           "name": "Pao frances",
           "additionalPrice": 0.0,
@@ -598,13 +605,19 @@ Resposta:
 ### Criar grupo
 
 ```http
-POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups
 ```
 
 ### Atualizar grupo
 
 ```http
-PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
+PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups/{optionGroupId}
+```
+
+### Vincular grupo ao produto
+
+```http
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
 ```
 
 Request de criacao/atualizacao:
@@ -617,9 +630,7 @@ Request de criacao/atualizacao:
   "isRequired": true,
   "options": [
     {
-      "code": "PAO-HAMB",
-      "name": "Pao de hamburguer",
-      "additionalPrice": 0.0,
+      "optionId": "uuid",
       "isAvailable": true,
       "displayOrder": 1
     }
@@ -627,14 +638,21 @@ Request de criacao/atualizacao:
 }
 ```
 
-### Remover grupo
+### Desvincular grupo do produto
 
 ```http
 DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
 ```
 
-O backend rejeita a remocao quando alguma opcao do grupo ja foi usada em
-rascunho ou comanda. O frontend apenas exibe a mensagem retornada.
+Remove apenas o vinculo com o produto. Para remover o cadastro reutilizavel do
+grupo, use:
+
+```http
+DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups/{optionGroupId}
+```
+
+O backend rejeita a remocao do cadastro quando alguma opcao do grupo ja foi
+usada em rascunho ou comanda. O frontend apenas exibe a mensagem retornada.
 
 ## 7. Acompanhamento de pedidos
 

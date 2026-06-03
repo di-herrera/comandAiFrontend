@@ -1,6 +1,6 @@
 import { Component, effect } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, switchMap } from 'rxjs';
 
 import { IngredientsApiService } from '@core/api/ingredients-api.service';
 import { OptionsApiService } from '@core/api/options-api.service';
@@ -33,9 +33,7 @@ interface OptionSelection {
 }
 
 type OptionGroupOptionForm = FormGroup<{
-  code: FormControl<string>;
-  name: FormControl<string>;
-  additionalPrice: FormControl<number>;
+  optionId: FormControl<string>;
   isAvailable: FormControl<boolean>;
   displayOrder: FormControl<number>;
 }>;
@@ -174,7 +172,7 @@ type OptionGroupOptionForm = FormGroup<{
         <div class="section-heading">
           <div>
             <h2>Grupos de escolha</h2>
-            <p>Configure perguntas como tamanho, tipo de pao, tipo de hamburguer e adicionais.</p>
+            <p>Crie grupos reutilizaveis da unidade e vincule ao produto selecionado.</p>
           </div>
           <button class="btn" type="button" (click)="resetOptionGroupForm()" [disabled]="!canUseProductContext">
             Novo grupo
@@ -189,6 +187,20 @@ type OptionGroupOptionForm = FormGroup<{
           <div class="split-grid">
             <div>
               <h3>Grupos configurados</h3>
+              <div class="link-panel">
+                <label class="field">
+                  <span>Vincular grupo existente</span>
+                  <select [formControl]="existingGroupControl" [disabled]="linkableOptionGroups.length === 0 || savingGroup">
+                    <option value="">Selecione um grupo</option>
+                    @for (group of linkableOptionGroups; track group.id) {
+                      <option [value]="group.id">{{ group.name }}</option>
+                    }
+                  </select>
+                </label>
+                <button class="btn" type="button" (click)="linkExistingOptionGroup()" [disabled]="!existingGroupControl.value || savingGroup">
+                  Vincular
+                </button>
+              </div>
               @if (optionGroups.length === 0) {
                 <p class="muted">Nenhum grupo configurado para este produto.</p>
               } @else {
@@ -220,7 +232,7 @@ type OptionGroupOptionForm = FormGroup<{
                           <div class="button-row compact">
                             <button class="btn" type="button" (click)="editOptionGroup(group)">Editar</button>
                             <button class="btn btn-danger" type="button" (click)="deleteOptionGroup(group)" [disabled]="savingGroup">
-                              Remover
+                              Desvincular
                             </button>
                           </div>
                         </td>
@@ -265,23 +277,20 @@ type OptionGroupOptionForm = FormGroup<{
                 <div>
                   <h3>Opcoes do grupo</h3>
                 </div>
-                <button class="btn" type="button" (click)="addOptionRow()">Adicionar opcao</button>
+                <button class="btn" type="button" (click)="addOptionRow()" [disabled]="availableOptions.length === 0">Adicionar opcao</button>
               </div>
 
               <div formArrayName="options" class="option-editor">
                 @for (optionControl of optionRows.controls; track $index) {
                   <div class="option-row" [formGroup]="optionControl">
                     <label class="field">
-                      <span>Codigo</span>
-                      <input type="text" formControlName="code" placeholder="PAO-FR" />
-                    </label>
-                    <label class="field">
-                      <span>Nome</span>
-                      <input type="text" formControlName="name" placeholder="Pao frances" />
-                    </label>
-                    <label class="field compact-field">
-                      <span>Preco</span>
-                      <input type="number" min="0" step="0.01" formControlName="additionalPrice" />
+                      <span>Opcao cadastrada</span>
+                      <select formControlName="optionId">
+                        <option value="">Selecione uma opcao</option>
+                        @for (option of availableOptions; track option.id) {
+                          <option [value]="option.id">{{ option.code }} - {{ option.name }} - {{ formatCurrency(option.additionalPrice) }}</option>
+                        }
+                      </select>
                     </label>
                     <label class="field compact-field">
                       <span>Ordem</span>
@@ -315,6 +324,7 @@ type OptionGroupOptionForm = FormGroup<{
 })
 export class ProductCompositionPage {
   protected readonly productControl = new FormControl('', { nonNullable: true });
+  protected readonly existingGroupControl = new FormControl('', { nonNullable: true });
   protected readonly optionGroupForm = new FormGroup({
     id: new FormControl<string | null>(null),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -327,7 +337,9 @@ export class ProductCompositionPage {
   protected products: ProductListItem[] = [];
   protected ingredientSelections: IngredientSelection[] = [];
   protected optionSelections: OptionSelection[] = [];
+  protected availableOptions: ProductOptionListItem[] = [];
   protected optionGroups: ProductOptionGroup[] = [];
+  protected reusableOptionGroups: ProductOptionGroup[] = [];
   protected loading = false;
   protected saving = false;
   protected savingGroup = false;
@@ -368,6 +380,11 @@ export class ProductCompositionPage {
     return this.optionGroupForm.controls.options;
   }
 
+  protected get linkableOptionGroups(): ProductOptionGroup[] {
+    const linkedIds = new Set(this.optionGroups.map((group) => group.id));
+    return this.reusableOptionGroups.filter((group) => !linkedIds.has(group.id));
+  }
+
   protected loadProducts(): void {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
@@ -401,11 +418,14 @@ export class ProductCompositionPage {
       composition: this.compositionApi.get(tenantId, businessUnitId, productId),
       ingredients: this.ingredientsApi.list(tenantId, businessUnitId),
       options: this.optionsApi.list(tenantId, businessUnitId),
-      optionGroups: this.compositionApi.listOptionGroups(tenantId, businessUnitId, productId)
+      optionGroups: this.compositionApi.listOptionGroups(tenantId, businessUnitId, productId),
+      reusableOptionGroups: this.compositionApi.listReusableOptionGroups(tenantId, businessUnitId)
     }).pipe(finalize(() => (this.loading = false))).subscribe({
-      next: ({ composition, ingredients, options, optionGroups }) => {
+      next: ({ composition, ingredients, options, optionGroups, reusableOptionGroups }) => {
         this.mergeComposition(composition, ingredients.items, options.items);
         this.optionGroups = optionGroups.items;
+        this.reusableOptionGroups = reusableOptionGroups.items;
+        this.existingGroupControl.setValue('');
       },
       error: (failure: ApiFailure) => {
         this.errorMessage = failure.error.message;
@@ -478,9 +498,7 @@ export class ProductCompositionPage {
 
   protected addOptionRow(option?: ProductOptionGroupOptionRequest): void {
     this.optionRows.push(new FormGroup({
-      code: new FormControl(option?.code ?? '', { nonNullable: true, validators: [Validators.required] }),
-      name: new FormControl(option?.name ?? '', { nonNullable: true, validators: [Validators.required] }),
-      additionalPrice: new FormControl(option?.additionalPrice ?? 0, { nonNullable: true, validators: [Validators.min(0)] }),
+      optionId: new FormControl(option?.optionId ?? '', { nonNullable: true, validators: [Validators.required] }),
       isAvailable: new FormControl(option?.isAvailable ?? true, { nonNullable: true }),
       displayOrder: new FormControl(option?.displayOrder ?? this.optionRows.length + 1, { nonNullable: true, validators: [Validators.min(0)] })
     }));
@@ -505,9 +523,7 @@ export class ProductCompositionPage {
 
     for (const option of group.options) {
       this.addOptionRow({
-        code: option.code,
-        name: option.name,
-        additionalPrice: option.additionalPrice,
+        optionId: option.optionId,
         isAvailable: option.isAvailable,
         displayOrder: option.displayOrder
       });
@@ -530,7 +546,7 @@ export class ProductCompositionPage {
 
     if (this.optionGroupForm.invalid) {
       this.optionGroupForm.markAllAsTouched();
-      this.errorMessage = 'Preencha nome do grupo, codigos, nomes e precos validos.';
+      this.errorMessage = 'Preencha nome do grupo, opcoes e ordem validos.';
       return;
     }
 
@@ -545,10 +561,18 @@ export class ProductCompositionPage {
       return;
     }
 
+    const optionIds = request.options.map((option) => option.optionId);
+    if (new Set(optionIds).size !== optionIds.length) {
+      this.errorMessage = 'A mesma opcao nao pode aparecer duas vezes no grupo.';
+      return;
+    }
+
     const optionGroupId = this.optionGroupForm.controls.id.value;
     const operation = optionGroupId
-      ? this.compositionApi.updateOptionGroup(tenantId, businessUnitId, productId, optionGroupId, request)
-      : this.compositionApi.createOptionGroup(tenantId, businessUnitId, productId, request);
+      ? this.compositionApi.updateOptionGroup(tenantId, businessUnitId, optionGroupId, request)
+      : this.compositionApi.createOptionGroup(tenantId, businessUnitId, request).pipe(
+          switchMap((group) => this.compositionApi.linkOptionGroup(tenantId, businessUnitId, productId, group.id))
+        );
 
     this.savingGroup = true;
     this.errorMessage = '';
@@ -575,7 +599,7 @@ export class ProductCompositionPage {
       return;
     }
 
-    if (!window.confirm(`Remover o grupo "${group.name}" deste produto?`)) {
+    if (!window.confirm(`Desvincular o grupo "${group.name}" deste produto?`)) {
       return;
     }
 
@@ -587,7 +611,34 @@ export class ProductCompositionPage {
       .pipe(finalize(() => (this.savingGroup = false)))
       .subscribe({
         next: () => {
-          this.successMessage = 'Grupo de escolha removido.';
+          this.successMessage = 'Grupo desvinculado do produto.';
+          this.loadComposition();
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
+  protected linkExistingOptionGroup(): void {
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
+    const productId = this.productControl.value;
+    const optionGroupId = this.existingGroupControl.value;
+
+    if (!tenantId || !businessUnitId || !productId || !optionGroupId) {
+      return;
+    }
+
+    this.savingGroup = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.compositionApi.linkOptionGroup(tenantId, businessUnitId, productId, optionGroupId)
+      .pipe(finalize(() => (this.savingGroup = false)))
+      .subscribe({
+        next: () => {
+          this.successMessage = 'Grupo vinculado ao produto.';
           this.loadComposition();
         },
         error: (failure: ApiFailure) => {
@@ -599,7 +650,10 @@ export class ProductCompositionPage {
   private clearComposition(): void {
     this.ingredientSelections = [];
     this.optionSelections = [];
+    this.availableOptions = [];
     this.optionGroups = [];
+    this.reusableOptionGroups = [];
+    this.existingGroupControl.setValue('');
     this.resetOptionGroupForm();
     this.successMessage = '';
     this.errorMessage = '';
@@ -627,6 +681,7 @@ export class ProductCompositionPage {
       option,
       selected: linkedOptions.has(option.id)
     }));
+    this.availableOptions = options;
   }
 
   private buildRequest(): ProductCompositionUpdateRequest {
@@ -651,9 +706,7 @@ export class ProductCompositionPage {
       maxSelected: this.optionGroupForm.controls.maxSelected.value,
       isRequired: this.optionGroupForm.controls.isRequired.value,
       options: this.optionRows.controls.map((control) => ({
-        code: control.controls.code.value.trim(),
-        name: control.controls.name.value.trim(),
-        additionalPrice: control.controls.additionalPrice.value,
+        optionId: control.controls.optionId.value,
         isAvailable: control.controls.isAvailable.value,
         displayOrder: control.controls.displayOrder.value
       }))

@@ -42,14 +42,19 @@ export class ProductCompositionApiService {
     );
   }
 
+  listReusableOptionGroups(tenantId: string, businessUnitId: string): Observable<PagedResult<ProductOptionGroup>> {
+    return this.http.get<PagedResult<ProductOptionGroup>>(
+      this.url(ApiEndpoints.optionGroups.list(tenantId, businessUnitId))
+    );
+  }
+
   createOptionGroup(
     tenantId: string,
     businessUnitId: string,
-    productId: string,
     request: ProductOptionGroupRequest
   ): Observable<ProductOptionGroup> {
     return this.http.post<ProductOptionGroup>(
-      this.url(ApiEndpoints.products.optionGroups(tenantId, businessUnitId, productId)),
+      this.url(ApiEndpoints.optionGroups.list(tenantId, businessUnitId)),
       request
     );
   }
@@ -57,13 +62,19 @@ export class ProductCompositionApiService {
   updateOptionGroup(
     tenantId: string,
     businessUnitId: string,
-    productId: string,
     optionGroupId: string,
     request: ProductOptionGroupRequest
   ): Observable<ProductOptionGroup> {
     return this.http.put<ProductOptionGroup>(
-      this.url(ApiEndpoints.products.optionGroup(tenantId, businessUnitId, productId, optionGroupId)),
+      this.url(ApiEndpoints.optionGroups.detail(tenantId, businessUnitId, optionGroupId)),
       request
+    );
+  }
+
+  linkOptionGroup(tenantId: string, businessUnitId: string, productId: string, optionGroupId: string): Observable<ProductOptionGroup> {
+    return this.http.post<ProductOptionGroup>(
+      this.url(ApiEndpoints.products.optionGroup(tenantId, businessUnitId, productId, optionGroupId)),
+      null
     );
   }
 

@@ -26,24 +26,25 @@ O foco do painel é cadastrar dados mínimos para que o backend consiga interpre
 ### FE-013 Grupos de escolha do produto
 
 **Objetivo**
-Permitir configurar grupos de opcoes por produto, como tipo de pao, tipo de
-hamburguer e adicionais.
+Permitir configurar grupos reutilizaveis de opcoes, como tipo de pao, tipo de
+hamburguer e adicionais, e vincula-los aos produtos.
 
 **Escopo**
 - Atualizar modelos TypeScript e servico HTTP para grupos de escolha.
-- Adicionar listagem, criacao, edicao e remocao de grupos na tela de composicao.
-- Permitir configurar nome, minimo, maximo, obrigatoriedade e opcoes do grupo.
+- Adicionar listagem, criacao, edicao e remocao de grupos reutilizaveis na tela de composicao.
+- Permitir vincular e desvincular grupos existentes ao produto.
+- Permitir configurar nome, minimo, maximo, obrigatoriedade e opcoes cadastradas do grupo.
 - Atualizar documentacao de contratos HTTP do frontend.
 
 **Criterios de aceite**
-- Usuario consegue configurar grupos por empresa, unidade e produto.
+- Usuario consegue configurar grupos por empresa/unidade e reaproveita-los em varios produtos.
 - Formulario envia os contratos esperados pelo backend.
 - Build do Angular passa.
 
 **Notas de implementacao**
 - Criados modelos `ProductOptionGroup` e request correspondente.
-- `ProductCompositionApiService` passou a consumir `/option-groups`.
-- Tela de composicao ganhou secao de grupos configurados e formulario de grupo.
+- `ProductCompositionApiService` passou a consumir `/option-groups` da unidade e as rotas de vinculo do produto.
+- Tela de composicao ganhou secao de grupos vinculados, seletor de grupo existente e formulario de grupo reutilizavel.
 - `npm run build` executado com sucesso usando `npm.cmd run build`.
 
 ---
