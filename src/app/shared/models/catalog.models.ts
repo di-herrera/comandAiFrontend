@@ -197,6 +197,7 @@ export interface ProductOptionGroup {
   minSelected: number;
   maxSelected: number;
   isRequired: boolean;
+  linkSource: 'None' | 'Product' | 'Category' | 'ProductAndCategory';
   options: ProductOptionGroupOption[];
 }
 

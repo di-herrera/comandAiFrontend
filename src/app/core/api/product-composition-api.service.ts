@@ -42,6 +42,12 @@ export class ProductCompositionApiService {
     );
   }
 
+  listCategoryOptionGroups(tenantId: string, businessUnitId: string, categoryId: string): Observable<PagedResult<ProductOptionGroup>> {
+    return this.http.get<PagedResult<ProductOptionGroup>>(
+      this.url(ApiEndpoints.productCategories.optionGroups(tenantId, businessUnitId, categoryId))
+    );
+  }
+
   listReusableOptionGroups(tenantId: string, businessUnitId: string): Observable<PagedResult<ProductOptionGroup>> {
     return this.http.get<PagedResult<ProductOptionGroup>>(
       this.url(ApiEndpoints.optionGroups.list(tenantId, businessUnitId))
@@ -78,9 +84,27 @@ export class ProductCompositionApiService {
     );
   }
 
+  linkCategoryOptionGroup(
+    tenantId: string,
+    businessUnitId: string,
+    categoryId: string,
+    optionGroupId: string
+  ): Observable<ProductOptionGroup> {
+    return this.http.post<ProductOptionGroup>(
+      this.url(ApiEndpoints.productCategories.optionGroup(tenantId, businessUnitId, categoryId, optionGroupId)),
+      null
+    );
+  }
+
   deleteOptionGroup(tenantId: string, businessUnitId: string, productId: string, optionGroupId: string): Observable<void> {
     return this.http.delete<void>(
       this.url(ApiEndpoints.products.optionGroup(tenantId, businessUnitId, productId, optionGroupId))
+    );
+  }
+
+  deleteCategoryOptionGroup(tenantId: string, businessUnitId: string, categoryId: string, optionGroupId: string): Observable<void> {
+    return this.http.delete<void>(
+      this.url(ApiEndpoints.productCategories.optionGroup(tenantId, businessUnitId, categoryId, optionGroupId))
     );
   }
 

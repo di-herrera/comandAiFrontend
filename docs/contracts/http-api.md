@@ -581,11 +581,12 @@ Resposta:
       "id": "uuid",
       "tenantId": "uuid",
       "businessUnitId": "uuid",
-      "name": "Tipo de pao",
-      "minSelected": 1,
-      "maxSelected": 1,
-      "isRequired": true,
-      "options": [
+          "name": "Tipo de pao",
+          "minSelected": 1,
+          "maxSelected": 1,
+          "isRequired": true,
+          "linkSource": "Category",
+          "options": [
         {
           "id": "uuid",
           "optionId": "uuid",
@@ -619,6 +620,18 @@ PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups/
 ```http
 POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
 ```
+
+### Vincular grupo a categoria
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories/{categoryId}/option-groups
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories/{categoryId}/option-groups/{optionGroupId}
+DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories/{categoryId}/option-groups/{optionGroupId}
+```
+
+A listagem de grupos do produto retorna vinculos diretos e herdados da
+categoria. O campo `linkSource` indica `Product`, `Category`,
+`ProductAndCategory` ou `None`.
 
 Request de criacao/atualizacao:
 

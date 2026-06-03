@@ -44,7 +44,8 @@ hamburguer e adicionais, e vincula-los aos produtos.
 **Notas de implementacao**
 - Criados modelos `ProductOptionGroup` e request correspondente.
 - `ProductCompositionApiService` passou a consumir `/option-groups` da unidade e as rotas de vinculo do produto.
-- Tela de composicao ganhou secao de grupos vinculados, seletor de grupo existente e formulario de grupo reutilizavel.
+- Tela de composicao ganhou secao de grupos vinculados, seletor de grupo existente, vinculo por categoria e formulario de grupo reutilizavel.
+- Grupos exibem a origem do vinculo (`Product`, `Category` ou `ProductAndCategory`) para distinguir heranca da categoria e vinculo direto do produto.
 - `npm run build` executado com sucesso usando `npm.cmd run build`.
 
 ---
