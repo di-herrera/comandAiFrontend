@@ -51,6 +51,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/options/options.page').then((m) => m.OptionsPage)
   },
   {
+    path: 'grupos',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/option-groups/option-groups.page').then((m) => m.OptionGroupsPage)
+  },
+  {
     path: 'composicao-produto',
     canActivate: [authGuard],
     loadComponent: () => import('./features/product-composition/product-composition.page').then((m) => m.ProductCompositionPage)

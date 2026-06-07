@@ -554,6 +554,119 @@ Request:
 }
 ```
 
+## 6.1 Grupos de escolha
+
+Grupos de escolha configuram perguntas como `Tipo de pao`, `Tipo de hamburguer`
+e `Adicionais`. Eles pertencem a unidade, usam opcoes ja cadastradas e podem ser
+vinculados a varios produtos.
+
+### Listar grupos da unidade
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups
+```
+
+### Listar grupos vinculados ao produto
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups
+```
+
+Resposta:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "tenantId": "uuid",
+      "businessUnitId": "uuid",
+          "name": "Tipo de pao",
+          "minSelected": 1,
+          "maxSelected": 1,
+          "isRequired": true,
+          "linkSource": "Category",
+          "options": [
+        {
+          "id": "uuid",
+          "optionId": "uuid",
+          "code": "PAO-FR",
+          "name": "Pao frances",
+          "additionalPrice": 0.0,
+          "isAvailable": true,
+          "displayOrder": 1
+        }
+      ]
+    }
+  ],
+  "total": 1
+}
+```
+
+### Criar grupo
+
+```http
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups
+```
+
+### Atualizar grupo
+
+```http
+PUT /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups/{optionGroupId}
+```
+
+### Vincular grupo ao produto
+
+```http
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
+```
+
+### Vincular grupo a categoria
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories/{categoryId}/option-groups
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories/{categoryId}/option-groups/{optionGroupId}
+DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/product-categories/{categoryId}/option-groups/{optionGroupId}
+```
+
+A listagem de grupos do produto retorna vinculos diretos e herdados da
+categoria. O campo `linkSource` indica `Product`, `Category`,
+`ProductAndCategory` ou `None`.
+
+Request de criacao/atualizacao:
+
+```json
+{
+  "name": "Tipo de pao",
+  "minSelected": 1,
+  "maxSelected": 1,
+  "isRequired": true,
+  "options": [
+    {
+      "optionId": "uuid",
+      "isAvailable": true,
+      "displayOrder": 1
+    }
+  ]
+}
+```
+
+### Desvincular grupo do produto
+
+```http
+DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/products/{productId}/option-groups/{optionGroupId}
+```
+
+Remove apenas o vinculo com o produto. Para remover o cadastro reutilizavel do
+grupo, use:
+
+```http
+DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/option-groups/{optionGroupId}
+```
+
+O backend rejeita a remocao do cadastro quando alguma opcao do grupo ja foi
+usada em rascunho ou comanda. O frontend apenas exibe a mensagem retornada.
+
 ## 7. Acompanhamento de pedidos
 
 ### Listar pedidos
@@ -628,5 +741,4 @@ O backend nao retorna secrets, API keys ou headers sensiveis.
 ## Decisões abertas
 
 - Confirmar se `status` será string `Active/Inactive` ou boolean `isActive`.
-- Confirmar se `options` terá grupos no MVP ou será lista simples de adicionais por unidade.
 - Confirmar se endpoints terão paginação real ou apenas `items + total` inicialmente.

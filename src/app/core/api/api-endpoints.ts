@@ -33,13 +33,27 @@ export const ApiEndpoints = {
     detail: (tenantId: string, businessUnitId: string, productId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}`,
     composition: (tenantId: string, businessUnitId: string, productId: string) =>
-      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/composition`
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/composition`,
+    optionGroups: (tenantId: string, businessUnitId: string, productId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/option-groups`,
+    optionGroup: (tenantId: string, businessUnitId: string, productId: string, optionGroupId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/products/${enc(productId)}/option-groups/${enc(optionGroupId)}`
+  },
+  optionGroups: {
+    list: (tenantId: string, businessUnitId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/option-groups`,
+    detail: (tenantId: string, businessUnitId: string, optionGroupId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/option-groups/${enc(optionGroupId)}`
   },
   productCategories: {
     list: (tenantId: string, businessUnitId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/product-categories`,
     detail: (tenantId: string, businessUnitId: string, categoryId: string) =>
-      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/product-categories/${enc(categoryId)}`
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/product-categories/${enc(categoryId)}`,
+    optionGroups: (tenantId: string, businessUnitId: string, categoryId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/product-categories/${enc(categoryId)}/option-groups`,
+    optionGroup: (tenantId: string, businessUnitId: string, categoryId: string, optionGroupId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/product-categories/${enc(categoryId)}/option-groups/${enc(optionGroupId)}`
   },
   ingredients: {
     list: (tenantId: string, businessUnitId: string) =>

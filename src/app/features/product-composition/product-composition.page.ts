@@ -13,6 +13,7 @@ import {
   ProductComposition,
   ProductCompositionUpdateRequest,
   ProductListItem,
+  OptionGroup,
   ProductOptionListItem
 } from '@shared/models/catalog.models';
 import { ApiFailure } from '@shared/models/common.models';
@@ -158,17 +159,122 @@ interface OptionSelection {
           </div>
         }
       </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Grupos de escolha</h2>
+            <p>Vincule grupos ja cadastrados ao produto. O cadastro do grupo fica em Grupos.</p>
+          </div>
+        </div>
+
+        @if (!canUseProductContext) {
+          <p class="muted">Selecione empresa, unidade e produto para configurar grupos.</p>
+        } @else if (loading) {
+          <p class="muted">Carregando grupos...</p>
+        } @else {
+          <div class="link-panel">
+            <label class="field">
+              <span>Grupo cadastrado</span>
+              <select [formControl]="existingGroupControl" [disabled]="linkableOptionGroups.length === 0 || savingGroup">
+                <option value="">Selecione um grupo</option>
+                @for (group of linkableOptionGroups; track group.id) {
+                  <option [value]="group.id">{{ group.name }}</option>
+                }
+              </select>
+            </label>
+            <button class="btn" type="button" (click)="linkExistingOptionGroup()" [disabled]="!existingGroupControl.value || savingGroup">
+              Vincular
+            </button>
+          </div>
+          @if (optionGroups.length === 0) {
+            <p class="muted">Nenhum grupo especifico vinculado a este produto.</p>
+          } @else {
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Grupo</th>
+                  <th>Selecao</th>
+                  <th>Opcoes</th>
+                  <th>Acao</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (group of optionGroups; track group.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ group.name }}</strong>
+                      @if (group.isRequired) {
+                        <span class="status-chip active">obrigatorio</span>
+                      }
+                      <span class="status-chip">{{ linkSourceLabel(group) }}</span>
+                    </td>
+                    <td>{{ group.minSelected }} a {{ group.maxSelected }}</td>
+                    <td>
+                      @for (option of group.options; track option.id) {
+                        <span class="inline-chip">{{ option.code }} - {{ option.name }}</span>
+                      }
+                    </td>
+                    <td>
+                      <button class="btn btn-danger" type="button" (click)="deleteOptionGroup(group)" [disabled]="savingGroup">
+                        Desvincular
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          @if (categoryOptionGroups.length > 0) {
+            <h3>Grupos herdados da categoria</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Grupo</th>
+                  <th>Selecao</th>
+                  <th>Opcoes</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (group of categoryOptionGroups; track group.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ group.name }}</strong>
+                      @if (group.isRequired) {
+                        <span class="status-chip active">obrigatorio</span>
+                      }
+                      <span class="status-chip">categoria</span>
+                    </td>
+                    <td>{{ group.minSelected }} a {{ group.maxSelected }}</td>
+                    <td>
+                      @for (option of group.options; track option.id) {
+                        <span class="inline-chip">{{ option.code }} - {{ option.name }}</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </section>
     </section>
   `
 })
 export class ProductCompositionPage {
   protected readonly productControl = new FormControl('', { nonNullable: true });
+  protected readonly existingGroupControl = new FormControl('', { nonNullable: true });
 
   protected products: ProductListItem[] = [];
   protected ingredientSelections: IngredientSelection[] = [];
   protected optionSelections: OptionSelection[] = [];
+  protected availableOptions: ProductOptionListItem[] = [];
+  protected optionGroups: OptionGroup[] = [];
+  protected categoryOptionGroups: OptionGroup[] = [];
+  protected reusableOptionGroups: OptionGroup[] = [];
   protected loading = false;
   protected saving = false;
+  protected savingGroup = false;
   protected successMessage = '';
   protected errorMessage = '';
 
@@ -198,8 +304,24 @@ export class ProductCompositionPage {
   }
 
   protected get selectedProductName(): string {
-    const product = this.products.find((item) => item.id === this.productControl.value);
+    const product = this.selectedProduct;
     return product ? `${product.code} - ${product.name}` : '';
+  }
+
+  protected get selectedProductCategoryName(): string {
+    return this.selectedProduct?.categoryName ?? '';
+  }
+
+  protected get linkableOptionGroups(): OptionGroup[] {
+    const linkedIds = new Set(
+      this.optionGroups
+        .map((group) => group.id)
+    );
+    return this.reusableOptionGroups.filter((group) => !linkedIds.has(group.id));
+  }
+
+  private get selectedProduct(): ProductListItem | undefined {
+    return this.products.find((item) => item.id === this.productControl.value);
   }
 
   protected loadProducts(): void {
@@ -223,8 +345,9 @@ export class ProductCompositionPage {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     const productId = this.productControl.value;
+    const categoryId = this.selectedProduct?.categoryId;
 
-    if (!tenantId || !businessUnitId || !productId) {
+    if (!tenantId || !businessUnitId || !productId || !categoryId) {
       return;
     }
 
@@ -234,10 +357,17 @@ export class ProductCompositionPage {
     forkJoin({
       composition: this.compositionApi.get(tenantId, businessUnitId, productId),
       ingredients: this.ingredientsApi.list(tenantId, businessUnitId),
-      options: this.optionsApi.list(tenantId, businessUnitId)
+      options: this.optionsApi.list(tenantId, businessUnitId),
+      optionGroups: this.compositionApi.listOptionGroups(tenantId, businessUnitId, productId),
+      categoryOptionGroups: this.compositionApi.listCategoryOptionGroups(tenantId, businessUnitId, categoryId),
+      reusableOptionGroups: this.compositionApi.listReusableOptionGroups(tenantId, businessUnitId)
     }).pipe(finalize(() => (this.loading = false))).subscribe({
-      next: ({ composition, ingredients, options }) => {
+      next: ({ composition, ingredients, options, optionGroups, categoryOptionGroups, reusableOptionGroups }) => {
         this.mergeComposition(composition, ingredients.items, options.items);
+        this.optionGroups = optionGroups.items.filter((group) => group.linkSource === 'Product' || group.linkSource === 'ProductAndCategory');
+        this.categoryOptionGroups = categoryOptionGroups.items;
+        this.reusableOptionGroups = reusableOptionGroups.items;
+        this.existingGroupControl.setValue('');
       },
       error: (failure: ApiFailure) => {
         this.errorMessage = failure.error.message;
@@ -296,9 +426,88 @@ export class ProductCompositionPage {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
 
+  protected linkSourceLabel(group: OptionGroup): string {
+    switch (group.linkSource) {
+      case 'Category':
+        return 'categoria';
+      case 'Product':
+        return 'produto';
+      case 'ProductAndCategory':
+        return 'produto + categoria';
+      default:
+        return 'cadastro';
+    }
+  }
+
+  protected deleteOptionGroup(group: OptionGroup): void {
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
+    const productId = this.productControl.value;
+
+    if (!tenantId || !businessUnitId || !productId) {
+      return;
+    }
+
+    if (group.linkSource !== 'Product' && group.linkSource !== 'ProductAndCategory') {
+      return;
+    }
+
+    if (!window.confirm(`Desvincular o grupo "${group.name}" deste produto?`)) {
+      return;
+    }
+
+    this.savingGroup = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.compositionApi.deleteOptionGroup(tenantId, businessUnitId, productId, group.id)
+      .pipe(finalize(() => (this.savingGroup = false)))
+      .subscribe({
+        next: () => {
+          this.successMessage = 'Grupo desvinculado do produto.';
+          this.loadComposition();
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
+  protected linkExistingOptionGroup(): void {
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
+    const productId = this.productControl.value;
+    const optionGroupId = this.existingGroupControl.value;
+
+    if (!tenantId || !businessUnitId || !productId || !optionGroupId) {
+      return;
+    }
+
+    this.savingGroup = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.compositionApi.linkOptionGroup(tenantId, businessUnitId, productId, optionGroupId)
+      .pipe(finalize(() => (this.savingGroup = false)))
+      .subscribe({
+        next: () => {
+          this.successMessage = 'Grupo vinculado ao produto.';
+          this.loadComposition();
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
   private clearComposition(): void {
     this.ingredientSelections = [];
     this.optionSelections = [];
+    this.availableOptions = [];
+    this.optionGroups = [];
+    this.categoryOptionGroups = [];
+    this.reusableOptionGroups = [];
+    this.existingGroupControl.setValue('');
     this.successMessage = '';
     this.errorMessage = '';
   }
@@ -325,6 +534,7 @@ export class ProductCompositionPage {
       option,
       selected: linkedOptions.has(option.id)
     }));
+    this.availableOptions = options;
   }
 
   private buildRequest(): ProductCompositionUpdateRequest {

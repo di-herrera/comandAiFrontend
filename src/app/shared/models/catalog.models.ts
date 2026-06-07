@@ -188,3 +188,39 @@ export interface ProductCompositionUpdateRequest {
   ingredients: ProductCompositionUpdateIngredient[];
   optionIds: string[];
 }
+
+export interface OptionGroup {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  name: string;
+  minSelected: number;
+  maxSelected: number;
+  isRequired: boolean;
+  linkSource: 'None' | 'Product' | 'Category' | 'ProductAndCategory';
+  options: OptionGroupOption[];
+}
+
+export interface OptionGroupOption {
+  id: string;
+  optionId: string;
+  code: string;
+  name: string;
+  additionalPrice: number;
+  isAvailable: boolean;
+  displayOrder: number;
+}
+
+export interface OptionGroupRequest {
+  name: string;
+  minSelected: number;
+  maxSelected: number;
+  isRequired: boolean;
+  options: OptionGroupOptionRequest[];
+}
+
+export interface OptionGroupOptionRequest {
+  optionId: string;
+  isAvailable: boolean;
+  displayOrder: number;
+}
