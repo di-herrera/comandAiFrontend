@@ -42,7 +42,7 @@ hamburguer e adicionais, e vincula-los aos produtos.
 - Build do Angular passa.
 
 **Notas de implementacao**
-- Criados modelos `ProductOptionGroup` e request correspondente.
+- Criados modelos `OptionGroup` e request correspondente.
 - `ProductCompositionApiService` passou a consumir `/option-groups` da unidade e as rotas de vinculo do produto.
 - Tela de composicao ganhou secao de grupos vinculados, seletor de grupo existente, vinculo por categoria e formulario de grupo reutilizavel.
 - Grupos exibem a origem do vinculo (`Product`, `Category` ou `ProductAndCategory`) para distinguir heranca da categoria e vinculo direto do produto.

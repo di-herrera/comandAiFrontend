@@ -1,11 +1,12 @@
 import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 
 import { ProductCategoriesApiService } from '@core/api/product-categories-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
 import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
+  OptionGroup,
   ProductCategoryCreateRequest,
   ProductCategoryListItem
 } from '@shared/models/catalog.models';
@@ -21,7 +22,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div>
           <p class="eyebrow">Catalogo por unidade</p>
           <h1 class="page-title">Categorias</h1>
-          <p class="page-description">Organize produtos em grupos do cardapio para cadastro, exibicao e interpretacao da IA.</p>
+          <p class="page-description">Cadastre categorias e vincule grupos ja cadastrados aos produtos da categoria.</p>
         </div>
       </header>
 
@@ -117,14 +118,87 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                   <td>{{ category.description || '-' }}</td>
                   <td><span class="status-pill">{{ statusLabel(category.status) }}</span></td>
                   <td>
-                    <button class="btn btn-small" type="button" (click)="startEdit(category)">
-                      Editar
-                    </button>
+                    <div class="button-row compact">
+                      <button class="btn btn-small" type="button" (click)="startEdit(category)">
+                        Editar
+                      </button>
+                      <button class="btn btn-small" type="button" (click)="selectCategoryForGroups(category)">
+                        Vinculos
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
+        }
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Grupos vinculados a categoria</h2>
+            <p>{{ selectedCategory ? selectedCategory.name : 'Selecione uma categoria para gerenciar vinculos.' }}</p>
+          </div>
+        </div>
+
+        @if (!canUseCategoryGroupContext) {
+          <p class="muted">Selecione uma categoria cadastrada para vincular grupos.</p>
+        } @else if (loadingGroups) {
+          <p class="muted">Carregando grupos da categoria...</p>
+        } @else {
+          <div class="link-panel">
+            <label class="field">
+              <span>Grupo cadastrado</span>
+              <select [formControl]="existingGroupControl" [disabled]="linkableOptionGroups.length === 0 || savingGroup">
+                <option value="">Selecione um grupo</option>
+                @for (group of linkableOptionGroups; track group.id) {
+                  <option [value]="group.id">{{ group.name }}</option>
+                }
+              </select>
+            </label>
+            <button class="btn" type="button" (click)="linkExistingOptionGroup()" [disabled]="!existingGroupControl.value || savingGroup">
+              Vincular
+            </button>
+          </div>
+
+          @if (optionGroups.length === 0) {
+            <p class="muted">Nenhum grupo vinculado a esta categoria.</p>
+          } @else {
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Grupo</th>
+                  <th>Selecao</th>
+                  <th>Opcoes</th>
+                  <th>Acao</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (group of optionGroups; track group.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ group.name }}</strong>
+                      @if (group.isRequired) {
+                        <span class="status-chip active">obrigatorio</span>
+                      }
+                    </td>
+                    <td>{{ group.minSelected }} a {{ group.maxSelected }}</td>
+                    <td>
+                      @for (option of group.options; track option.id) {
+                        <span class="inline-chip">{{ option.code }} - {{ option.name }}</span>
+                      }
+                    </td>
+                    <td>
+                      <button class="btn btn-danger" type="button" (click)="deleteOptionGroup(group)" [disabled]="savingGroup">
+                        Desvincular
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
         }
       </section>
     </section>
@@ -137,11 +211,17 @@ export class ProductCategoriesPage {
     displayOrder: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
+  protected readonly existingGroupControl = new FormControl('', { nonNullable: true });
 
   protected categories: ProductCategoryListItem[] = [];
+  protected optionGroups: OptionGroup[] = [];
+  protected reusableOptionGroups: OptionGroup[] = [];
+  protected selectedCategoryId = '';
   protected editingCategoryId: string | null = null;
   protected loading = false;
+  protected loadingGroups = false;
   protected saving = false;
+  protected savingGroup = false;
   protected successMessage = '';
   protected errorMessage = '';
 
@@ -153,12 +233,26 @@ export class ProductCategoriesPage {
       this.catalogContext.selectedTenantId();
       this.catalogContext.selectedBusinessUnitId();
       this.cancelEdit();
+      this.clearGroupContext();
       this.loadCategories();
     });
   }
 
   protected get canUseCatalogContext(): boolean {
     return this.catalogContext.hasCatalogContext();
+  }
+
+  protected get canUseCategoryGroupContext(): boolean {
+    return Boolean(this.canUseCatalogContext && this.selectedCategoryId);
+  }
+
+  protected get selectedCategory(): ProductCategoryListItem | undefined {
+    return this.categories.find((category) => category.id === this.selectedCategoryId);
+  }
+
+  protected get linkableOptionGroups(): OptionGroup[] {
+    const linkedIds = new Set(this.optionGroups.map((group) => group.id));
+    return this.reusableOptionGroups.filter((group) => !linkedIds.has(group.id));
   }
 
   protected loadCategories(): void {
@@ -178,6 +272,9 @@ export class ProductCategoriesPage {
       .subscribe({
         next: (result) => {
           this.categories = result.items;
+          if (this.selectedCategoryId && !this.selectedCategory) {
+            this.clearGroupContext();
+          }
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -208,10 +305,12 @@ export class ProductCategoriesPage {
       : this.productCategoriesApi.create(tenantId, businessUnitId, request);
 
     save.pipe(finalize(() => (this.saving = false))).subscribe({
-      next: () => {
+      next: (category) => {
         this.successMessage = this.editingCategoryId ? 'Categoria atualizada com sucesso.' : 'Categoria cadastrada com sucesso.';
+        this.selectedCategoryId = category.id;
         this.cancelEdit();
         this.loadCategories();
+        this.loadCategoryGroups();
       },
       error: (failure: ApiFailure) => {
         this.errorMessage = failure.error.message;
@@ -241,6 +340,95 @@ export class ProductCategoriesPage {
     });
   }
 
+  protected selectCategoryForGroups(category: ProductCategoryListItem): void {
+    this.selectedCategoryId = category.id;
+    this.loadCategoryGroups();
+  }
+
+  protected loadCategoryGroups(): void {
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
+    const categoryId = this.selectedCategoryId;
+
+    if (!tenantId || !businessUnitId || !categoryId) {
+      return;
+    }
+
+    this.loadingGroups = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      linkedGroups: this.productCategoriesApi.listOptionGroups(tenantId, businessUnitId, categoryId),
+      reusableGroups: this.productCategoriesApi.listReusableOptionGroups(tenantId, businessUnitId)
+    }).pipe(finalize(() => (this.loadingGroups = false))).subscribe({
+      next: ({ linkedGroups, reusableGroups }) => {
+        this.optionGroups = linkedGroups.items;
+        this.reusableOptionGroups = reusableGroups.items;
+        this.existingGroupControl.setValue('');
+      },
+      error: (failure: ApiFailure) => {
+        this.errorMessage = failure.error.message;
+      }
+    });
+  }
+
+  protected linkExistingOptionGroup(): void {
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
+    const categoryId = this.selectedCategoryId;
+    const optionGroupId = this.existingGroupControl.value;
+
+    if (!tenantId || !businessUnitId || !categoryId || !optionGroupId) {
+      return;
+    }
+
+    this.savingGroup = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.productCategoriesApi.linkOptionGroup(tenantId, businessUnitId, categoryId, optionGroupId)
+      .pipe(finalize(() => (this.savingGroup = false)))
+      .subscribe({
+        next: () => {
+          this.successMessage = 'Grupo vinculado a categoria.';
+          this.loadCategoryGroups();
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
+  protected deleteOptionGroup(group: OptionGroup): void {
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
+    const categoryId = this.selectedCategoryId;
+
+    if (!tenantId || !businessUnitId || !categoryId) {
+      return;
+    }
+
+    if (!window.confirm(`Desvincular o grupo "${group.name}" desta categoria?`)) {
+      return;
+    }
+
+    this.savingGroup = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.productCategoriesApi.deleteOptionGroup(tenantId, businessUnitId, categoryId, group.id)
+      .pipe(finalize(() => (this.savingGroup = false)))
+      .subscribe({
+        next: () => {
+          this.successMessage = 'Grupo desvinculado da categoria.';
+          this.loadCategoryGroups();
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
   protected isInvalid(controlName: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
@@ -248,6 +436,13 @@ export class ProductCategoriesPage {
 
   protected statusLabel(status: EntityStatus): string {
     return status === 'Active' ? 'Ativa' : 'Inativa';
+  }
+
+  private clearGroupContext(): void {
+    this.selectedCategoryId = '';
+    this.optionGroups = [];
+    this.reusableOptionGroups = [];
+    this.existingGroupControl.setValue('');
   }
 
   private buildRequest(): ProductCategoryCreateRequest {

@@ -6,8 +6,8 @@ import { ApiConfigService } from '@core/config/api-config.service';
 import {
   ProductComposition,
   ProductCompositionUpdateRequest,
-  ProductOptionGroup,
-  ProductOptionGroupRequest
+  OptionGroup,
+  OptionGroupRequest
 } from '@shared/models/catalog.models';
 import { PagedResult } from '@shared/models/common.models';
 
@@ -36,20 +36,20 @@ export class ProductCompositionApiService {
     );
   }
 
-  listOptionGroups(tenantId: string, businessUnitId: string, productId: string): Observable<PagedResult<ProductOptionGroup>> {
-    return this.http.get<PagedResult<ProductOptionGroup>>(
+  listOptionGroups(tenantId: string, businessUnitId: string, productId: string): Observable<PagedResult<OptionGroup>> {
+    return this.http.get<PagedResult<OptionGroup>>(
       this.url(ApiEndpoints.products.optionGroups(tenantId, businessUnitId, productId))
     );
   }
 
-  listCategoryOptionGroups(tenantId: string, businessUnitId: string, categoryId: string): Observable<PagedResult<ProductOptionGroup>> {
-    return this.http.get<PagedResult<ProductOptionGroup>>(
+  listCategoryOptionGroups(tenantId: string, businessUnitId: string, categoryId: string): Observable<PagedResult<OptionGroup>> {
+    return this.http.get<PagedResult<OptionGroup>>(
       this.url(ApiEndpoints.productCategories.optionGroups(tenantId, businessUnitId, categoryId))
     );
   }
 
-  listReusableOptionGroups(tenantId: string, businessUnitId: string): Observable<PagedResult<ProductOptionGroup>> {
-    return this.http.get<PagedResult<ProductOptionGroup>>(
+  listReusableOptionGroups(tenantId: string, businessUnitId: string): Observable<PagedResult<OptionGroup>> {
+    return this.http.get<PagedResult<OptionGroup>>(
       this.url(ApiEndpoints.optionGroups.list(tenantId, businessUnitId))
     );
   }
@@ -57,10 +57,22 @@ export class ProductCompositionApiService {
   createOptionGroup(
     tenantId: string,
     businessUnitId: string,
-    request: ProductOptionGroupRequest
-  ): Observable<ProductOptionGroup> {
-    return this.http.post<ProductOptionGroup>(
+    request: OptionGroupRequest
+  ): Observable<OptionGroup> {
+    return this.http.post<OptionGroup>(
       this.url(ApiEndpoints.optionGroups.list(tenantId, businessUnitId)),
+      request
+    );
+  }
+
+  createProductOptionGroup(
+    tenantId: string,
+    businessUnitId: string,
+    productId: string,
+    request: OptionGroupRequest
+  ): Observable<OptionGroup> {
+    return this.http.post<OptionGroup>(
+      this.url(ApiEndpoints.products.optionGroups(tenantId, businessUnitId, productId)),
       request
     );
   }
@@ -69,16 +81,16 @@ export class ProductCompositionApiService {
     tenantId: string,
     businessUnitId: string,
     optionGroupId: string,
-    request: ProductOptionGroupRequest
-  ): Observable<ProductOptionGroup> {
-    return this.http.put<ProductOptionGroup>(
+    request: OptionGroupRequest
+  ): Observable<OptionGroup> {
+    return this.http.put<OptionGroup>(
       this.url(ApiEndpoints.optionGroups.detail(tenantId, businessUnitId, optionGroupId)),
       request
     );
   }
 
-  linkOptionGroup(tenantId: string, businessUnitId: string, productId: string, optionGroupId: string): Observable<ProductOptionGroup> {
-    return this.http.post<ProductOptionGroup>(
+  linkOptionGroup(tenantId: string, businessUnitId: string, productId: string, optionGroupId: string): Observable<OptionGroup> {
+    return this.http.post<OptionGroup>(
       this.url(ApiEndpoints.products.optionGroup(tenantId, businessUnitId, productId, optionGroupId)),
       null
     );
@@ -89,8 +101,8 @@ export class ProductCompositionApiService {
     businessUnitId: string,
     categoryId: string,
     optionGroupId: string
-  ): Observable<ProductOptionGroup> {
-    return this.http.post<ProductOptionGroup>(
+  ): Observable<OptionGroup> {
+    return this.http.post<OptionGroup>(
       this.url(ApiEndpoints.productCategories.optionGroup(tenantId, businessUnitId, categoryId, optionGroupId)),
       null
     );

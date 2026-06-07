@@ -189,7 +189,7 @@ export interface ProductCompositionUpdateRequest {
   optionIds: string[];
 }
 
-export interface ProductOptionGroup {
+export interface OptionGroup {
   id: string;
   tenantId: string;
   businessUnitId: string;
@@ -198,10 +198,10 @@ export interface ProductOptionGroup {
   maxSelected: number;
   isRequired: boolean;
   linkSource: 'None' | 'Product' | 'Category' | 'ProductAndCategory';
-  options: ProductOptionGroupOption[];
+  options: OptionGroupOption[];
 }
 
-export interface ProductOptionGroupOption {
+export interface OptionGroupOption {
   id: string;
   optionId: string;
   code: string;
@@ -211,15 +211,15 @@ export interface ProductOptionGroupOption {
   displayOrder: number;
 }
 
-export interface ProductOptionGroupRequest {
+export interface OptionGroupRequest {
   name: string;
   minSelected: number;
   maxSelected: number;
   isRequired: boolean;
-  options: ProductOptionGroupOptionRequest[];
+  options: OptionGroupOptionRequest[];
 }
 
-export interface ProductOptionGroupOptionRequest {
+export interface OptionGroupOptionRequest {
   optionId: string;
   isAvailable: boolean;
   displayOrder: number;
