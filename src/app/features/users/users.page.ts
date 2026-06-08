@@ -27,7 +27,10 @@ import { ApiFailure } from '@shared/models/common.models';
           <h1 class="page-title">Usuarios</h1>
           <p class="page-description">Mantenha os acessos administrativos internos.</p>
         </div>
-        <button class="btn" type="button" (click)="loadUsers()" [disabled]="loading">Atualizar</button>
+        <div class="crud-toolbar">
+          <button class="btn btn-primary" type="button" (click)="openCreate()">Novo usuario</button>
+          <button class="btn" type="button" (click)="loadUsers()" [disabled]="loading">Atualizar</button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -38,10 +41,18 @@ import { ApiFailure } from '@shared/models/common.models';
         <p class="feedback error">{{ errorMessage }}</p>
       }
 
-      <section class="card">
-        <h2>{{ editingUserId ? 'Editar usuario' : 'Novo usuario' }}</h2>
+      @if (isEditorOpen) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingUserId ? 'Editar usuario' : 'Novo usuario' }}</h2>
+              <p>{{ editingUserId ? 'Atualize usuario, escopo e status.' : 'Crie um acesso administrativo para o painel.' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving || savingPassword" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Nome</span>
             <input type="text" formControlName="displayName" autocomplete="name" />
@@ -116,17 +127,14 @@ import { ApiFailure } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving">
               {{ saving ? 'Salvando...' : editingUserId ? 'Salvar edicao' : 'Criar usuario' }}
             </button>
-            @if (editingUserId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edicao
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
 
-      @if (editingUserId) {
-        <section class="card">
+        @if (editingUserId) {
+        <section class="nested-section">
           <h2>Alterar senha</h2>
 
           <form class="form-grid" [formGroup]="passwordForm" (ngSubmit)="setPassword()">
@@ -145,6 +153,9 @@ import { ApiFailure } from '@shared/models/common.models';
             </div>
           </form>
         </section>
+        }
+        </section>
+      </div>
       }
 
       <section class="card">
@@ -153,14 +164,20 @@ import { ApiFailure } from '@shared/models/common.models';
             <h2>Usuarios cadastrados</h2>
             <p>{{ users.length }} usuario(s) retornado(s) pela API.</p>
           </div>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Nome, email ou escopo" />
+          </label>
         </div>
 
         @if (loading) {
           <p class="muted">Carregando usuarios...</p>
         } @else if (users.length === 0) {
           <p class="muted">Nenhum usuario cadastrado ainda.</p>
+        } @else if (filteredUsers.length === 0) {
+          <p class="muted">Nenhum usuario encontrado para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -173,15 +190,15 @@ import { ApiFailure } from '@shared/models/common.models';
               </tr>
             </thead>
             <tbody>
-              @for (user of users; track user.id) {
+              @for (user of filteredUsers; track user.id) {
                 <tr>
-                  <td>{{ user.displayName }}</td>
-                  <td>{{ user.email }}</td>
-                  <td>{{ roleLabel(primaryRole(user)) }}</td>
-                  <td>{{ scopeLabel(user) }}</td>
-                  <td><span class="status-pill">{{ user.isActive ? 'Ativo' : 'Inativo' }}</span></td>
-                  <td>{{ formatDate(user.createdAt) }}</td>
-                  <td>
+                  <td data-label="Usuario">{{ user.displayName }}</td>
+                  <td data-label="Email">{{ user.email }}</td>
+                  <td data-label="Role">{{ roleLabel(primaryRole(user)) }}</td>
+                  <td data-label="Escopo">{{ scopeLabel(user) }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ user.isActive ? 'Ativo' : 'Inativo' }}</span></td>
+                  <td data-label="Criado em">{{ formatDate(user.createdAt) }}</td>
+                  <td data-label="Acoes">
                     <div class="button-row">
                       <button class="btn btn-small" type="button" (click)="startEdit(user)">Editar</button>
                       <button class="btn btn-small" type="button" (click)="deactivate(user)" [disabled]="!user.isActive">
@@ -213,11 +230,13 @@ export class UsersPage {
   protected readonly passwordForm = new FormGroup({
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] })
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected users: AdminUser[] = [];
   protected tenants: TenantListItem[] = [];
   protected businessUnits: BusinessUnitListItem[] = [];
   protected editingUserId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected savingPassword = false;
@@ -282,6 +301,24 @@ export class UsersPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
+  protected get filteredUsers(): AdminUser[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.users;
+    }
+
+    return this.users.filter((user) =>
+      user.displayName.toLowerCase().includes(term) ||
+      user.email.toLowerCase().includes(term) ||
+      this.roleLabel(this.primaryRole(user)).toLowerCase().includes(term) ||
+      this.scopeLabel(user).toLowerCase().includes(term));
+  }
+
   protected startEdit(user: AdminUser): void {
     this.editingUserId = user.id;
     this.form.controls.password.clearValidators();
@@ -297,12 +334,14 @@ export class UsersPage {
     });
     this.syncScopeControls(user.businessUnitId ?? '');
     this.passwordForm.reset({ password: '' });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingUserId = null;
+    this.isEditorOpen = false;
     this.form.controls.password.setValidators([Validators.required, Validators.minLength(8)]);
     this.form.reset({
       displayName: '',

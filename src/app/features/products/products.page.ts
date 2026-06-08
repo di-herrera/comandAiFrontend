@@ -34,6 +34,14 @@ type VariantForm = FormGroup<{
           <h1 class="page-title">Produtos</h1>
           <p class="page-description">Cadastre produtos e vincule variantes globais com preco por produto.</p>
         </div>
+        <div class="crud-toolbar">
+          <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!canUseCatalogContext">
+            Novo produto
+          </button>
+          <button class="btn" type="button" (click)="loadProducts()" [disabled]="loading || !canUseCatalogContext">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -46,10 +54,18 @@ type VariantForm = FormGroup<{
 
       <app-catalog-context-selector />
 
-      <section class="card">
-        <h2>{{ editingProductId ? 'Editar produto' : 'Novo produto' }}</h2>
+      @if (isEditorOpen) {
+      <div class="editor-backdrop">
+        <section class="editor-panel editor-panel-wide">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingProductId ? 'Editar produto' : 'Novo produto' }}</h2>
+              <p>{{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Codigo</span>
             <input type="text" formControlName="code" placeholder="P001" />
@@ -148,14 +164,14 @@ type VariantForm = FormGroup<{
             <button class="btn btn-primary" type="submit" [disabled]="saving || !canUseCatalogContext">
               {{ saving ? 'Salvando...' : editingProductId ? 'Salvar edicao' : 'Cadastrar produto' }}
             </button>
-            @if (editingProductId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edicao
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -163,9 +179,10 @@ type VariantForm = FormGroup<{
             <h2>Produtos cadastrados</h2>
             <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadProducts()" [disabled]="loading || !canUseCatalogContext">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Codigo, produto ou categoria" />
+          </label>
         </div>
 
         @if (!canUseCatalogContext) {
@@ -174,8 +191,10 @@ type VariantForm = FormGroup<{
           <p class="muted">Carregando produtos...</p>
         } @else if (products.length === 0) {
           <p class="muted">Nenhum produto cadastrado para este contexto.</p>
+        } @else if (filteredProducts.length === 0) {
+          <p class="muted">Nenhum produto encontrado para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Codigo</th>
@@ -189,13 +208,13 @@ type VariantForm = FormGroup<{
               </tr>
             </thead>
             <tbody>
-              @for (product of products; track product.id) {
+              @for (product of filteredProducts; track product.id) {
                 <tr>
-                  <td>{{ product.code }}</td>
-                  <td>{{ product.name }}</td>
-                  <td>{{ product.categoryName }}</td>
-                  <td>{{ formatCurrency(product.price) }}</td>
-                  <td>
+                  <td data-label="Codigo">{{ product.code }}</td>
+                  <td data-label="Produto">{{ product.name }}</td>
+                  <td data-label="Categoria">{{ product.categoryName }}</td>
+                  <td data-label="Preco base">{{ formatCurrency(product.price) }}</td>
+                  <td data-label="Variantes">
                     @if (product.variants.length === 0) {
                       <span class="muted">Nenhuma</span>
                     } @else {
@@ -206,9 +225,9 @@ type VariantForm = FormGroup<{
                       </div>
                     }
                   </td>
-                  <td>{{ product.isAvailable ? 'Sim' : 'Nao' }}</td>
-                  <td><span class="status-pill">{{ statusLabel(product.status) }}</span></td>
-                  <td>
+                  <td data-label="Disponivel">{{ product.isAvailable ? 'Sim' : 'Nao' }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(product.status) }}</span></td>
+                  <td data-label="Acao">
                     <button class="btn btn-small" type="button" (click)="startEdit(product)">
                       Editar
                     </button>
@@ -233,10 +252,12 @@ export class ProductsPage {
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] }),
     variants: new FormArray<VariantForm>([])
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected products: ProductListItem[] = [];
   protected categories: ProductCategoryListItem[] = [];
   protected editingProductId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected successMessage = '';
@@ -262,6 +283,18 @@ export class ProductsPage {
 
   protected get canUseCatalogContext(): boolean {
     return this.catalogContext.hasCatalogContext();
+  }
+
+  protected get filteredProducts(): ProductListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.products;
+    }
+
+    return this.products.filter((product) =>
+      product.code.toLowerCase().includes(term) ||
+      product.name.toLowerCase().includes(term) ||
+      (product.categoryName ?? '').toLowerCase().includes(term));
   }
 
   protected loadProducts(): void {
@@ -358,6 +391,11 @@ export class ProductsPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
   protected startEdit(product: ProductListItem): void {
     this.editingProductId = product.id;
     this.variants.clear();
@@ -379,12 +417,14 @@ export class ProductsPage {
       isAvailable: product.isAvailable,
       status: product.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingProductId = null;
+    this.isEditorOpen = false;
     this.variants.clear();
     this.form.reset({
       code: '',

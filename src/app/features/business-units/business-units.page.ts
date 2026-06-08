@@ -25,6 +25,16 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <h1 class="page-title">Unidades de negócio</h1>
           <p class="page-description">Cadastre unidades operacionais vinculadas a uma empresa.</p>
         </div>
+        <div class="crud-toolbar">
+          @if (canEditBusinessUnits()) {
+            <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!tenantControl.value">
+              Nova unidade
+            </button>
+          }
+          <button class="btn" type="button" (click)="loadBusinessUnits()" [disabled]="loading || !tenantControl.value">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -55,11 +65,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         </div>
       </section>
 
-      @if (canEditBusinessUnits()) {
-      <section class="card">
-        <h2>{{ editingBusinessUnitId ? 'Editar unidade' : 'Nova unidade' }}</h2>
+      @if (isEditorOpen && canEditBusinessUnits()) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingBusinessUnitId ? 'Editar unidade' : 'Nova unidade' }}</h2>
+              <p>Empresa: {{ selectedTenantName || 'nenhuma selecionada' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Nome da unidade</span>
             <input type="text" formControlName="name" />
@@ -98,14 +115,13 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving || !tenantControl.value">
               {{ saving ? 'Salvando...' : editingBusinessUnitId ? 'Salvar edição' : 'Cadastrar unidade' }}
             </button>
-            @if (editingBusinessUnitId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edição
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
       }
 
       <section class="card">
@@ -114,9 +130,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <h2>Unidades cadastradas</h2>
             <p>Filtro ativo: {{ selectedTenantName || 'selecione uma empresa' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadBusinessUnits()" [disabled]="loading || !tenantControl.value">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Unidade, telefone ou endereco" />
+          </label>
         </div>
 
         @if (!tenantControl.value) {
@@ -125,8 +142,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <p class="muted">Carregando unidades...</p>
         } @else if (businessUnits.length === 0) {
           <p class="muted">Nenhuma unidade cadastrada para esta empresa.</p>
+        } @else if (filteredBusinessUnits.length === 0) {
+          <p class="muted">Nenhuma unidade encontrada para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Unidade</th>
@@ -139,14 +158,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               </tr>
             </thead>
             <tbody>
-              @for (unit of businessUnits; track unit.id) {
+              @for (unit of filteredBusinessUnits; track unit.id) {
                 <tr>
-                  <td>{{ unit.name }}</td>
-                  <td>{{ unit.phone || '-' }}</td>
-                  <td>{{ unit.address || '-' }}</td>
-                  <td>{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
-                  <td><span class="status-pill">{{ statusLabel(unit.status) }}</span></td>
-                  <td>
+                  <td data-label="Unidade">{{ unit.name }}</td>
+                  <td data-label="Telefone">{{ unit.phone || '-' }}</td>
+                  <td data-label="Endereco">{{ unit.address || '-' }}</td>
+                  <td data-label="Taxa entrega">{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(unit.status) }}</span></td>
+                  <td data-label="WhatsApp">
                     <div class="whatsapp-cell">
                       <span class="status-pill">{{ whatsappStatusLabel(unit.id) }}</span>
                       @if (whatsappChannels[unit.id]?.instanceId) {
@@ -159,7 +178,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                       }
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Acao">
                     <div class="button-row">
                       <button class="btn btn-small" type="button" (click)="startEdit(unit)">
                         Editar
@@ -200,11 +219,13 @@ export class BusinessUnitsPage {
     fixedDeliveryFee: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected tenants: TenantListItem[] = [];
   protected businessUnits: BusinessUnitListItem[] = [];
   protected whatsappChannels: Record<string, BusinessUnitWhatsAppChannel> = {};
   protected editingBusinessUnitId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected connectingWhatsAppId: string | null = null;
@@ -304,6 +325,23 @@ export class BusinessUnitsPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
+  protected get filteredBusinessUnits(): BusinessUnitListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.businessUnits;
+    }
+
+    return this.businessUnits.filter((unit) =>
+      unit.name.toLowerCase().includes(term) ||
+      (unit.phone ?? '').toLowerCase().includes(term) ||
+      (unit.address ?? '').toLowerCase().includes(term));
+  }
+
   protected startEdit(unit: BusinessUnitListItem): void {
     if (!this.canEditBusinessUnits()) {
       this.errorMessage = 'Seu usuario nao tem permissao para editar unidades.';
@@ -318,12 +356,14 @@ export class BusinessUnitsPage {
       fixedDeliveryFee: unit.fixedDeliveryFee,
       status: unit.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingBusinessUnitId = null;
+    this.isEditorOpen = false;
     this.form.reset({
       name: '',
       phone: null,

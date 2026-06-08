@@ -23,6 +23,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <h1 class="page-title">Ingredientes</h1>
           <p class="page-description">Cadastre ingredientes que podem compor produtos e serem removidos.</p>
         </div>
+        <div class="crud-toolbar">
+          <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!canUseCatalogContext">
+            Novo ingrediente
+          </button>
+          <button class="btn" type="button" (click)="loadIngredients()" [disabled]="loading || !canUseCatalogContext">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -35,10 +43,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
       <app-catalog-context-selector />
 
-      <section class="card">
-        <h2>{{ editingIngredientId ? 'Editar ingrediente' : 'Novo ingrediente' }}</h2>
+      @if (isEditorOpen) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingIngredientId ? 'Editar ingrediente' : 'Novo ingrediente' }}</h2>
+              <p>{{ catalogContext.selectedTenantName() || 'empresa não selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade não selecionada' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Código</span>
             <input type="text" formControlName="code" placeholder="I001" />
@@ -67,14 +83,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving || !canUseCatalogContext">
               {{ saving ? 'Salvando...' : editingIngredientId ? 'Salvar edição' : 'Cadastrar ingrediente' }}
             </button>
-            @if (editingIngredientId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edição
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -82,9 +98,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <h2>Ingredientes cadastrados</h2>
             <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa não selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade não selecionada' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadIngredients()" [disabled]="loading || !canUseCatalogContext">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Codigo ou nome" />
+          </label>
         </div>
 
         @if (!canUseCatalogContext) {
@@ -93,8 +110,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <p class="muted">Carregando ingredientes...</p>
         } @else if (ingredients.length === 0) {
           <p class="muted">Nenhum ingrediente cadastrado para este contexto.</p>
+        } @else if (filteredIngredients.length === 0) {
+          <p class="muted">Nenhum ingrediente encontrado para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Código</th>
@@ -104,12 +123,12 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               </tr>
             </thead>
             <tbody>
-              @for (ingredient of ingredients; track ingredient.id) {
+              @for (ingredient of filteredIngredients; track ingredient.id) {
                 <tr>
-                  <td>{{ ingredient.code }}</td>
-                  <td>{{ ingredient.name }}</td>
-                  <td><span class="status-pill">{{ statusLabel(ingredient.status) }}</span></td>
-                  <td>
+                  <td data-label="Código">{{ ingredient.code }}</td>
+                  <td data-label="Ingrediente">{{ ingredient.name }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(ingredient.status) }}</span></td>
+                  <td data-label="Ação">
                     <button class="btn btn-small" type="button" (click)="startEdit(ingredient)">
                       Editar
                     </button>
@@ -129,9 +148,11 @@ export class IngredientsPage {
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(160)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected ingredients: IngredientListItem[] = [];
   protected editingIngredientId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected successMessage = '';
@@ -151,6 +172,17 @@ export class IngredientsPage {
 
   protected get canUseCatalogContext(): boolean {
     return this.catalogContext.hasCatalogContext();
+  }
+
+  protected get filteredIngredients(): IngredientListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.ingredients;
+    }
+
+    return this.ingredients.filter((ingredient) =>
+      ingredient.code.toLowerCase().includes(term) ||
+      ingredient.name.toLowerCase().includes(term));
   }
 
   protected loadIngredients(): void {
@@ -211,6 +243,11 @@ export class IngredientsPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
   protected startEdit(ingredient: IngredientListItem): void {
     this.editingIngredientId = ingredient.id;
     this.form.setValue({
@@ -218,12 +255,14 @@ export class IngredientsPage {
       name: ingredient.name,
       status: ingredient.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingIngredientId = null;
+    this.isEditorOpen = false;
     this.form.reset({
       code: '',
       name: '',
