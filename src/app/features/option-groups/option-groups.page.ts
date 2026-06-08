@@ -32,6 +32,14 @@ type OptionGroupOptionForm = FormGroup<{
           <h1 class="page-title">Grupos</h1>
           <p class="page-description">Cadastre grupos reutilizaveis e suas opcoes antes de vincular em categorias ou produtos.</p>
         </div>
+        <div class="crud-toolbar">
+          <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!canUseCatalogContext">
+            Novo grupo
+          </button>
+          <button class="btn" type="button" (click)="loadData()" [disabled]="loading || !canUseCatalogContext">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -50,9 +58,10 @@ type OptionGroupOptionForm = FormGroup<{
             <h2>Grupos cadastrados</h2>
             <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadData()" [disabled]="loading || !canUseCatalogContext">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Grupo ou opcao" />
+          </label>
         </div>
 
         @if (!canUseCatalogContext) {
@@ -61,8 +70,10 @@ type OptionGroupOptionForm = FormGroup<{
           <p class="muted">Carregando grupos...</p>
         } @else if (optionGroups.length === 0) {
           <p class="muted">Nenhum grupo cadastrado para este contexto.</p>
+        } @else if (filteredOptionGroups.length === 0) {
+          <p class="muted">Nenhum grupo encontrado para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Grupo</th>
@@ -72,21 +83,21 @@ type OptionGroupOptionForm = FormGroup<{
               </tr>
             </thead>
             <tbody>
-              @for (group of optionGroups; track group.id) {
+              @for (group of filteredOptionGroups; track group.id) {
                 <tr>
-                  <td>
+                  <td data-label="Grupo">
                     <strong>{{ group.name }}</strong>
                     @if (group.isRequired) {
                       <span class="status-chip active">obrigatorio</span>
                     }
                   </td>
-                  <td>{{ group.minSelected }} a {{ group.maxSelected }}</td>
-                  <td>
+                  <td data-label="Selecao">{{ group.minSelected }} a {{ group.maxSelected }}</td>
+                  <td data-label="Opcoes">
                     @for (option of group.options; track option.id) {
                       <span class="inline-chip">{{ option.code }} - {{ option.name }}</span>
                     }
                   </td>
-                  <td>
+                  <td data-label="Acoes">
                     <div class="button-row compact">
                       <button class="btn" type="button" (click)="editGroup(group)">Editar</button>
                       <button class="btn btn-danger" type="button" (click)="deleteGroup(group)" [disabled]="saving">
@@ -101,13 +112,16 @@ type OptionGroupOptionForm = FormGroup<{
         }
       </section>
 
-      <section class="card">
-        <form [formGroup]="form" (ngSubmit)="saveGroup()" class="panel-form">
+      @if (isEditorOpen) {
+      <div class="editor-backdrop">
+        <section class="editor-panel editor-panel-wide">
+          <form [formGroup]="form" (ngSubmit)="saveGroup()" class="panel-form">
           <div class="section-heading compact-heading">
             <div>
               <h2>{{ form.controls.id.value ? 'Editar grupo' : 'Novo grupo' }}</h2>
               <p>O grupo fica disponivel para vinculo em categorias e produtos.</p>
             </div>
+            <button class="btn editor-close" type="button" (click)="closeEditor()" [disabled]="saving" title="Fechar">X</button>
           </div>
 
           <div class="form-grid">
@@ -170,12 +184,14 @@ type OptionGroupOptionForm = FormGroup<{
             <button class="btn btn-primary" type="submit" [disabled]="saving || !canUseCatalogContext">
               {{ saving ? 'Salvando...' : 'Salvar grupo' }}
             </button>
-            <button class="btn" type="button" (click)="resetForm()">
-              Limpar
+            <button class="btn" type="button" (click)="closeEditor()" [disabled]="saving">
+              Cancelar
             </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
     </section>
   `
 })
@@ -188,9 +204,11 @@ export class OptionGroupsPage {
     isRequired: new FormControl(false, { nonNullable: true }),
     options: new FormArray<OptionGroupOptionForm>([])
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected optionGroups: OptionGroup[] = [];
   protected availableOptions: ProductOptionListItem[] = [];
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected successMessage = '';
@@ -205,6 +223,7 @@ export class OptionGroupsPage {
       this.catalogContext.selectedTenantId();
       this.catalogContext.selectedBusinessUnitId();
       this.resetForm();
+      this.isEditorOpen = false;
       this.loadData();
     });
   }
@@ -215,6 +234,19 @@ export class OptionGroupsPage {
 
   protected get optionRows(): FormArray<OptionGroupOptionForm> {
     return this.form.controls.options;
+  }
+
+  protected get filteredOptionGroups(): OptionGroup[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.optionGroups;
+    }
+
+    return this.optionGroups.filter((group) =>
+      group.name.toLowerCase().includes(term) ||
+      group.options.some((option) =>
+        option.code.toLowerCase().includes(term) ||
+        option.name.toLowerCase().includes(term)));
   }
 
   protected loadData(): void {
@@ -276,13 +308,18 @@ export class OptionGroupsPage {
     operation.pipe(finalize(() => (this.saving = false))).subscribe({
       next: () => {
         this.successMessage = groupId ? 'Grupo atualizado com sucesso.' : 'Grupo cadastrado com sucesso.';
-        this.resetForm();
+        this.closeEditor();
         this.loadData();
       },
       error: (failure: ApiFailure) => {
         this.errorMessage = failure.error.message;
       }
     });
+  }
+
+  protected openCreate(): void {
+    this.resetForm();
+    this.isEditorOpen = true;
   }
 
   protected editGroup(group: OptionGroup): void {
@@ -306,6 +343,8 @@ export class OptionGroupsPage {
     if (group.options.length === 0) {
       this.addOptionRow();
     }
+
+    this.isEditorOpen = true;
   }
 
   protected deleteGroup(group: OptionGroup): void {
@@ -348,6 +387,11 @@ export class OptionGroupsPage {
       isRequired: false
     });
     this.addOptionRow();
+  }
+
+  protected closeEditor(): void {
+    this.resetForm();
+    this.isEditorOpen = false;
   }
 
   protected addOptionRow(option?: OptionGroupOptionRequest): void {

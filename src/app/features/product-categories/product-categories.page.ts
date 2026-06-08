@@ -24,6 +24,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <h1 class="page-title">Categorias</h1>
           <p class="page-description">Cadastre categorias e vincule grupos ja cadastrados aos produtos da categoria.</p>
         </div>
+        <div class="crud-toolbar">
+          <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!canUseCatalogContext">
+            Nova categoria
+          </button>
+          <button class="btn" type="button" (click)="loadCategories()" [disabled]="loading || !canUseCatalogContext">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -36,10 +44,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
       <app-catalog-context-selector />
 
-      <section class="card">
-        <h2>{{ editingCategoryId ? 'Editar categoria' : 'Nova categoria' }}</h2>
+      @if (isEditorOpen) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingCategoryId ? 'Editar categoria' : 'Nova categoria' }}</h2>
+              <p>{{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Nome</span>
             <input type="text" formControlName="name" placeholder="Hamburguer" />
@@ -73,14 +89,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving || !canUseCatalogContext">
               {{ saving ? 'Salvando...' : editingCategoryId ? 'Salvar edicao' : 'Cadastrar categoria' }}
             </button>
-            @if (editingCategoryId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edicao
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -88,9 +104,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <h2>Categorias cadastradas</h2>
             <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadCategories()" [disabled]="loading || !canUseCatalogContext">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Categoria ou descricao" />
+          </label>
         </div>
 
         @if (!canUseCatalogContext) {
@@ -99,8 +116,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <p class="muted">Carregando categorias...</p>
         } @else if (categories.length === 0) {
           <p class="muted">Nenhuma categoria cadastrada para este contexto.</p>
+        } @else if (filteredCategories.length === 0) {
+          <p class="muted">Nenhuma categoria encontrada para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Ordem</th>
@@ -111,13 +130,13 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               </tr>
             </thead>
             <tbody>
-              @for (category of categories; track category.id) {
+              @for (category of filteredCategories; track category.id) {
                 <tr>
-                  <td>{{ category.displayOrder }}</td>
-                  <td>{{ category.name }}</td>
-                  <td>{{ category.description || '-' }}</td>
-                  <td><span class="status-pill">{{ statusLabel(category.status) }}</span></td>
-                  <td>
+                  <td data-label="Ordem">{{ category.displayOrder }}</td>
+                  <td data-label="Categoria">{{ category.name }}</td>
+                  <td data-label="Descricao">{{ category.description || '-' }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(category.status) }}</span></td>
+                  <td data-label="Acao">
                     <div class="button-row compact">
                       <button class="btn btn-small" type="button" (click)="startEdit(category)">
                         Editar
@@ -165,7 +184,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           @if (optionGroups.length === 0) {
             <p class="muted">Nenhum grupo vinculado a esta categoria.</p>
           } @else {
-            <table class="table">
+            <table class="table responsive-table">
               <thead>
                 <tr>
                   <th>Grupo</th>
@@ -177,19 +196,19 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               <tbody>
                 @for (group of optionGroups; track group.id) {
                   <tr>
-                    <td>
+                    <td data-label="Grupo">
                       <strong>{{ group.name }}</strong>
                       @if (group.isRequired) {
                         <span class="status-chip active">obrigatorio</span>
                       }
                     </td>
-                    <td>{{ group.minSelected }} a {{ group.maxSelected }}</td>
-                    <td>
+                    <td data-label="Selecao">{{ group.minSelected }} a {{ group.maxSelected }}</td>
+                    <td data-label="Opcoes">
                       @for (option of group.options; track option.id) {
                         <span class="inline-chip">{{ option.code }} - {{ option.name }}</span>
                       }
                     </td>
-                    <td>
+                    <td data-label="Acao">
                       <button class="btn btn-danger" type="button" (click)="deleteOptionGroup(group)" [disabled]="savingGroup">
                         Desvincular
                       </button>
@@ -212,12 +231,14 @@ export class ProductCategoriesPage {
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
   protected readonly existingGroupControl = new FormControl('', { nonNullable: true });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected categories: ProductCategoryListItem[] = [];
   protected optionGroups: OptionGroup[] = [];
   protected reusableOptionGroups: OptionGroup[] = [];
   protected selectedCategoryId = '';
   protected editingCategoryId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected loadingGroups = false;
   protected saving = false;
@@ -248,6 +269,17 @@ export class ProductCategoriesPage {
 
   protected get selectedCategory(): ProductCategoryListItem | undefined {
     return this.categories.find((category) => category.id === this.selectedCategoryId);
+  }
+
+  protected get filteredCategories(): ProductCategoryListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.categories;
+    }
+
+    return this.categories.filter((category) =>
+      category.name.toLowerCase().includes(term) ||
+      (category.description ?? '').toLowerCase().includes(term));
   }
 
   protected get linkableOptionGroups(): OptionGroup[] {
@@ -318,6 +350,11 @@ export class ProductCategoriesPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
   protected startEdit(category: ProductCategoryListItem): void {
     this.editingCategoryId = category.id;
     this.form.setValue({
@@ -326,12 +363,14 @@ export class ProductCategoriesPage {
       displayOrder: category.displayOrder,
       status: category.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingCategoryId = null;
+    this.isEditorOpen = false;
     this.form.reset({
       name: '',
       description: null,

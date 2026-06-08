@@ -88,3 +88,18 @@ Usar `overrides` no `package.json` para corrigir vulnerabilidades transitivas de
 
 Motivo:
 Permite manter o tooling Angular atual e corrigir o `npm audit` sem adicionar novas bibliotecas nem alterar codigo de produto. Os overrides devem ser removidos quando as dependencias diretas passarem a resolver versoes seguras por conta propria.
+
+## ADR-FE-009 - Padrao mobile/desktop para telas CRUD
+
+Status: Accepted
+
+Decisao:
+Telas CRUD do painel devem usar lista como primeira area util, busca local quando os dados ja estiverem carregados, botao `Novo`, e criacao/edicao em painel sobreposto.
+
+No desktop, o painel deve se comportar como drawer lateral. No mobile, deve se comportar como bottom sheet ou tela sobreposta quase cheia. Listagens principais devem renderizar como tabela no desktop e cards no mobile.
+
+Motivo:
+Esse padrao evita que o usuario precise voltar ao topo da pagina para editar um registro e melhora a busca de cadastros em telas pequenas, mantendo o painel simples e operacional.
+
+Referencia:
+`docs/architecture/crud-screen-patterns.md`

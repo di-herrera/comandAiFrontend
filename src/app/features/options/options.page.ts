@@ -23,6 +23,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <h1 class="page-title">Opções e adicionais</h1>
           <p class="page-description">Cadastre adicionais globais da unidade e associe aos produtos na composição.</p>
         </div>
+        <div class="crud-toolbar">
+          <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!canUseCatalogContext">
+            Nova opção
+          </button>
+          <button class="btn" type="button" (click)="loadOptions()" [disabled]="loading || !canUseCatalogContext">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -35,10 +43,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
       <app-catalog-context-selector />
 
-      <section class="card">
-        <h2>{{ editingOptionId ? 'Editar opção' : 'Nova opção' }}</h2>
+      @if (isEditorOpen) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingOptionId ? 'Editar opção' : 'Nova opção' }}</h2>
+              <p>{{ catalogContext.selectedTenantName() || 'empresa não selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade não selecionada' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Código</span>
             <input type="text" formControlName="code" placeholder="O001" />
@@ -75,14 +91,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving || !canUseCatalogContext">
               {{ saving ? 'Salvando...' : editingOptionId ? 'Salvar edição' : 'Cadastrar opção' }}
             </button>
-            @if (editingOptionId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edição
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -90,9 +106,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <h2>Opções cadastradas</h2>
             <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa não selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade não selecionada' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadOptions()" [disabled]="loading || !canUseCatalogContext">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Codigo ou nome" />
+          </label>
         </div>
 
         @if (!canUseCatalogContext) {
@@ -101,8 +118,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <p class="muted">Carregando opções...</p>
         } @else if (options.length === 0) {
           <p class="muted">Nenhuma opção cadastrada para este contexto.</p>
+        } @else if (filteredOptions.length === 0) {
+          <p class="muted">Nenhuma opção encontrada para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Código</th>
@@ -114,14 +133,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               </tr>
             </thead>
             <tbody>
-              @for (option of options; track option.id) {
+              @for (option of filteredOptions; track option.id) {
                 <tr>
-                  <td>{{ option.code }}</td>
-                  <td>{{ option.name }}</td>
-                  <td>{{ formatCurrency(option.additionalPrice) }}</td>
-                  <td>{{ option.isAvailable ? 'Sim' : 'Não' }}</td>
-                  <td><span class="status-pill">{{ statusLabel(option.status) }}</span></td>
-                  <td>
+                  <td data-label="Código">{{ option.code }}</td>
+                  <td data-label="Opção">{{ option.name }}</td>
+                  <td data-label="Preço adicional">{{ formatCurrency(option.additionalPrice) }}</td>
+                  <td data-label="Disponível">{{ option.isAvailable ? 'Sim' : 'Não' }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(option.status) }}</span></td>
+                  <td data-label="Ação">
                     <button class="btn btn-small" type="button" (click)="startEdit(option)">
                       Editar
                     </button>
@@ -142,9 +161,11 @@ export class OptionsPage {
     additionalPrice: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected options: ProductOptionListItem[] = [];
   protected editingOptionId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected successMessage = '';
@@ -164,6 +185,17 @@ export class OptionsPage {
 
   protected get canUseCatalogContext(): boolean {
     return this.catalogContext.hasCatalogContext();
+  }
+
+  protected get filteredOptions(): ProductOptionListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.options;
+    }
+
+    return this.options.filter((option) =>
+      option.code.toLowerCase().includes(term) ||
+      option.name.toLowerCase().includes(term));
   }
 
   protected loadOptions(): void {
@@ -224,6 +256,11 @@ export class OptionsPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
   protected startEdit(option: ProductOptionListItem): void {
     this.editingOptionId = option.id;
     this.form.setValue({
@@ -232,12 +269,14 @@ export class OptionsPage {
       additionalPrice: option.additionalPrice,
       status: option.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingOptionId = null;
+    this.isEditorOpen = false;
     this.form.reset({
       code: '',
       name: '',
