@@ -10,6 +10,17 @@ Domínio público reservado para o produto:
 https://www.comandia.com.br
 ```
 
+## Links do projeto
+
+- Repositório GitHub: [di-herrera/comandAiFrontend](https://github.com/di-herrera/comandAiFrontend)
+- Issues para novas implementações: [comandAiFrontend/issues](https://github.com/di-herrera/comandAiFrontend/issues)
+- Board de acompanhamento: [GitHub Projects - ComandIA](https://github.com/users/di-herrera/projects/1/views/1)
+
+Novas implementações devem ser registradas como issues no GitHub antes do desenvolvimento. O board do GitHub Projects é usado para acompanhar o fluxo das atividades e deve refletir o estado atual de cada tarefa.
+
+Para agentes de IA: use as issues como fonte de trabalho e o board como fonte de acompanhamento. Não use arquivos antigos de backlog como origem para escolher novas tarefas,
+trate GitHub Issues como a fonte do escopo da tarefa e o GitHub Project como a fonte do status operacional. Não implemente novas funcionalidades sem issue correspondente, salvo pedido explícito do mantenedor.
+
 ## Escopo deste projeto
 
 Este projeto é o **frontend administrativo** separado da API `ComandIA.Api`.
@@ -87,7 +98,6 @@ Leia antes:
 
 ```text
 AGENTS.md
-docs/backlog/frontend-backlog.md
 docs/contracts/http-api.md
 docs/development/codex-workflow.md
 ```
@@ -95,9 +105,10 @@ docs/development/codex-workflow.md
 Prompt recomendado:
 
 ```text
-Leia AGENTS.md, README.md, docs/backlog/frontend-backlog.md e docs/contracts/http-api.md.
+Leia AGENTS.md, README.md e docs/contracts/http-api.md.
 
-Pegue somente a primeira tarefa da coluna Ready.
+Abra a issue/card correspondente no GitHub antes de implementar.
+Pegue somente uma tarefa por vez.
 Mova para Doing.
 Implemente apenas essa tarefa.
 Não implemente autenticação, financeiro, PDV, marketplace ou features fora do escopo.
