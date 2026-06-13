@@ -21,6 +21,23 @@ Novas implementações devem ser registradas como issues no GitHub antes do dese
 Para agentes de IA: use as issues como fonte de trabalho e o board como fonte de acompanhamento. Não use arquivos antigos de backlog como origem para escolher novas tarefas,
 trate GitHub Issues como a fonte do escopo da tarefa e o GitHub Project como a fonte do status operacional. Não implemente novas funcionalidades sem issue correspondente, salvo pedido explícito do mantenedor.
 
+## Projeto relacionado: backend
+
+O backend da ComandIA é o projeto `ComandIA.Api`. Na máquina de desenvolvimento, ele fica em:
+
+```text
+C:\Repos\comandIA
+```
+
+Algumas tarefas podem exigir alterações coordenadas no frontend e no backend para entregar a atividade completa. Quando isso acontecer, o agente de IA deve abrir e seguir as diretrizes do `README.md` e demais instruções locais de cada projeto antes de editar arquivos.
+
+Regras práticas para agentes:
+
+- Este repositório define as regras do frontend administrativo.
+- O repositório `C:\Repos\comandIA` define as regras do backend.
+- Alterações de contrato entre frontend e backend devem respeitar a API como fonte da verdade.
+- Antes de finalizar, rode as validações exigidas pelo README de cada projeto alterado.
+
 ## Escopo deste projeto
 
 Este projeto é o **frontend administrativo** separado da API `ComandIA.Api`.
