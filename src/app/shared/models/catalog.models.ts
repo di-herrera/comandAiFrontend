@@ -24,6 +24,7 @@ export interface BusinessUnitListItem {
   phone?: string | null;
   address?: string | null;
   fixedDeliveryFee: number;
+  whatsAppWelcomeMessage?: string | null;
   status: EntityStatus;
 }
 
@@ -32,6 +33,7 @@ export interface BusinessUnitCreateRequest {
   phone?: string | null;
   address?: string | null;
   fixedDeliveryFee: number;
+  whatsAppWelcomeMessage?: string | null;
   status: EntityStatus;
 }
 

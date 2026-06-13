@@ -195,10 +195,16 @@ export class ChatSimulatorPage {
       text
     }).pipe(finalize(() => this.sending.set(false))).subscribe({
       next: (result) => {
-        this.messages.update((messages) => [
-          ...messages,
-          { role: 'system', text: result.customerReply || 'Mensagem processada.', result }
-        ]);
+        const sentMessages = result.outgoingMessages ?? [];
+        const outgoingMessages = sentMessages.length > 0
+          ? sentMessages.map((message, index) => ({
+              role: 'system' as const,
+              text: message.text,
+              result: index === sentMessages.length - 1 ? result : undefined
+            }))
+          : [{ role: 'system' as const, text: result.customerReply || 'Mensagem processada.', result }];
+
+        this.messages.update((messages) => [...messages, ...outgoingMessages]);
         this.messageForm.reset({ text: '' });
       },
       error: (failure: ApiFailure) => {
