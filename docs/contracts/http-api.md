@@ -220,6 +220,7 @@ Resposta:
       "phone": "+5517999999999",
       "address": "Rua Exemplo, 123",
       "fixedDeliveryFee": 7.0,
+      "whatsAppWelcomeMessage": "Ola! Este e o atendimento automatico da loja. Posso montar seu pedido e chamar uma pessoa quando for necessario.",
       "status": "Active"
     }
   ],
@@ -241,9 +242,14 @@ Request:
   "phone": "+5517999999999",
   "address": "Rua Exemplo, 123",
   "fixedDeliveryFee": 7.0,
+  "whatsAppWelcomeMessage": "Ola! Este e o atendimento automatico da loja. Posso montar seu pedido e chamar uma pessoa quando for necessario.",
   "status": "Active"
 }
 ```
+
+`whatsAppWelcomeMessage` e opcional. Quando enviado como `null`, vazio ou
+somente com espacos, o backend usa a mensagem padrao no primeiro contato do
+cliente pelo WhatsApp.
 
 ### Atualizar unidade
 

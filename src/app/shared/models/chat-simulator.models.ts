@@ -37,4 +37,10 @@ export interface SimulateMessageResult {
   validationErrors: string[];
   customerReply: string;
   requiresHumanAttention: boolean;
+  outgoingMessages?: SimulatedOutgoingMessage[];
+}
+
+export interface SimulatedOutgoingMessage {
+  outgoingMessageId: string;
+  text: string;
 }

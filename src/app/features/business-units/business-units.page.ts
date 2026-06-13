@@ -103,6 +103,16 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             }
           </label>
 
+          <label class="field full-span">
+            <span>Mensagem de boas-vindas no WhatsApp</span>
+            <textarea rows="5" formControlName="whatsAppWelcomeMessage"></textarea>
+            @if (isInvalid('whatsAppWelcomeMessage')) {
+              <small>Use no máximo 1000 caracteres.</small>
+            } @else {
+              <small class="field-hint">Enviada automaticamente apenas no primeiro contato do cliente. Deixe em branco para usar a mensagem padrão.</small>
+            }
+          </label>
+
           <label class="field">
             <span>Status</span>
             <select formControlName="status">
@@ -152,6 +162,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                 <th>Telefone</th>
                 <th>Endereço</th>
                 <th>Taxa entrega</th>
+                <th>Boas-vindas</th>
                 <th>Status</th>
                 <th>WhatsApp</th>
                 <th>Ação</th>
@@ -164,6 +175,13 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                   <td data-label="Telefone">{{ unit.phone || '-' }}</td>
                   <td data-label="Endereco">{{ unit.address || '-' }}</td>
                   <td data-label="Taxa entrega">{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
+                  <td data-label="Boas-vindas">
+                    @if (hasCustomWelcomeMessage(unit)) {
+                      <span class="status-pill">Personalizada</span>
+                    } @else {
+                      <span class="muted">Padrão</span>
+                    }
+                  </td>
                   <td data-label="Status"><span class="status-pill">{{ statusLabel(unit.status) }}</span></td>
                   <td data-label="WhatsApp">
                     <div class="whatsapp-cell">
@@ -217,6 +235,7 @@ export class BusinessUnitsPage {
     phone: new FormControl<string | null>(null, { validators: [Validators.maxLength(32)] }),
     address: new FormControl<string | null>(null, { validators: [Validators.maxLength(240)] }),
     fixedDeliveryFee: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+    whatsAppWelcomeMessage: new FormControl<string | null>(null, { validators: [Validators.maxLength(1000)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
@@ -354,6 +373,7 @@ export class BusinessUnitsPage {
       phone: unit.phone ?? null,
       address: unit.address ?? null,
       fixedDeliveryFee: unit.fixedDeliveryFee,
+      whatsAppWelcomeMessage: unit.whatsAppWelcomeMessage ?? null,
       status: unit.status
     });
     this.isEditorOpen = true;
@@ -369,6 +389,7 @@ export class BusinessUnitsPage {
       phone: null,
       address: null,
       fixedDeliveryFee: 0,
+      whatsAppWelcomeMessage: null,
       status: 'Active'
     });
   }
@@ -472,14 +493,20 @@ export class BusinessUnitsPage {
     const value = this.form.getRawValue();
     const phone = value.phone?.trim();
     const address = value.address?.trim();
+    const whatsAppWelcomeMessage = value.whatsAppWelcomeMessage?.trim();
 
     return {
       name: value.name.trim(),
       phone: phone ? phone : null,
       address: address ? address : null,
       fixedDeliveryFee: Number(value.fixedDeliveryFee),
+      whatsAppWelcomeMessage: whatsAppWelcomeMessage ? whatsAppWelcomeMessage : null,
       status: value.status
     };
+  }
+
+  protected hasCustomWelcomeMessage(unit: BusinessUnitListItem): boolean {
+    return Boolean(unit.whatsAppWelcomeMessage?.trim());
   }
 
   private loadWhatsAppChannels(units: BusinessUnitListItem[]): void {
