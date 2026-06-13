@@ -66,6 +66,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/orders/orders.page').then((m) => m.OrdersPage)
   },
   {
+    path: 'painel-operador',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/operator-panel/operator-panel.page').then((m) => m.OperatorPanelPage)
+  },
+  {
     path: 'auditoria-ia',
     canActivate: [authGuard],
     loadComponent: () => import('./features/ai-audit/ai-audit.page').then((m) => m.AiAuditPage)

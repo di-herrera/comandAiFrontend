@@ -50,6 +50,7 @@ Ele cobre:
 - Ingredientes.
 - Opções/adicionais.
 - Composição de produto: ingredientes removíveis e opções aplicáveis.
+- Painel operador para acompanhar conversas em andamento e acionar handoff.
 
 Ele **não** cobre:
 
@@ -60,7 +61,7 @@ Ele **não** cobre:
 - Marketplace.
 - Disparo em massa.
 - Autenticação completa no MVP.
-- Atendimento em tempo real.
+- Chat humano completo em tempo real.
 
 ## Stack
 
