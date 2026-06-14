@@ -36,6 +36,7 @@ Regras práticas para agentes:
 - Este repositório define as regras do frontend administrativo.
 - O repositório `C:\Repos\comandIA` define as regras do backend.
 - Alterações de contrato entre frontend e backend devem respeitar a API como fonte da verdade.
+- O frontend deve evitar regras de negócio. Sempre que possível, decisões operacionais, status derivados, validações e cálculos devem ficar no backend; o frontend deve apenas exibir os campos retornados pela API.
 - Antes de finalizar, rode as validações exigidas pelo README de cada projeto alterado.
 
 ## Escopo deste projeto

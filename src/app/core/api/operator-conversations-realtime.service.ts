@@ -2,10 +2,11 @@ import { Injectable, NgZone, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 
 import { ApiConfigService } from '@core/config/api-config.service';
-import { OperatorConversationSummary } from '@shared/models/operator-conversations.models';
+import { OperatorConversationDetail, OperatorConversationSummary } from '@shared/models/operator-conversations.models';
 
 export interface OperatorConversationRealtimeHandlers {
   changed: (conversation: OperatorConversationSummary) => void;
+  detailChanged?: (conversation: OperatorConversationDetail) => void;
   removed: (conversationId: string) => void;
   reconnected: () => void;
   statusChanged: (connected: boolean) => void;
@@ -35,6 +36,10 @@ export class OperatorConversationsRealtimeService {
 
     connection.on('operatorConversationRemoved', (conversationId: string) => {
       this.zone.run(() => handlers.removed(conversationId));
+    });
+
+    connection.on('operatorConversationDetailChanged', (conversation: OperatorConversationDetail) => {
+      this.zone.run(() => handlers.detailChanged?.(conversation));
     });
 
     connection.onreconnecting(() => {

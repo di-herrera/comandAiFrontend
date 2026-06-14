@@ -76,8 +76,12 @@ export const ApiEndpoints = {
   operatorConversations: {
     list: (tenantId: string, businessUnitId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations`,
+    detail: (tenantId: string, businessUnitId: string, conversationId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations/${enc(conversationId)}`,
     handoff: (tenantId: string, businessUnitId: string, conversationId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations/${enc(conversationId)}/handoff`,
+    messages: (tenantId: string, businessUnitId: string, conversationId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations/${enc(conversationId)}/messages`,
     close: (tenantId: string, businessUnitId: string, conversationId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations/${enc(conversationId)}/close`
   },

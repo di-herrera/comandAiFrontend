@@ -111,6 +111,33 @@ export interface AiInteractionListItem {
   durationMs: number;
   createdAtUtc: string;
 }
+
+export interface OperatorConversationSummary {
+  conversationId: string;
+  tenantId: string;
+  businessUnitId: string;
+  conversationStatus: string;
+  requiresHumanAttention: boolean;
+  draftStatus?: string | null;
+  operatorStatus: string;
+  operatorStatusLabel: string;
+  isReadyToConfirm: boolean;
+  itemCount: number;
+  total: number;
+}
+
+export interface OperatorConversationDetail {
+  summary: OperatorConversationSummary;
+  messages: OperatorConversationMessage[];
+  draft?: OperatorOrderDraftSummary | null;
+}
+
+export interface OperatorConversationMessage {
+  messageId: string;
+  direction: 'Customer' | 'Store' | string;
+  text: string;
+  createdAtUtc: string;
+}
 ```
 
 O arquivo inicial fica em:
@@ -129,4 +156,10 @@ Modelos de auditoria de IA ficam em:
 
 ```text
 src/app/shared/models/ai-audit.models.ts
+```
+
+Modelos do painel operador ficam em:
+
+```text
+src/app/shared/models/operator-conversations.models.ts
 ```

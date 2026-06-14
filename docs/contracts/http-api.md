@@ -699,6 +699,35 @@ variantes, opcoes/adicionais, ingredientes removidos e totais calculados pelo
 backend. O frontend apenas exibe `subtotal`, `deliveryFee`, `total`, subtotais
 de item e totais de opcao retornados pela API.
 
+## 7.1 Painel operador
+
+```http
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/operator/conversations
+GET /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/operator/conversations/{conversationId}
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/operator/conversations/{conversationId}/handoff
+DELETE /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/operator/conversations/{conversationId}/handoff
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/operator/conversations/{conversationId}/messages
+POST /api/admin/tenants/{tenantId}/business-units/{businessUnitId}/operator/conversations/{conversationId}/close
+```
+
+O painel operador consome um snapshot de conversas em andamento e assina o hub
+SignalR `/hubs/operator-conversations`. Apos conectar, o frontend chama
+`JoinBusinessUnit(tenantId, businessUnitId)`.
+
+Eventos esperados:
+
+- `operatorConversationChanged`: atualiza ou inclui um card.
+- `operatorConversationDetailChanged`: atualiza a modal de detalhe aberta.
+- `operatorConversationRemoved`: remove um card e fecha a modal se ela estiver aberta.
+
+O envio manual de mensagem (`POST /messages`) deve ser habilitado na UI apenas
+quando `requiresHumanAttention` for `true`. Caso contrario, o operador deve
+assumir o atendimento primeiro.
+
+O backend retorna `operatorStatus`, `operatorStatusLabel` e `isReadyToConfirm`
+prontos para exibicao no Painel operador. O frontend nao deve recalcular estes
+estados a partir de `draftStatus`, itens, entrega ou pagamento.
+
 ## 8. Auditoria de IA
 
 ### Listar interacoes

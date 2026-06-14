@@ -7,6 +7,8 @@ import { PagedResult } from '@shared/models/common.models';
 import {
   CloseOperatorConversationRequest,
   EnableConversationHandoffRequest,
+  OperatorConversationDetail,
+  SendOperatorConversationMessageRequest,
   OperatorConversationSummary
 } from '@shared/models/operator-conversations.models';
 
@@ -20,6 +22,12 @@ export class OperatorConversationsApiService {
   list(tenantId: string, businessUnitId: string): Observable<PagedResult<OperatorConversationSummary>> {
     return this.http.get<PagedResult<OperatorConversationSummary>>(
       this.url(ApiEndpoints.operatorConversations.list(tenantId, businessUnitId))
+    );
+  }
+
+  detail(tenantId: string, businessUnitId: string, conversationId: string): Observable<OperatorConversationDetail> {
+    return this.http.get<OperatorConversationDetail>(
+      this.url(ApiEndpoints.operatorConversations.detail(tenantId, businessUnitId, conversationId))
     );
   }
 
@@ -49,6 +57,18 @@ export class OperatorConversationsApiService {
   ): Observable<void> {
     return this.http.post<void>(
       this.url(ApiEndpoints.operatorConversations.close(tenantId, businessUnitId, conversationId)),
+      request
+    );
+  }
+
+  sendMessage(
+    tenantId: string,
+    businessUnitId: string,
+    conversationId: string,
+    request: SendOperatorConversationMessageRequest
+  ): Observable<OperatorConversationDetail> {
+    return this.http.post<OperatorConversationDetail>(
+      this.url(ApiEndpoints.operatorConversations.messages(tenantId, businessUnitId, conversationId)),
       request
     );
   }

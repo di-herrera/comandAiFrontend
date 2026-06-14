@@ -25,16 +25,54 @@ export interface OperatorConversationSummary {
   idleSeconds: number;
   draftId?: string | null;
   draftStatus?: string | null;
+  operatorStatus: string;
+  operatorStatusLabel: string;
   itemCount: number;
   hasItems: boolean;
   hasFulfillmentType: boolean;
   fulfillmentType?: 'Delivery' | 'Pickup' | string | null;
   hasDeliveryAddress: boolean;
   hasPaymentMethod: boolean;
+  isReadyToConfirm: boolean;
   missingFields: string[];
   subtotal: number;
   deliveryFee: number;
   total: number;
+}
+
+export interface OperatorConversationDetail {
+  summary: OperatorConversationSummary;
+  messages: OperatorConversationMessage[];
+  draft?: OperatorOrderDraftSummary | null;
+}
+
+export interface OperatorConversationMessage {
+  messageId: string;
+  direction: 'Customer' | 'Store' | string;
+  text: string;
+  createdAtUtc: string;
+}
+
+export interface OperatorOrderDraftSummary {
+  draftId: string;
+  status: string;
+  fulfillmentType?: 'Delivery' | 'Pickup' | string | null;
+  deliveryAddress?: string | null;
+  paymentMethod?: string | null;
+  missingFields: string[];
+  items: OperatorOrderDraftItemSummary[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+}
+
+export interface OperatorOrderDraftItemSummary {
+  draftItemId: string;
+  quantity: number;
+  productName: string;
+  variantName: string;
+  notes?: string | null;
+  subtotal: number;
 }
 
 export interface EnableConversationHandoffRequest {
@@ -43,4 +81,8 @@ export interface EnableConversationHandoffRequest {
 
 export interface CloseOperatorConversationRequest {
   reason?: string | null;
+}
+
+export interface SendOperatorConversationMessageRequest {
+  text: string;
 }
