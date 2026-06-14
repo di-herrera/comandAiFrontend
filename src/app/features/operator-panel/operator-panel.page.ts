@@ -143,7 +143,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
       }
 
       @if (selectedDetail) {
-        <div class="operator-modal-backdrop" role="presentation" (click)="closeDetail()">
+        <div class="operator-modal-backdrop" role="presentation">
           <section class="operator-modal" role="dialog" aria-modal="true" aria-label="Detalhe da conversa" (click)="$event.stopPropagation()">
             <header class="operator-modal-header">
               <div>
@@ -174,9 +174,12 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                   }
                 </div>
 
-                <form class="reply-panel" (ngSubmit)="sendOperatorMessage()">
+                <form class="reply-panel" (submit)="sendOperatorMessage($event)">
                   @if (!selectedDetail.summary.requiresHumanAttention) {
                     <p class="feedback warning compact-feedback">Assuma o atendimento para responder manualmente.</p>
+                  }
+                  @if (detailErrorMessage) {
+                    <p class="feedback error compact-feedback">{{ detailErrorMessage }}</p>
                   }
                   <textarea
                     [formControl]="messageControl"
@@ -451,6 +454,7 @@ export class OperatorPanelPage implements OnDestroy {
   protected sendingMessage = false;
   protected realtimeConnected = false;
   protected errorMessage = '';
+  protected detailErrorMessage = '';
 
   private readonly actionLoadingIds = new Set<string>();
   private readonly now = signal(Date.now());
@@ -549,16 +553,21 @@ export class OperatorPanelPage implements OnDestroy {
 
   protected openDetail(conversation: OperatorConversationSummary): void {
     this.selectedDetail = null;
+    this.detailErrorMessage = '';
     this.messageControl.setValue('');
     this.loadDetail(conversation);
   }
 
   protected closeDetail(): void {
     this.selectedDetail = null;
+    this.detailErrorMessage = '';
     this.messageControl.setValue('');
   }
 
-  protected sendOperatorMessage(): void {
+  protected sendOperatorMessage(event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
     const detail = this.selectedDetail;
     const text = this.messageControl.value.trim();
     if (!detail || !text || !detail.summary.requiresHumanAttention || this.sendingMessage) {
@@ -567,6 +576,7 @@ export class OperatorPanelPage implements OnDestroy {
 
     this.sendingMessage = true;
     this.errorMessage = '';
+    this.detailErrorMessage = '';
 
     this.api.sendMessage(
       detail.summary.tenantId,
@@ -580,7 +590,7 @@ export class OperatorPanelPage implements OnDestroy {
           this.applySummaryUpdate(updated.summary);
           this.messageControl.setValue('');
         },
-        error: (failure: ApiFailure) => this.errorMessage = failure.error.message
+        error: (failure: ApiFailure) => this.detailErrorMessage = failure.error.message
       });
   }
 
@@ -730,6 +740,7 @@ export class OperatorPanelPage implements OnDestroy {
   private loadDetail(conversation: OperatorConversationSummary): void {
     this.detailLoading = true;
     this.errorMessage = '';
+    this.detailErrorMessage = '';
 
     this.api.detail(conversation.tenantId, conversation.businessUnitId, conversation.conversationId)
       .pipe(finalize(() => (this.detailLoading = false)))
