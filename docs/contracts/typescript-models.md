@@ -112,6 +112,20 @@ export interface AiInteractionListItem {
   createdAtUtc: string;
 }
 
+export interface OperatorConversationSummary {
+  conversationId: string;
+  tenantId: string;
+  businessUnitId: string;
+  conversationStatus: string;
+  requiresHumanAttention: boolean;
+  draftStatus?: string | null;
+  operatorStatus: string;
+  operatorStatusLabel: string;
+  isReadyToConfirm: boolean;
+  itemCount: number;
+  total: number;
+}
+
 export interface OperatorConversationDetail {
   summary: OperatorConversationSummary;
   messages: OperatorConversationMessage[];

@@ -25,12 +25,15 @@ export interface OperatorConversationSummary {
   idleSeconds: number;
   draftId?: string | null;
   draftStatus?: string | null;
+  operatorStatus: string;
+  operatorStatusLabel: string;
   itemCount: number;
   hasItems: boolean;
   hasFulfillmentType: boolean;
   fulfillmentType?: 'Delivery' | 'Pickup' | string | null;
   hasDeliveryAddress: boolean;
   hasPaymentMethod: boolean;
+  isReadyToConfirm: boolean;
   missingFields: string[];
   subtotal: number;
   deliveryFee: number;

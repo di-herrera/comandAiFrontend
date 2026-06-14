@@ -724,6 +724,10 @@ O envio manual de mensagem (`POST /messages`) deve ser habilitado na UI apenas
 quando `requiresHumanAttention` for `true`. Caso contrario, o operador deve
 assumir o atendimento primeiro.
 
+O backend retorna `operatorStatus`, `operatorStatusLabel` e `isReadyToConfirm`
+prontos para exibicao no Painel operador. O frontend nao deve recalcular estes
+estados a partir de `draftStatus`, itens, entrega ou pagamento.
+
 ## 8. Auditoria de IA
 
 ### Listar interacoes

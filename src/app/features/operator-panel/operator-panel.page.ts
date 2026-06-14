@@ -101,7 +101,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                 <span class="status-pill" [class.ok]="conversation.hasPaymentMethod" [class.pending]="!conversation.hasPaymentMethod">
                   {{ conversation.hasPaymentMethod ? 'Pagamento informado' : 'Pagamento pendente' }}
                 </span>
-                @if (isReadyToConfirm(conversation)) {
+                @if (conversation.isReadyToConfirm) {
                   <span class="status-pill ready">Pronto para confirmar</span>
                 }
                 @if (conversation.requiresHumanAttention) {
@@ -112,7 +112,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
               <dl class="operator-values">
                 <div>
                   <dt>Rascunho</dt>
-                  <dd>{{ conversationDraftStatusLabel(conversation) }}</dd>
+                  <dd>{{ conversation.operatorStatusLabel }}</dd>
                 </div>
                 <div>
                   <dt>Total</dt>
@@ -213,7 +213,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                   <dl class="detail-grid">
                     <div>
                       <dt>Status</dt>
-                      <dd>{{ detailDraftStatusLabel(selectedDetail) }}</dd>
+                      <dd>{{ selectedDetail.summary.operatorStatusLabel }}</dd>
                     </div>
                     <div>
                       <dt>Entrega</dt>
@@ -496,7 +496,7 @@ export class OperatorPanelPage implements OnDestroy {
   }
 
   protected get readyToConfirmCount(): number {
-    return this.conversations.filter((conversation) => this.isReadyToConfirm(conversation)).length;
+    return this.conversations.filter((conversation) => conversation.isReadyToConfirm).length;
   }
 
   protected get canSendOperatorMessage(): boolean {
@@ -616,20 +616,12 @@ export class OperatorPanelPage implements OnDestroy {
     return this.actionLoadingIds.has(conversation.conversationId);
   }
 
-  protected isReadyToConfirm(conversation: OperatorConversationSummary): boolean {
-    return conversation.hasItems &&
-      conversation.hasFulfillmentType &&
-      (conversation.fulfillmentType !== 'Delivery' || conversation.hasDeliveryAddress) &&
-      conversation.hasPaymentMethod &&
-      !conversation.requiresHumanAttention;
-  }
-
   protected cardClass(conversation: OperatorConversationSummary): string {
     if (conversation.requiresHumanAttention) {
       return 'operator-card handoff';
     }
 
-    if (this.isReadyToConfirm(conversation)) {
+    if (conversation.isReadyToConfirm) {
       return 'operator-card ready';
     }
 
@@ -663,60 +655,6 @@ export class OperatorPanelPage implements OnDestroy {
 
   protected fulfillmentLabel(value: string): string {
     return value === 'Delivery' ? 'Entrega' : 'Retirada';
-  }
-
-  protected conversationDraftStatusLabel(conversation: OperatorConversationSummary): string {
-    if (conversation.requiresHumanAttention) {
-      return 'Atendimento humano';
-    }
-
-    if (!conversation.hasItems) {
-      return 'Sem itens no rascunho';
-    }
-
-    if (!conversation.hasFulfillmentType ||
-      (conversation.fulfillmentType === 'Delivery' && !conversation.hasDeliveryAddress) ||
-      !conversation.hasPaymentMethod) {
-      return 'Dados pendentes';
-    }
-
-    if (this.isReadyToConfirm(conversation)) {
-      return 'Pronto para confirmar';
-    }
-
-    return this.draftStatusLabel(conversation.draftStatus);
-  }
-
-  protected detailDraftStatusLabel(detail: OperatorConversationDetail): string {
-    if (detail.summary.requiresHumanAttention) {
-      return 'Atendimento humano';
-    }
-
-    if (!detail.draft || detail.draft.items.length === 0) {
-      return 'Sem itens no rascunho';
-    }
-
-    if (detail.draft.missingFields.length > 0) {
-      return 'Dados pendentes';
-    }
-
-    return this.draftStatusLabel(detail.draft.status);
-  }
-
-  protected draftStatusLabel(value: string | null | undefined): string {
-    const labels: Record<string, string> = {
-      Open: 'Em montagem',
-      WaitingCustomerConfirmation: 'Aguardando confirmacao do cliente',
-      WaitingCustomerInput: 'Aguardando informacoes do cliente',
-      WaitingHumanAttention: 'Atendimento humano',
-      HumanAttentionRequired: 'Atendimento humano',
-      ReadyForConfirmation: 'Pronto para confirmar',
-      Confirmed: 'Confirmado',
-      Cancelled: 'Cancelado',
-      Abandoned: 'Abandonado'
-    };
-
-    return value ? labels[value] ?? value : 'Sem rascunho';
   }
 
   protected formatCurrency(value: number): string {
