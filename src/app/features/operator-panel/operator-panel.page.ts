@@ -42,7 +42,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
           <strong>{{ conversations.length }}</strong>
         </article>
         <article class="card metric-card attention">
-          <span>Handoff</span>
+          <span>Atendimento humano</span>
           <strong>{{ handoffCount }}</strong>
         </article>
         <article class="card metric-card ready">
@@ -82,7 +82,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
 
               @if (conversation.requiresHumanAttention) {
                 <p class="feedback warning compact-feedback">
-                  Handoff: {{ conversation.humanHandoffReason || 'atendimento humano ativo.' }}
+                  Atendimento humano: {{ conversation.humanHandoffReason || 'atendimento humano ativo.' }}
                 </p>
               }
 
@@ -105,14 +105,14 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                   <span class="status-pill ready">Pronto para confirmar</span>
                 }
                 @if (conversation.requiresHumanAttention) {
-                  <span class="status-pill attention">Handoff</span>
+                  <span class="status-pill attention">Atendimento humano</span>
                 }
               </div>
 
               <dl class="operator-values">
                 <div>
                   <dt>Rascunho</dt>
-                  <dd>{{ draftStatusLabel(conversation.draftStatus) }}</dd>
+                  <dd>{{ conversationDraftStatusLabel(conversation) }}</dd>
                 </div>
                 <div>
                   <dt>Total</dt>
@@ -213,7 +213,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                   <dl class="detail-grid">
                     <div>
                       <dt>Status</dt>
-                      <dd>{{ draftStatusLabel(selectedDetail.draft.status) }}</dd>
+                      <dd>{{ detailDraftStatusLabel(selectedDetail) }}</dd>
                     </div>
                     <div>
                       <dt>Entrega</dt>
@@ -665,12 +665,51 @@ export class OperatorPanelPage implements OnDestroy {
     return value === 'Delivery' ? 'Entrega' : 'Retirada';
   }
 
+  protected conversationDraftStatusLabel(conversation: OperatorConversationSummary): string {
+    if (conversation.requiresHumanAttention) {
+      return 'Atendimento humano';
+    }
+
+    if (!conversation.hasItems) {
+      return 'Sem itens no rascunho';
+    }
+
+    if (!conversation.hasFulfillmentType ||
+      (conversation.fulfillmentType === 'Delivery' && !conversation.hasDeliveryAddress) ||
+      !conversation.hasPaymentMethod) {
+      return 'Dados pendentes';
+    }
+
+    if (this.isReadyToConfirm(conversation)) {
+      return 'Pronto para confirmar';
+    }
+
+    return this.draftStatusLabel(conversation.draftStatus);
+  }
+
+  protected detailDraftStatusLabel(detail: OperatorConversationDetail): string {
+    if (detail.summary.requiresHumanAttention) {
+      return 'Atendimento humano';
+    }
+
+    if (!detail.draft || detail.draft.items.length === 0) {
+      return 'Sem itens no rascunho';
+    }
+
+    if (detail.draft.missingFields.length > 0) {
+      return 'Dados pendentes';
+    }
+
+    return this.draftStatusLabel(detail.draft.status);
+  }
+
   protected draftStatusLabel(value: string | null | undefined): string {
     const labels: Record<string, string> = {
       Open: 'Em montagem',
       WaitingCustomerConfirmation: 'Aguardando confirmacao do cliente',
       WaitingCustomerInput: 'Aguardando informacoes do cliente',
-      WaitingHumanAttention: 'Aguardando atendimento humano',
+      WaitingHumanAttention: 'Atendimento humano',
+      HumanAttentionRequired: 'Atendimento humano',
       ReadyForConfirmation: 'Pronto para confirmar',
       Confirmed: 'Confirmado',
       Cancelled: 'Cancelado',
