@@ -72,7 +72,10 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                   <strong>{{ conversation.customer.name || 'Cliente sem nome' }}</strong>
                   <span>{{ conversation.customer.phoneNumber }}</span>
                 </div>
-                <span class="idle-pill">{{ idleLabel(conversation) }}</span>
+                <div class="time-stack">
+                  <span class="time-pill">{{ serviceTimeLabel(conversation) }}</span>
+                  <span class="time-pill quiet">{{ idleLabel(conversation) }}</span>
+                </div>
               </header>
 
               <div class="operator-card-facts">
@@ -342,8 +345,14 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
       overflow-wrap: anywhere;
     }
 
-    .idle-pill {
+    .time-stack {
+      display: grid;
+      gap: .3rem;
+      justify-items: end;
       flex: 0 0 auto;
+    }
+
+    .time-pill {
       border-radius: 999px;
       background: var(--primary-soft);
       color: var(--text) !important;
@@ -351,6 +360,11 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
       font-size: .82rem;
       font-weight: 700;
       white-space: nowrap;
+    }
+
+    .time-pill.quiet {
+      background: var(--surface-soft);
+      color: var(--muted) !important;
     }
 
     .compact-feedback {
@@ -439,8 +453,9 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
         justify-content: stretch;
       }
 
-      .idle-pill {
+      .time-stack {
         justify-self: start;
+        justify-items: start;
       }
 
       .operator-values {
@@ -643,20 +658,28 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
   }
 
   protected idleLabel(conversation: OperatorConversationSummary): string {
+    return `${this.durationSince(conversation.lastInteractionAtUtc)} sem interacao`;
+  }
+
+  protected serviceTimeLabel(conversation: OperatorConversationSummary): string {
+    return `${this.durationSince(conversation.startedAtUtc)} em atendimento`;
+  }
+
+  private durationSince(value: string): string {
     this.now();
-    const seconds = Math.max(0, Math.floor((Date.now() - new Date(conversation.lastInteractionAtUtc).getTime()) / 1000));
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
 
     if (seconds < 60) {
-      return `${seconds}s sem interacao`;
+      return `${seconds}s`;
     }
 
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) {
-      return `${minutes}min sem interacao`;
+      return `${minutes}min`;
     }
 
     const hours = Math.floor(minutes / 60);
-    return `${hours}h sem interacao`;
+    return `${hours}h`;
   }
 
   protected channelLabel(conversation: OperatorConversationSummary): string {
