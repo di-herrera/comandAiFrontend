@@ -1,4 +1,5 @@
 import { Component, OnDestroy, effect, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { OperatorConversationsApiService } from '@core/api/operator-conversations-api.service';
@@ -6,12 +7,12 @@ import { OperatorConversationsRealtimeService } from '@core/api/operator-convers
 import { CatalogContextService } from '@core/context/catalog-context.service';
 import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import { ApiFailure } from '@shared/models/common.models';
-import { OperatorConversationSummary } from '@shared/models/operator-conversations.models';
+import { OperatorConversationDetail, OperatorConversationSummary } from '@shared/models/operator-conversations.models';
 
 @Component({
   selector: 'app-operator-panel',
   standalone: true,
-  imports: [CatalogContextSelectorComponent],
+  imports: [CatalogContextSelectorComponent, ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -120,6 +121,9 @@ import { OperatorConversationSummary } from '@shared/models/operator-conversatio
               </dl>
 
               <div class="button-row operator-actions">
+                <button class="btn btn-small" type="button" (click)="openDetail(conversation)" [disabled]="isActionLoading(conversation)">
+                  Detalhe
+                </button>
                 @if (conversation.requiresHumanAttention) {
                   <button class="btn btn-small" type="button" (click)="disableHandoff(conversation)" [disabled]="isActionLoading(conversation)">
                     Devolver para IA
@@ -136,6 +140,128 @@ import { OperatorConversationSummary } from '@shared/models/operator-conversatio
             </article>
           }
         </section>
+      }
+
+      @if (selectedDetail) {
+        <div class="operator-modal-backdrop" role="presentation" (click)="closeDetail()">
+          <section class="operator-modal" role="dialog" aria-modal="true" aria-label="Detalhe da conversa" (click)="$event.stopPropagation()">
+            <header class="operator-modal-header">
+              <div>
+                <p class="eyebrow">Conversa</p>
+                <h2>{{ selectedDetail.summary.customer.name || 'Cliente sem nome' }}</h2>
+                <p>{{ selectedDetail.summary.customer.phoneNumber }} - {{ idleLabel(selectedDetail.summary) }}</p>
+              </div>
+              <button class="btn editor-close" type="button" (click)="closeDetail()" aria-label="Fechar detalhe">x</button>
+            </header>
+
+            @if (detailLoading) {
+              <p class="muted">Atualizando conversa...</p>
+            }
+
+            <div class="operator-modal-layout">
+              <section class="conversation-panel">
+                <div class="conversation-stream">
+                  @if (selectedDetail.messages.length === 0) {
+                    <p class="muted">Nenhuma mensagem de texto registrada.</p>
+                  } @else {
+                    @for (message of selectedDetail.messages; track message.messageId) {
+                      <article class="conversation-message" [class.customer]="message.direction === 'Customer'" [class.store]="message.direction !== 'Customer'">
+                        <strong>{{ message.direction === 'Customer' ? 'Cliente' : 'Loja' }}</strong>
+                        <p>{{ message.text }}</p>
+                        <span>{{ formatDate(message.createdAtUtc) }}</span>
+                      </article>
+                    }
+                  }
+                </div>
+
+                <form class="reply-panel" (ngSubmit)="sendOperatorMessage()">
+                  @if (!selectedDetail.summary.requiresHumanAttention) {
+                    <p class="feedback warning compact-feedback">Assuma o atendimento para responder manualmente.</p>
+                  }
+                  <textarea
+                    [formControl]="messageControl"
+                    rows="3"
+                    placeholder="Digite a resposta para o cliente"
+                    [disabled]="!selectedDetail.summary.requiresHumanAttention || sendingMessage"
+                  ></textarea>
+                  <div class="button-row operator-actions">
+                    @if (!selectedDetail.summary.requiresHumanAttention) {
+                      <button class="btn btn-small" type="button" (click)="enableHandoff(selectedDetail.summary)" [disabled]="isActionLoading(selectedDetail.summary)">
+                        Assumir atendimento
+                      </button>
+                    }
+                    <button class="btn btn-primary btn-small" type="submit" [disabled]="!canSendOperatorMessage">
+                      {{ sendingMessage ? 'Enviando...' : 'Enviar' }}
+                    </button>
+                  </div>
+                </form>
+              </section>
+
+              <aside class="draft-panel">
+                <h3>Resumo do pedido</h3>
+                @if (!selectedDetail.draft) {
+                  <p class="muted">Ainda nao existe rascunho de pedido para esta conversa.</p>
+                } @else {
+                  <dl class="detail-grid">
+                    <div>
+                      <dt>Status</dt>
+                      <dd>{{ selectedDetail.draft.status }}</dd>
+                    </div>
+                    <div>
+                      <dt>Entrega</dt>
+                      <dd>{{ selectedDetail.draft.fulfillmentType ? fulfillmentLabel(selectedDetail.draft.fulfillmentType) : 'Pendente' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Pagamento</dt>
+                      <dd>{{ selectedDetail.draft.paymentMethod || 'Pendente' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Total</dt>
+                      <dd>{{ formatCurrency(selectedDetail.draft.total) }}</dd>
+                    </div>
+                  </dl>
+
+                  @if (selectedDetail.draft.deliveryAddress) {
+                    <section class="draft-section">
+                      <h4>Endereco</h4>
+                      <p>{{ selectedDetail.draft.deliveryAddress }}</p>
+                    </section>
+                  }
+
+                  @if (selectedDetail.draft.missingFields.length > 0) {
+                    <div class="operator-chip-row">
+                      @for (field of selectedDetail.draft.missingFields; track field) {
+                        <span class="status-pill pending">{{ missingFieldLabel(field) }}</span>
+                      }
+                    </div>
+                  }
+
+                  <section class="draft-section">
+                    <h4>Itens</h4>
+                    @if (selectedDetail.draft.items.length === 0) {
+                      <p class="muted">Nenhum item no rascunho.</p>
+                    } @else {
+                      <div class="draft-items">
+                        @for (item of selectedDetail.draft.items; track item.draftItemId) {
+                          <article class="draft-item">
+                            <div>
+                              <strong>{{ item.quantity }}x {{ item.productName }}</strong>
+                              <span>{{ item.variantName }}</span>
+                            </div>
+                            <strong>{{ formatCurrency(item.subtotal) }}</strong>
+                            @if (item.notes) {
+                              <p class="muted">Obs.: {{ item.notes }}</p>
+                            }
+                          </article>
+                        }
+                      </div>
+                    }
+                  </section>
+                }
+              </aside>
+            </div>
+          </section>
+        </div>
       }
     </section>
   `,
@@ -167,7 +293,7 @@ import { OperatorConversationSummary } from '@shared/models/operator-conversatio
 
     .operator-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 1rem;
     }
 
@@ -281,7 +407,23 @@ import { OperatorConversationSummary } from '@shared/models/operator-conversatio
       justify-content: flex-end;
     }
 
+    @media (max-width: 1180px) {
+      .operator-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 980px) {
+      .operator-modal-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 640px) {
+      .operator-grid {
+        grid-template-columns: 1fr;
+      }
+
       .operator-card-header,
       .operator-card-facts,
       .operator-actions {
@@ -296,12 +438,17 @@ import { OperatorConversationSummary } from '@shared/models/operator-conversatio
       .operator-values {
         grid-template-columns: 1fr;
       }
+
     }
   `]
 })
 export class OperatorPanelPage implements OnDestroy {
+  protected readonly messageControl = new FormControl('', { nonNullable: true });
   protected conversations: OperatorConversationSummary[] = [];
+  protected selectedDetail: OperatorConversationDetail | null = null;
   protected loading = false;
+  protected detailLoading = false;
+  protected sendingMessage = false;
   protected realtimeConnected = false;
   protected errorMessage = '';
 
@@ -340,6 +487,13 @@ export class OperatorPanelPage implements OnDestroy {
     return this.conversations.filter((conversation) => this.isReadyToConfirm(conversation)).length;
   }
 
+  protected get canSendOperatorMessage(): boolean {
+    return Boolean(
+      this.selectedDetail?.summary.requiresHumanAttention &&
+      this.messageControl.value.trim() &&
+      !this.sendingMessage);
+  }
+
   protected reload(): void {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
@@ -368,7 +522,7 @@ export class OperatorPanelPage implements OnDestroy {
       this.api.enableHandoff(conversation.tenantId, conversation.businessUnitId, conversation.conversationId, {
         reason: 'Operador assumiu o atendimento.'
       }).pipe(finalize(() => this.clearAction(conversation))).subscribe({
-        next: (updated) => this.upsert(updated),
+        next: (updated) => this.applySummaryUpdate(updated),
         error: (failure: ApiFailure) => this.errorMessage = failure.error.message
       }));
   }
@@ -378,7 +532,7 @@ export class OperatorPanelPage implements OnDestroy {
       this.api.disableHandoff(conversation.tenantId, conversation.businessUnitId, conversation.conversationId)
         .pipe(finalize(() => this.clearAction(conversation)))
         .subscribe({
-        next: (updated) => this.upsert(updated),
+        next: (updated) => this.applySummaryUpdate(updated),
         error: (failure: ApiFailure) => this.errorMessage = failure.error.message
       }));
   }
@@ -391,6 +545,43 @@ export class OperatorPanelPage implements OnDestroy {
         next: () => this.remove(conversation.conversationId),
         error: (failure: ApiFailure) => this.errorMessage = failure.error.message
       }));
+  }
+
+  protected openDetail(conversation: OperatorConversationSummary): void {
+    this.selectedDetail = null;
+    this.messageControl.setValue('');
+    this.loadDetail(conversation);
+  }
+
+  protected closeDetail(): void {
+    this.selectedDetail = null;
+    this.messageControl.setValue('');
+  }
+
+  protected sendOperatorMessage(): void {
+    const detail = this.selectedDetail;
+    const text = this.messageControl.value.trim();
+    if (!detail || !text || !detail.summary.requiresHumanAttention || this.sendingMessage) {
+      return;
+    }
+
+    this.sendingMessage = true;
+    this.errorMessage = '';
+
+    this.api.sendMessage(
+      detail.summary.tenantId,
+      detail.summary.businessUnitId,
+      detail.summary.conversationId,
+      { text })
+      .pipe(finalize(() => (this.sendingMessage = false)))
+      .subscribe({
+        next: (updated) => {
+          this.selectedDetail = updated;
+          this.applySummaryUpdate(updated.summary);
+          this.messageControl.setValue('');
+        },
+        error: (failure: ApiFailure) => this.errorMessage = failure.error.message
+      });
   }
 
   protected isActionLoading(conversation: OperatorConversationSummary): boolean {
@@ -457,6 +648,18 @@ export class OperatorPanelPage implements OnDestroy {
     }).format(new Date(value));
   }
 
+  protected missingFieldLabel(field: string): string {
+    const labels: Record<string, string> = {
+      items: 'Itens pendentes',
+      fulfillment_type: 'Entrega/retirada pendente',
+      delivery_address: 'Endereco pendente',
+      payment_method: 'Pagamento pendente',
+      item_variant: 'Variacao pendente'
+    };
+
+    return labels[field] ?? field;
+  }
+
   private async connectRealtime(): Promise<void> {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
@@ -470,7 +673,8 @@ export class OperatorPanelPage implements OnDestroy {
 
     try {
       await this.realtime.connect(tenantId, businessUnitId, {
-        changed: (conversation) => this.upsert(conversation),
+        changed: (conversation) => this.applySummaryUpdate(conversation),
+        detailChanged: (conversation) => this.applyDetailUpdate(conversation),
         removed: (conversationId) => this.remove(conversationId),
         reconnected: () => this.reload(),
         statusChanged: (connected) => this.realtimeConnected = connected
@@ -497,8 +701,45 @@ export class OperatorPanelPage implements OnDestroy {
     ]);
   }
 
+  private applySummaryUpdate(conversation: OperatorConversationSummary): void {
+    this.upsert(conversation);
+
+    if (this.selectedDetail?.summary.conversationId === conversation.conversationId) {
+      this.selectedDetail = {
+        ...this.selectedDetail,
+        summary: conversation
+      };
+    }
+  }
+
+  private applyDetailUpdate(detail: OperatorConversationDetail): void {
+    this.applySummaryUpdate(detail.summary);
+
+    if (this.selectedDetail?.summary.conversationId === detail.summary.conversationId) {
+      this.selectedDetail = detail;
+    }
+  }
+
   private remove(conversationId: string): void {
     this.conversations = this.conversations.filter((conversation) => conversation.conversationId !== conversationId);
+    if (this.selectedDetail?.summary.conversationId === conversationId) {
+      this.closeDetail();
+    }
+  }
+
+  private loadDetail(conversation: OperatorConversationSummary): void {
+    this.detailLoading = true;
+    this.errorMessage = '';
+
+    this.api.detail(conversation.tenantId, conversation.businessUnitId, conversation.conversationId)
+      .pipe(finalize(() => (this.detailLoading = false)))
+      .subscribe({
+        next: (detail) => {
+          this.selectedDetail = detail;
+          this.applySummaryUpdate(detail.summary);
+        },
+        error: (failure: ApiFailure) => this.errorMessage = failure.error.message
+      });
   }
 
   private sort(items: OperatorConversationSummary[]): OperatorConversationSummary[] {
@@ -508,6 +749,7 @@ export class OperatorPanelPage implements OnDestroy {
 
   private reset(): void {
     this.conversations = [];
+    this.selectedDetail = null;
     this.errorMessage = '';
   }
 }
