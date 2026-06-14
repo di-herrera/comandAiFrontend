@@ -1,10 +1,9 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
 
 import { ProductCompositionApiService } from '@core/api/product-composition-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
   ProductComposition,
   ProductListItem
@@ -19,7 +18,7 @@ interface MenuProduct {
 @Component({
   selector: 'app-menu-preview',
   standalone: true,
-  imports: [CatalogContextSelectorComponent],
+  imports: [],
   template: `
     <section class="page">
       <header class="page-header">
@@ -33,8 +32,6 @@ interface MenuProduct {
       @if (errorMessage) {
         <p class="feedback error">{{ errorMessage }}</p>
       }
-
-      <app-catalog-context-selector />
 
       <section class="card">
         <div class="section-heading">
@@ -232,3 +229,5 @@ export class MenuPreviewPage {
       });
   }
 }
+
+

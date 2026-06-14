@@ -1,10 +1,9 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { OptionsApiService } from '@core/api/options-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
   ProductOptionCreateRequest,
   ProductOptionListItem
@@ -14,7 +13,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 @Component({
   selector: 'app-options',
   standalone: true,
-  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -40,8 +39,6 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
       @if (errorMessage) {
         <p class="feedback error">{{ errorMessage }}</p>
       }
-
-      <app-catalog-context-selector />
 
       @if (isEditorOpen) {
       <div class="editor-backdrop">
@@ -104,7 +101,6 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div class="section-heading">
           <div>
             <h2>Opções cadastradas</h2>
-            <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa não selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade não selecionada' }}.</p>
           </div>
           <label class="field list-search">
             <span>Buscar</span>
@@ -309,3 +305,5 @@ export class OptionsPage {
     };
   }
 }
+
+

@@ -33,51 +33,61 @@ export const routes: Routes = [
   {
     path: 'produtos',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/products/products.page').then((m) => m.ProductsPage)
   },
   {
     path: 'categorias',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/product-categories/product-categories.page').then((m) => m.ProductCategoriesPage)
   },
   {
     path: 'ingredientes',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/ingredients/ingredients.page').then((m) => m.IngredientsPage)
   },
   {
     path: 'opcoes',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/options/options.page').then((m) => m.OptionsPage)
   },
   {
     path: 'grupos',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/option-groups/option-groups.page').then((m) => m.OptionGroupsPage)
   },
   {
     path: 'composicao-produto',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/product-composition/product-composition.page').then((m) => m.ProductCompositionPage)
   },
   {
     path: 'pedidos',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/orders/orders.page').then((m) => m.OrdersPage)
   },
   {
     path: 'painel-operador',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/operator-panel/operator-panel.page').then((m) => m.OperatorPanelPage)
   },
   {
     path: 'auditoria-ia',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/ai-audit/ai-audit.page').then((m) => m.AiAuditPage)
   },
   {
     path: 'cardapio',
     canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
     loadComponent: () => import('./features/menu-preview/menu-preview.page').then((m) => m.MenuPreviewPage)
   },
   {

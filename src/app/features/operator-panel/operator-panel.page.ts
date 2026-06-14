@@ -1,18 +1,17 @@
-import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild, effect, signal } from '@angular/core';
+﻿import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild, effect, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { OperatorConversationsApiService } from '@core/api/operator-conversations-api.service';
 import { OperatorConversationsRealtimeService } from '@core/api/operator-conversations-realtime.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import { ApiFailure } from '@shared/models/common.models';
 import { OperatorConversationDetail, OperatorConversationSummary } from '@shared/models/operator-conversations.models';
 
 @Component({
   selector: 'app-operator-panel',
   standalone: true,
-  imports: [CatalogContextSelectorComponent, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -25,8 +24,6 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
           {{ loading ? 'Atualizando...' : 'Atualizar' }}
         </button>
       </header>
-
-      <app-catalog-context-selector />
 
       @if (errorMessage) {
         <p class="feedback error">{{ errorMessage }}</p>
@@ -844,3 +841,4 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
     this.errorMessage = '';
   }
 }
+

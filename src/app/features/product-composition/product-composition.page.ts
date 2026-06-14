@@ -1,4 +1,4 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { finalize, forkJoin } from 'rxjs';
 
@@ -7,7 +7,6 @@ import { OptionsApiService } from '@core/api/options-api.service';
 import { ProductCompositionApiService } from '@core/api/product-composition-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
   IngredientListItem,
   ProductComposition,
@@ -33,7 +32,7 @@ interface OptionSelection {
 @Component({
   selector: 'app-product-composition',
   standalone: true,
-  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -51,8 +50,6 @@ interface OptionSelection {
       @if (errorMessage) {
         <p class="feedback error">{{ errorMessage }}</p>
       }
-
-      <app-catalog-context-selector />
 
       <section class="card">
         <div class="form-grid">
@@ -556,3 +553,4 @@ export class ProductCompositionPage {
     return event.target instanceof HTMLInputElement ? event.target.checked : false;
   }
 }
+

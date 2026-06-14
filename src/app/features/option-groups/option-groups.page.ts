@@ -1,11 +1,10 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize, forkJoin } from 'rxjs';
 
 import { OptionGroupsApiService } from '@core/api/option-groups-api.service';
 import { OptionsApiService } from '@core/api/options-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
   OptionGroup,
   OptionGroupOptionRequest,
@@ -23,7 +22,7 @@ type OptionGroupOptionForm = FormGroup<{
 @Component({
   selector: 'app-option-groups',
   standalone: true,
-  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -50,13 +49,10 @@ type OptionGroupOptionForm = FormGroup<{
         <p class="feedback error">{{ errorMessage }}</p>
       }
 
-      <app-catalog-context-selector />
-
       <section class="card">
         <div class="section-heading">
           <div>
             <h2>Grupos cadastrados</h2>
-            <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}.</p>
           </div>
           <label class="field list-search">
             <span>Buscar</span>
@@ -447,3 +443,5 @@ export class OptionGroupsPage {
     return true;
   }
 }
+
+

@@ -1,10 +1,9 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize, forkJoin } from 'rxjs';
 
 import { ProductCategoriesApiService } from '@core/api/product-categories-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
   OptionGroup,
   ProductCategoryCreateRequest,
@@ -15,7 +14,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 @Component({
   selector: 'app-product-categories',
   standalone: true,
-  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -41,8 +40,6 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
       @if (errorMessage) {
         <p class="feedback error">{{ errorMessage }}</p>
       }
-
-      <app-catalog-context-selector />
 
       @if (isEditorOpen) {
       <div class="editor-backdrop">
@@ -102,7 +99,6 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div class="section-heading">
           <div>
             <h2>Categorias cadastradas</h2>
-            <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}.</p>
           </div>
           <label class="field list-search">
             <span>Buscar</span>
@@ -496,3 +492,5 @@ export class ProductCategoriesPage {
     };
   }
 }
+
+

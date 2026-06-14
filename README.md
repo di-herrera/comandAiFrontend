@@ -18,8 +18,7 @@ https://www.comandia.com.br
 
 Novas implementações devem ser registradas como issues no GitHub antes do desenvolvimento. O board do GitHub Projects é usado para acompanhar o fluxo das atividades e deve refletir o estado atual de cada tarefa.
 
-Para agentes de IA: use as issues como fonte de trabalho e o board como fonte de acompanhamento. Não use arquivos antigos de backlog como origem para escolher novas tarefas,
-trate GitHub Issues como a fonte do escopo da tarefa e o GitHub Project como a fonte do status operacional. Não implemente novas funcionalidades sem issue correspondente, salvo pedido explícito do mantenedor.
+Para agentes de IA: use as issues como fonte de trabalho e o board como fonte de acompanhamento. Não use arquivos antigos de backlog como origem para escolher novas tarefas, trate GitHub Issues como a fonte do escopo da tarefa e o GitHub Project como a fonte do status operacional. Não implemente novas funcionalidades sem issue correspondente, salvo pedido explícito do mantenedor.
 
 ## Projeto relacionado: backend
 
@@ -121,6 +120,20 @@ docs/contracts/http-api.md
 docs/development/codex-workflow.md
 ```
 
+Fluxo obrigatório para qualquer alteração:
+
+1. Abrir ou localizar a issue/card correspondente no GitHub antes de implementar.
+2. Mover a tarefa no GitHub Projects para `Doing` ao iniciar.
+3. Criar uma branch dedicada a partir da branch base atual, usando o número da issue quando disponível.
+4. Implementar somente o escopo da issue.
+5. Atualizar documentação quando mudar fluxo, contrato, estrutura ou decisão técnica.
+6. Rodar `npm run build`.
+7. Fazer commit com uma mensagem clara.
+8. Enviar a branch para o GitHub.
+9. Abrir PR apontando para a branch base correta.
+10. Comentar na issue/card o que foi feito, validações executadas e link do PR.
+11. Mover a tarefa no GitHub Projects para `Review`, nunca para `Done`.
+
 Prompt recomendado:
 
 ```text
@@ -129,8 +142,10 @@ Leia AGENTS.md, README.md e docs/contracts/http-api.md.
 Abra a issue/card correspondente no GitHub antes de implementar.
 Pegue somente uma tarefa por vez.
 Mova para Doing.
+Crie uma branch para a tarefa.
 Implemente apenas essa tarefa.
 Não implemente autenticação, financeiro, PDV, marketplace ou features fora do escopo.
+Atualize a documentação quando mudar fluxo, contrato, estrutura ou decisão técnica.
 Rode npm run build.
-Se passar, mova a tarefa para Review e adicione notas de implementação.
+Se passar, faça commit, envie a branch, abra PR, comente na issue/card e mova a tarefa para Review.
 ```
