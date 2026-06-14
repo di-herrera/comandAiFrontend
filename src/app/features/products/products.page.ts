@@ -1,11 +1,10 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { ProductCategoriesApiService } from '@core/api/product-categories-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import {
   ProductCreateRequest,
   ProductCategoryListItem,
@@ -25,7 +24,7 @@ type VariantForm = FormGroup<{
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -51,8 +50,6 @@ type VariantForm = FormGroup<{
       @if (errorMessage) {
         <p class="feedback error">{{ errorMessage }}</p>
       }
-
-      <app-catalog-context-selector />
 
       @if (isEditorOpen) {
       <div class="editor-backdrop">
@@ -177,7 +174,6 @@ type VariantForm = FormGroup<{
         <div class="section-heading">
           <div>
             <h2>Produtos cadastrados</h2>
-            <p>Filtro ativo: {{ catalogContext.selectedTenantName() || 'empresa nao selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade nao selecionada' }}.</p>
           </div>
           <label class="field list-search">
             <span>Buscar</span>
@@ -482,3 +478,5 @@ export class ProductsPage {
     };
   }
 }
+
+

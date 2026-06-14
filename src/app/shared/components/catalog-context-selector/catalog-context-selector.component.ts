@@ -1,4 +1,4 @@
-import { Component, effect } from '@angular/core';
+import { Component, EventEmitter, Input, Output, effect } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { CatalogContextService } from '@core/context/catalog-context.service';
@@ -8,7 +8,7 @@ import { CatalogContextService } from '@core/context/catalog-context.service';
   standalone: true,
   imports: [ReactiveFormsModule],
   template: `
-    <section class="card">
+    <section class="context-selector" [class.context-selector-card]="asCard">
       <div class="form-grid">
         <label class="field">
           <span>Empresa</span>
@@ -43,10 +43,26 @@ import { CatalogContextService } from '@core/context/catalog-context.service';
       @if (context.errorMessage()) {
         <p class="muted context-message">{{ context.errorMessage() }}</p>
       }
+
+      @if (showActions) {
+        <div class="button-row context-actions">
+          <button class="btn btn-primary" type="button" (click)="confirmed.emit()" [disabled]="!context.hasCatalogContext()">
+            Usar filtro
+          </button>
+          <button class="btn" type="button" (click)="cancelled.emit()">
+            Fechar
+          </button>
+        </div>
+      }
     </section>
   `
 })
 export class CatalogContextSelectorComponent {
+  @Input() asCard = true;
+  @Input() showActions = false;
+  @Output() readonly confirmed = new EventEmitter<void>();
+  @Output() readonly cancelled = new EventEmitter<void>();
+
   protected readonly tenantControl = new FormControl('', { nonNullable: true });
   protected readonly businessUnitControl = new FormControl('', { nonNullable: true });
 

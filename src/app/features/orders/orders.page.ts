@@ -1,17 +1,16 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { OrdersApiService } from '@core/api/orders-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import { ApiFailure } from '@shared/models/common.models';
 import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@shared/models/orders.models';
 
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -64,8 +63,6 @@ import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@share
           </div>
         </form>
       </section>
-
-      <app-catalog-context-selector />
 
       <section class="orders-layout">
         <section class="card orders-list-card">
@@ -353,3 +350,4 @@ export class OrdersPage {
     this.selectedDetail = null;
   }
 }
+

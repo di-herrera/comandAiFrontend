@@ -1,10 +1,9 @@
-import { Component, effect } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AiAuditApiService } from '@core/api/ai-audit-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
-import { CatalogContextSelectorComponent } from '@shared/components/catalog-context-selector/catalog-context-selector.component';
 import { AiInteractionFilters, AiInteractionListItem } from '@shared/models/ai-audit.models';
 import { ApiFailure } from '@shared/models/common.models';
 
@@ -13,7 +12,7 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
 @Component({
   selector: 'app-ai-audit',
   standalone: true,
-  imports: [ReactiveFormsModule, CatalogContextSelectorComponent],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -67,8 +66,6 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
           </div>
         </form>
       </section>
-
-      <app-catalog-context-selector />
 
       <section class="audit-layout">
         <section class="card audit-list-card">
@@ -309,3 +306,4 @@ export class AiAuditPage {
     this.selectedInteraction = null;
   }
 }
+
