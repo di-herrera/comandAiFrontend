@@ -112,7 +112,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
               <dl class="operator-values">
                 <div>
                   <dt>Rascunho</dt>
-                  <dd>{{ conversation.draftStatus || 'Sem rascunho' }}</dd>
+                  <dd>{{ draftStatusLabel(conversation.draftStatus) }}</dd>
                 </div>
                 <div>
                   <dt>Total</dt>
@@ -213,7 +213,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                   <dl class="detail-grid">
                     <div>
                       <dt>Status</dt>
-                      <dd>{{ selectedDetail.draft.status }}</dd>
+                      <dd>{{ draftStatusLabel(selectedDetail.draft.status) }}</dd>
                     </div>
                     <div>
                       <dt>Entrega</dt>
@@ -663,6 +663,21 @@ export class OperatorPanelPage implements OnDestroy {
 
   protected fulfillmentLabel(value: string): string {
     return value === 'Delivery' ? 'Entrega' : 'Retirada';
+  }
+
+  protected draftStatusLabel(value: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      Open: 'Em montagem',
+      WaitingCustomerConfirmation: 'Aguardando confirmacao do cliente',
+      WaitingCustomerInput: 'Aguardando informacoes do cliente',
+      WaitingHumanAttention: 'Aguardando atendimento humano',
+      ReadyForConfirmation: 'Pronto para confirmar',
+      Confirmed: 'Confirmado',
+      Cancelled: 'Cancelado',
+      Abandoned: 'Abandonado'
+    };
+
+    return value ? labels[value] ?? value : 'Sem rascunho';
   }
 
   protected formatCurrency(value: number): string {
