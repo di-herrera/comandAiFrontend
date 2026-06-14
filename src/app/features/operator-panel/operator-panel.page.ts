@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, ViewChild, effect, signal } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild, effect, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -450,7 +450,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
     }
   `]
 })
-export class OperatorPanelPage implements OnDestroy {
+export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
   @ViewChild('conversationStream') private conversationStream?: ElementRef<HTMLElement>;
 
   protected readonly messageControl = new FormControl('', { nonNullable: true });
@@ -467,6 +467,7 @@ export class OperatorPanelPage implements OnDestroy {
   private readonly actionLoadingIds = new Set<string>();
   private readonly now = signal(Date.now());
   private readonly clock = window.setInterval(() => this.now.set(Date.now()), 30000);
+  private pendingConversationScroll = false;
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
@@ -485,6 +486,15 @@ export class OperatorPanelPage implements OnDestroy {
   ngOnDestroy(): void {
     window.clearInterval(this.clock);
     void this.realtime.disconnect();
+  }
+
+  ngAfterViewChecked(): void {
+    if (!this.pendingConversationScroll) {
+      return;
+    }
+
+    this.pendingConversationScroll = false;
+    this.scrollConversationToBottomNow();
   }
 
   protected get canUseContext(): boolean {
@@ -787,12 +797,17 @@ export class OperatorPanelPage implements OnDestroy {
   }
 
   private scrollConversationToBottom(): void {
-    window.setTimeout(() => {
-      const element = this.conversationStream?.nativeElement;
-      if (element) {
-        element.scrollTop = element.scrollHeight;
-      }
-    });
+    this.pendingConversationScroll = true;
+    window.requestAnimationFrame(() => this.scrollConversationToBottomNow());
+  }
+
+  private scrollConversationToBottomNow(): void {
+    const element = this.conversationStream?.nativeElement;
+    if (!element) {
+      return;
+    }
+
+    element.scrollTo({ top: element.scrollHeight });
   }
 
   private sort(items: OperatorConversationSummary[]): OperatorConversationSummary[] {
