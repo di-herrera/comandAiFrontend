@@ -1,4 +1,4 @@
-import { Component, OnDestroy, effect, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, ViewChild, effect, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -160,7 +160,12 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
 
             <div class="operator-modal-layout">
               <section class="conversation-panel">
-                <div class="conversation-stream">
+                <label class="auto-scroll-toggle">
+                  <input type="checkbox" [checked]="autoScrollConversation" (change)="toggleAutoScroll($event)" />
+                  Rolar automaticamente ao receber mensagem
+                </label>
+
+                <div #conversationStream class="conversation-stream">
                   @if (selectedDetail.messages.length === 0) {
                     <p class="muted">Nenhuma mensagem de texto registrada.</p>
                   } @else {
@@ -446,6 +451,8 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
   `]
 })
 export class OperatorPanelPage implements OnDestroy {
+  @ViewChild('conversationStream') private conversationStream?: ElementRef<HTMLElement>;
+
   protected readonly messageControl = new FormControl('', { nonNullable: true });
   protected conversations: OperatorConversationSummary[] = [];
   protected selectedDetail: OperatorConversationDetail | null = null;
@@ -455,6 +462,7 @@ export class OperatorPanelPage implements OnDestroy {
   protected realtimeConnected = false;
   protected errorMessage = '';
   protected detailErrorMessage = '';
+  protected autoScrollConversation = true;
 
   private readonly actionLoadingIds = new Set<string>();
   private readonly now = signal(Date.now());
@@ -586,12 +594,22 @@ export class OperatorPanelPage implements OnDestroy {
       .pipe(finalize(() => (this.sendingMessage = false)))
       .subscribe({
         next: (updated) => {
+          const shouldScroll = this.hasNewMessages(this.selectedDetail, updated);
           this.selectedDetail = updated;
           this.applySummaryUpdate(updated.summary);
           this.messageControl.setValue('');
+          this.scrollConversationToBottomIfNeeded(shouldScroll);
         },
         error: (failure: ApiFailure) => this.detailErrorMessage = failure.error.message
       });
+  }
+
+  protected toggleAutoScroll(event: Event): void {
+    this.autoScrollConversation = (event.target as HTMLInputElement).checked;
+
+    if (this.autoScrollConversation) {
+      this.scrollConversationToBottom();
+    }
   }
 
   protected isActionLoading(conversation: OperatorConversationSummary): boolean {
@@ -726,7 +744,9 @@ export class OperatorPanelPage implements OnDestroy {
     this.applySummaryUpdate(detail.summary);
 
     if (this.selectedDetail?.summary.conversationId === detail.summary.conversationId) {
+      const shouldScroll = this.hasNewMessages(this.selectedDetail, detail);
       this.selectedDetail = detail;
+      this.scrollConversationToBottomIfNeeded(shouldScroll);
     }
   }
 
@@ -748,9 +768,39 @@ export class OperatorPanelPage implements OnDestroy {
         next: (detail) => {
           this.selectedDetail = detail;
           this.applySummaryUpdate(detail.summary);
+          this.scrollConversationToBottomIfNeeded(detail.messages.length > 0);
         },
         error: (failure: ApiFailure) => this.errorMessage = failure.error.message
       });
+  }
+
+  private hasNewMessages(current: OperatorConversationDetail | null, next: OperatorConversationDetail): boolean {
+    if (!current) {
+      return next.messages.length > 0;
+    }
+
+    const currentLastMessage = current.messages.at(-1);
+    const nextLastMessage = next.messages.at(-1);
+
+    return current.messages.length !== next.messages.length ||
+      currentLastMessage?.messageId !== nextLastMessage?.messageId;
+  }
+
+  private scrollConversationToBottomIfNeeded(shouldScroll: boolean): void {
+    if (!shouldScroll || !this.autoScrollConversation) {
+      return;
+    }
+
+    this.scrollConversationToBottom();
+  }
+
+  private scrollConversationToBottom(): void {
+    window.setTimeout(() => {
+      const element = this.conversationStream?.nativeElement;
+      if (element) {
+        element.scrollTop = element.scrollHeight;
+      }
+    });
   }
 
   private sort(items: OperatorConversationSummary[]): OperatorConversationSummary[] {
