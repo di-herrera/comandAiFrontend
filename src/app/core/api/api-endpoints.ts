@@ -73,6 +73,14 @@ export const ApiEndpoints = {
     detail: (tenantId: string, businessUnitId: string, orderId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}`
   },
+  operatorConversations: {
+    list: (tenantId: string, businessUnitId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations`,
+    handoff: (tenantId: string, businessUnitId: string, conversationId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations/${enc(conversationId)}/handoff`,
+    close: (tenantId: string, businessUnitId: string, conversationId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/operator/conversations/${enc(conversationId)}/close`
+  },
   aiAudit: {
     list: (tenantId: string, businessUnitId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/ai-interactions`

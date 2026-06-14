@@ -21,7 +21,7 @@ O frontend não é o produto principal para o cliente final. Ele é um painel op
 - Não implementar autenticação completa neste MVP.
 - Não implementar PDV, ERP, financeiro, pagamentos ou marketplace.
 - Não implementar disparo em massa.
-- Não implementar atendimento ao cliente em tempo real neste frontend.
+- Não implementar chat humano completo em tempo real neste frontend; o painel operador pode acompanhar conversas e acionar handoff.
 
 ## Arquitetura do frontend
 
