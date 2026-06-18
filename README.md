@@ -1,12 +1,46 @@
-# ComandAI Admin Frontend
+# ComandIA Admin Frontend
 
-Painel administrativo Angular da **ComandAI**.
+Painel administrativo Angular da **ComandIA**.
 
-A ComandAI é uma camada inteligente que transforma conversas do WhatsApp em pedidos organizados, validados e prontos para execução. Este frontend existe apenas para cadastrar e manter os dados mínimos que o backend precisa para interpretar mensagens, validar catálogo e montar comandas.
+A ComandIA é uma camada inteligente que transforma conversas do WhatsApp em pedidos organizados, validados e prontos para execução. Este frontend existe apenas para cadastrar e manter os dados mínimos que o backend precisa para interpretar mensagens, validar catálogo e montar comandas.
+
+Domínio público reservado para o produto:
+
+```text
+https://www.comandia.com.br
+```
+
+## Links do projeto
+
+- Repositório GitHub: [di-herrera/comandAiFrontend](https://github.com/di-herrera/comandAiFrontend)
+- Issues para novas implementações: [comandAiFrontend/issues](https://github.com/di-herrera/comandAiFrontend/issues)
+- Board de acompanhamento: [GitHub Projects - ComandIA](https://github.com/users/di-herrera/projects/1/views/1)
+
+Novas implementações devem ser registradas como issues no GitHub antes do desenvolvimento. O board do GitHub Projects é usado para acompanhar o fluxo das atividades e deve refletir o estado atual de cada tarefa.
+
+Para agentes de IA: use as issues como fonte de trabalho e o board como fonte de acompanhamento. Não use arquivos antigos de backlog como origem para escolher novas tarefas, trate GitHub Issues como a fonte do escopo da tarefa e o GitHub Project como a fonte do status operacional. Não implemente novas funcionalidades sem issue correspondente, salvo pedido explícito do mantenedor.
+
+## Projeto relacionado: backend
+
+O backend da ComandIA é o projeto `ComandIA.Api`. Na máquina de desenvolvimento, ele fica em:
+
+```text
+C:\Repos\comandIA
+```
+
+Algumas tarefas podem exigir alterações coordenadas no frontend e no backend para entregar a atividade completa. Quando isso acontecer, o agente de IA deve abrir e seguir as diretrizes do `README.md` e demais instruções locais de cada projeto antes de editar arquivos.
+
+Regras práticas para agentes:
+
+- Este repositório define as regras do frontend administrativo.
+- O repositório `C:\Repos\comandIA` define as regras do backend.
+- Alterações de contrato entre frontend e backend devem respeitar a API como fonte da verdade.
+- O frontend deve evitar regras de negócio. Sempre que possível, decisões operacionais, status derivados, validações e cálculos devem ficar no backend; o frontend deve apenas exibir os campos retornados pela API.
+- Antes de finalizar, rode as validações exigidas pelo README de cada projeto alterado.
 
 ## Escopo deste projeto
 
-Este projeto é o **frontend administrativo** separado da API `ComandAI.Api`.
+Este projeto é o **frontend administrativo** separado da API `ComandIA.Api`.
 
 Ele cobre:
 
@@ -16,6 +50,7 @@ Ele cobre:
 - Ingredientes.
 - Opções/adicionais.
 - Composição de produto: ingredientes removíveis e opções aplicáveis.
+- Painel operador para acompanhar conversas em andamento e acionar handoff.
 
 Ele **não** cobre:
 
@@ -26,7 +61,7 @@ Ele **não** cobre:
 - Marketplace.
 - Disparo em massa.
 - Autenticação completa no MVP.
-- Atendimento em tempo real.
+- Chat humano completo em tempo real.
 
 ## Stack
 
@@ -81,20 +116,36 @@ Leia antes:
 
 ```text
 AGENTS.md
-docs/backlog/frontend-backlog.md
 docs/contracts/http-api.md
 docs/development/codex-workflow.md
 ```
 
+Fluxo obrigatório para qualquer alteração:
+
+1. Abrir ou localizar a issue/card correspondente no GitHub antes de implementar.
+2. Mover a tarefa no GitHub Projects para `Doing` ao iniciar.
+3. Criar uma branch dedicada a partir da branch base atual, usando o número da issue quando disponível.
+4. Implementar somente o escopo da issue.
+5. Atualizar documentação quando mudar fluxo, contrato, estrutura ou decisão técnica.
+6. Rodar `npm run build`.
+7. Fazer commit com uma mensagem clara.
+8. Enviar a branch para o GitHub.
+9. Abrir PR apontando para a branch base correta.
+10. Comentar na issue/card o que foi feito, validações executadas e link do PR.
+11. Mover a tarefa no GitHub Projects para `Review`, nunca para `Done`.
+
 Prompt recomendado:
 
 ```text
-Leia AGENTS.md, README.md, docs/backlog/frontend-backlog.md e docs/contracts/http-api.md.
+Leia AGENTS.md, README.md e docs/contracts/http-api.md.
 
-Pegue somente a primeira tarefa da coluna Ready.
+Abra a issue/card correspondente no GitHub antes de implementar.
+Pegue somente uma tarefa por vez.
 Mova para Doing.
+Crie uma branch para a tarefa.
 Implemente apenas essa tarefa.
 Não implemente autenticação, financeiro, PDV, marketplace ou features fora do escopo.
+Atualize a documentação quando mudar fluxo, contrato, estrutura ou decisão técnica.
 Rode npm run build.
-Se passar, mova a tarefa para Review e adicione notas de implementação.
+Se passar, faça commit, envie a branch, abra PR, comente na issue/card e mova a tarefa para Review.
 ```

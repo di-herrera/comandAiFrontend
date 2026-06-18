@@ -3,6 +3,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { finalize } from 'rxjs';
 
 import { TenantsApiService } from '@core/api/tenants-api.service';
+import { AuthSessionService } from '@core/auth/auth-session.service';
 import { TenantCreateRequest, TenantListItem } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
@@ -16,11 +17,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div>
           <p class="eyebrow">Cadastro operacional</p>
           <h1 class="page-title">Empresas</h1>
-          <p class="page-description">Cadastre e mantenha as empresas atendidas pela ComandAI.</p>
+          <p class="page-description">Cadastre e mantenha as empresas atendidas pela ComandIA.</p>
         </div>
-        <button class="btn" type="button" (click)="loadTenants()" [disabled]="loading">
-          Atualizar
-        </button>
+        <div class="crud-toolbar">
+          @if (authSession.isSystemAdmin()) {
+            <button class="btn btn-primary" type="button" (click)="openCreate()">
+              Nova empresa
+            </button>
+          }
+          <button class="btn" type="button" (click)="loadTenants()" [disabled]="loading">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -31,10 +39,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <p class="feedback error">{{ errorMessage }}</p>
       }
 
-      <section class="card">
-        <h2>{{ editingTenantId ? 'Editar empresa' : 'Nova empresa' }}</h2>
+      @if (isEditorOpen && (authSession.isSystemAdmin() || editingTenantId)) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingTenantId ? 'Editar empresa' : 'Nova empresa' }}</h2>
+              <p>{{ editingTenantId ? 'Atualize os dados da empresa selecionada.' : 'Cadastre uma nova empresa para operar no painel.' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Razão social</span>
             <input type="text" formControlName="name" autocomplete="organization" />
@@ -68,14 +84,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving">
               {{ saving ? 'Salvando...' : editingTenantId ? 'Salvar edição' : 'Cadastrar empresa' }}
             </button>
-            @if (editingTenantId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edição
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -83,14 +99,20 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <h2>Empresas cadastradas</h2>
             <p>{{ tenants.length }} empresa(s) retornada(s) pela API.</p>
           </div>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Empresa ou documento" />
+          </label>
         </div>
 
         @if (loading) {
           <p class="muted">Carregando empresas...</p>
         } @else if (tenants.length === 0) {
           <p class="muted">Nenhuma empresa cadastrada ainda.</p>
+        } @else if (filteredTenants.length === 0) {
+          <p class="muted">Nenhuma empresa encontrada para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Empresa</th>
@@ -101,13 +123,13 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               </tr>
             </thead>
             <tbody>
-              @for (tenant of tenants; track tenant.id) {
+              @for (tenant of filteredTenants; track tenant.id) {
                 <tr>
-                  <td>{{ tenant.name }}</td>
-                  <td>{{ tenant.tradeName }}</td>
-                  <td>{{ tenant.document || '-' }}</td>
-                  <td><span class="status-pill">{{ statusLabel(tenant.status) }}</span></td>
-                  <td>
+                  <td data-label="Empresa">{{ tenant.name }}</td>
+                  <td data-label="Nome comercial">{{ tenant.tradeName }}</td>
+                  <td data-label="Documento">{{ tenant.document || '-' }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(tenant.status) }}</span></td>
+                  <td data-label="Ação">
                     <button class="btn btn-small" type="button" (click)="startEdit(tenant)">
                       Editar
                     </button>
@@ -128,15 +150,20 @@ export class TenantsPage {
     document: new FormControl<string | null>(null, { validators: [Validators.maxLength(32)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected tenants: TenantListItem[] = [];
   protected editingTenantId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
 
-  constructor(private readonly tenantsApi: TenantsApiService) {
+  constructor(
+    private readonly tenantsApi: TenantsApiService,
+    protected readonly authSession: AuthSessionService
+  ) {
     this.loadTenants();
   }
 
@@ -148,7 +175,7 @@ export class TenantsPage {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (result) => {
-          this.tenants = result.items;
+          this.tenants = this.filterTenantsByScope(result.items);
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -157,6 +184,11 @@ export class TenantsPage {
   }
 
   protected submit(): void {
+    if (!this.editingTenantId && !this.authSession.isSystemAdmin()) {
+      this.errorMessage = 'Seu usuario nao tem permissao para cadastrar empresas.';
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -183,7 +215,29 @@ export class TenantsPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
+  protected get filteredTenants(): TenantListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.tenants;
+    }
+
+    return this.tenants.filter((tenant) =>
+      tenant.name.toLowerCase().includes(term) ||
+      tenant.tradeName.toLowerCase().includes(term) ||
+      (tenant.document ?? '').toLowerCase().includes(term));
+  }
+
   protected startEdit(tenant: TenantListItem): void {
+    if (!this.canEditTenant(tenant)) {
+      this.errorMessage = 'Seu usuario nao tem permissao para editar esta empresa.';
+      return;
+    }
+
     this.editingTenantId = tenant.id;
     this.form.setValue({
       name: tenant.name,
@@ -191,12 +245,14 @@ export class TenantsPage {
       document: tenant.document ?? null,
       status: tenant.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingTenantId = null;
+    this.isEditorOpen = false;
     this.form.reset({
       name: '',
       tradeName: '',
@@ -224,5 +280,14 @@ export class TenantsPage {
       document: document ? document : null,
       status: value.status
     };
+  }
+
+  private filterTenantsByScope(tenants: TenantListItem[]): TenantListItem[] {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    return scopedTenantId ? tenants.filter((tenant) => tenant.id === scopedTenantId) : tenants;
+  }
+
+  private canEditTenant(tenant: TenantListItem): boolean {
+    return this.authSession.isSystemAdmin() || this.authSession.user()?.tenantId === tenant.id;
   }
 }

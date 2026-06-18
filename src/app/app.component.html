@@ -1,29 +1,108 @@
+@if (router.url.startsWith('/login')) {
+  <router-outlet />
+} @else {
 <div class="shell">
-  <aside class="sidebar">
-    <div class="brand">
-      <strong>ComandAI</strong>
-      <span>Painel operacional</span>
+  <aside class="sidebar" [class.sidebar-open]="mobileMenuOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <strong>ComandIA</strong>
+        <span>Painel operacional</span>
+      </div>
+
+      <button
+        class="menu-toggle"
+        type="button"
+        (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="mobileMenuOpen"
+        aria-controls="main-navigation"
+        aria-label="Abrir ou fechar menu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
 
-    <nav class="nav" aria-label="Navegacao principal">
+    <nav class="nav" id="main-navigation" aria-label="Navegacao principal">
       <span class="nav-label">Base</span>
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
-      <a routerLink="/empresas" routerLinkActive="active">Empresas</a>
-      <a routerLink="/unidades" routerLinkActive="active">Unidades</a>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">Inicio</a>
+      @if (authSession.canManageTenants()) {
+        <a routerLink="/empresas" routerLinkActive="active" (click)="closeMobileMenu()">Empresas</a>
+      }
+      @if (authSession.canManageBusinessUnits()) {
+        <a routerLink="/unidades" routerLinkActive="active" (click)="closeMobileMenu()">Unidades</a>
+      }
+      @if (authSession.canManageUsers()) {
+        <a routerLink="/usuarios" routerLinkActive="active" (click)="closeMobileMenu()">Usuarios</a>
+      }
 
       <span class="nav-label">Catalogo</span>
-      <a routerLink="/produtos" routerLinkActive="active">Produtos</a>
-      <a routerLink="/ingredientes" routerLinkActive="active">Ingredientes</a>
-      <a routerLink="/opcoes" routerLinkActive="active">Opcoes</a>
-      <a routerLink="/composicao-produto" routerLinkActive="active">Composicao</a>
-      <a routerLink="/cardapio" routerLinkActive="active">Cardapio</a>
+      <a routerLink="/categorias" routerLinkActive="active" (click)="closeMobileMenu()">Categorias</a>
+      <a routerLink="/produtos" routerLinkActive="active" (click)="closeMobileMenu()">Produtos</a>
+      <a routerLink="/ingredientes" routerLinkActive="active" (click)="closeMobileMenu()">Ingredientes</a>
+      <a routerLink="/opcoes" routerLinkActive="active" (click)="closeMobileMenu()">Opcoes</a>
+      <a routerLink="/grupos" routerLinkActive="active" (click)="closeMobileMenu()">Grupos</a>
+      <a routerLink="/composicao-produto" routerLinkActive="active" (click)="closeMobileMenu()">Composicao</a>
+      <a routerLink="/cardapio" routerLinkActive="active" (click)="closeMobileMenu()">Cardapio</a>
 
-      <span class="nav-label">Teste</span>
-      <a routerLink="/simulador-chat" routerLinkActive="active">Simulador chat</a>
+      <span class="nav-label">Operacao</span>
+      <a routerLink="/painel-operador" routerLinkActive="active" (click)="closeMobileMenu()">Painel operador</a>
+      <a routerLink="/pedidos" routerLinkActive="active" (click)="closeMobileMenu()">Pedidos</a>
+      <a routerLink="/auditoria-ia" routerLinkActive="active" (click)="closeMobileMenu()">Auditoria IA</a>
+
+      @if (authSession.canUseChatSimulator()) {
+        <span class="nav-label">Teste</span>
+        <a routerLink="/simulador-chat" routerLinkActive="active" (click)="closeMobileMenu()">Simulador chat</a>
+      }
     </nav>
   </aside>
 
-  <main class="content">
-    <router-outlet />
-  </main>
+  <section class="main-shell">
+    <app-header
+      [user]="authSession.user()"
+      [loggingOut]="loggingOut"
+      [requiresCatalogContext]="requiresCatalogContext"
+      [hasCatalogContext]="hasCatalogContext"
+      [selectedTenantName]="catalogContext.selectedTenantName()"
+      [selectedBusinessUnitName]="catalogContext.selectedBusinessUnitName()"
+      (openContext)="openContextDrawer()"
+      (logout)="logout()"
+    />
+
+    <main class="content">
+      @if (missingRequiredCatalogContext) {
+        <section class="context-required card">
+          <div>
+            <h1>Selecione empresa e unidade para usar esta tela.</h1>
+            <p>O conteúdo desta área depende do filtro ativo para carregar dados e salvar alterações no contexto correto.</p>
+          </div>
+          <button class="btn btn-primary" type="button" (click)="openContextDrawer()">Selecionar filtro</button>
+        </section>
+      } @else {
+        <router-outlet />
+      }
+    </main>
+  </section>
+
+  @if (contextDrawerOpen) {
+    <div class="editor-backdrop context-drawer-backdrop">
+      <section class="editor-panel context-drawer">
+        <div class="editor-header">
+          <div>
+            <h2>Filtro de empresa e unidade</h2>
+            <p>Escolha o contexto usado nas telas operacionais.</p>
+          </div>
+          <button class="btn editor-close" type="button" (click)="closeContextDrawer()" title="Fechar">X</button>
+        </div>
+
+        <app-catalog-context-selector
+          [asCard]="false"
+          [showActions]="true"
+          (confirmed)="closeContextDrawer()"
+          (cancelled)="closeContextDrawer()"
+        />
+      </section>
+    </div>
+  }
 </div>
+}

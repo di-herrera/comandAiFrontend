@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.comandai.local'
+  apiBaseUrl: 'https://api.comandia.com.br'
 };

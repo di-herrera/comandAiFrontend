@@ -4,9 +4,11 @@ import { finalize } from 'rxjs';
 
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { TenantsApiService } from '@core/api/tenants-api.service';
+import { AuthSessionService } from '@core/auth/auth-session.service';
 import {
   BusinessUnitCreateRequest,
   BusinessUnitListItem,
+  BusinessUnitWhatsAppChannel,
   TenantListItem
 } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
@@ -23,6 +25,16 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <h1 class="page-title">Unidades de negócio</h1>
           <p class="page-description">Cadastre unidades operacionais vinculadas a uma empresa.</p>
         </div>
+        <div class="crud-toolbar">
+          @if (canEditBusinessUnits()) {
+            <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!tenantControl.value">
+              Nova unidade
+            </button>
+          }
+          <button class="btn" type="button" (click)="loadBusinessUnits()" [disabled]="loading || !tenantControl.value">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -37,7 +49,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div class="form-grid">
           <label class="field">
             <span>Empresa</span>
-            <select [formControl]="tenantControl">
+            <select [formControl]="tenantControl" [disabled]="tenantSelectionLocked()">
               <option value="">Selecione uma empresa</option>
               @for (tenant of tenants; track tenant.id) {
                 <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
@@ -53,10 +65,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         </div>
       </section>
 
-      <section class="card">
-        <h2>{{ editingBusinessUnitId ? 'Editar unidade' : 'Nova unidade' }}</h2>
+      @if (isEditorOpen && canEditBusinessUnits()) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingBusinessUnitId ? 'Editar unidade' : 'Nova unidade' }}</h2>
+              <p>Empresa: {{ selectedTenantName || 'nenhuma selecionada' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
+          </div>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Nome da unidade</span>
             <input type="text" formControlName="name" />
@@ -83,6 +103,16 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             }
           </label>
 
+          <label class="field full-span">
+            <span>Mensagem de boas-vindas no WhatsApp</span>
+            <textarea rows="5" formControlName="whatsAppWelcomeMessage"></textarea>
+            @if (isInvalid('whatsAppWelcomeMessage')) {
+              <small>Use no máximo 1000 caracteres.</small>
+            } @else {
+              <small class="field-hint">Enviada automaticamente apenas no primeiro contato do cliente. Deixe em branco para usar a mensagem padrão.</small>
+            }
+          </label>
+
           <label class="field">
             <span>Status</span>
             <select formControlName="status">
@@ -95,14 +125,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving || !tenantControl.value">
               {{ saving ? 'Salvando...' : editingBusinessUnitId ? 'Salvar edição' : 'Cadastrar unidade' }}
             </button>
-            @if (editingBusinessUnitId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edição
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
 
       <section class="card">
         <div class="section-heading">
@@ -110,9 +140,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <h2>Unidades cadastradas</h2>
             <p>Filtro ativo: {{ selectedTenantName || 'selecione uma empresa' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadBusinessUnits()" [disabled]="loading || !tenantControl.value">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Unidade, telefone ou endereco" />
+          </label>
         </div>
 
         @if (!tenantControl.value) {
@@ -121,30 +152,72 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <p class="muted">Carregando unidades...</p>
         } @else if (businessUnits.length === 0) {
           <p class="muted">Nenhuma unidade cadastrada para esta empresa.</p>
+        } @else if (filteredBusinessUnits.length === 0) {
+          <p class="muted">Nenhuma unidade encontrada para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Unidade</th>
                 <th>Telefone</th>
                 <th>Endereço</th>
                 <th>Taxa entrega</th>
+                <th>Boas-vindas</th>
                 <th>Status</th>
+                <th>WhatsApp</th>
                 <th>Ação</th>
               </tr>
             </thead>
             <tbody>
-              @for (unit of businessUnits; track unit.id) {
+              @for (unit of filteredBusinessUnits; track unit.id) {
                 <tr>
-                  <td>{{ unit.name }}</td>
-                  <td>{{ unit.phone || '-' }}</td>
-                  <td>{{ unit.address || '-' }}</td>
-                  <td>{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
-                  <td><span class="status-pill">{{ statusLabel(unit.status) }}</span></td>
-                  <td>
-                    <button class="btn btn-small" type="button" (click)="startEdit(unit)">
-                      Editar
-                    </button>
+                  <td data-label="Unidade">{{ unit.name }}</td>
+                  <td data-label="Telefone">{{ unit.phone || '-' }}</td>
+                  <td data-label="Endereco">{{ unit.address || '-' }}</td>
+                  <td data-label="Taxa entrega">{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
+                  <td data-label="Boas-vindas">
+                    @if (hasCustomWelcomeMessage(unit)) {
+                      <span class="status-pill">Personalizada</span>
+                    } @else {
+                      <span class="muted">Padrão</span>
+                    }
+                  </td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(unit.status) }}</span></td>
+                  <td data-label="WhatsApp">
+                    <div class="whatsapp-cell">
+                      <span class="status-pill">{{ whatsappStatusLabel(unit.id) }}</span>
+                      @if (whatsappChannels[unit.id]?.instanceId) {
+                        <small>{{ whatsappChannels[unit.id]?.instanceId }}</small>
+                      }
+                      @if (whatsappQrCodeSource(unit.id)) {
+                        <img class="qr-code" [src]="whatsappQrCodeSource(unit.id)" alt="QR Code do WhatsApp" />
+                      } @else if (hasWhatsAppQrCode(unit.id)) {
+                        <small class="qr-code-error">QR Code recebido em formato nÃ£o suportado para imagem.</small>
+                      }
+                    </div>
+                  </td>
+                  <td data-label="Acao">
+                    <div class="button-row">
+                      <button class="btn btn-small" type="button" (click)="startEdit(unit)">
+                        Editar
+                      </button>
+                      <button
+                        class="btn btn-small"
+                        type="button"
+                        (click)="connectWhatsApp(unit)"
+                        [disabled]="connectingWhatsAppId === unit.id"
+                      >
+                        {{ connectingWhatsAppId === unit.id ? 'Gerando...' : 'Conectar WhatsApp' }}
+                      </button>
+                      <button
+                        class="btn btn-small"
+                        type="button"
+                        (click)="refreshWhatsAppStatus(unit)"
+                        [disabled]="loadingWhatsAppStatusId === unit.id || !whatsappChannels[unit.id]"
+                      >
+                        Status
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
@@ -162,20 +235,27 @@ export class BusinessUnitsPage {
     phone: new FormControl<string | null>(null, { validators: [Validators.maxLength(32)] }),
     address: new FormControl<string | null>(null, { validators: [Validators.maxLength(240)] }),
     fixedDeliveryFee: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+    whatsAppWelcomeMessage: new FormControl<string | null>(null, { validators: [Validators.maxLength(1000)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   protected tenants: TenantListItem[] = [];
   protected businessUnits: BusinessUnitListItem[] = [];
+  protected whatsappChannels: Record<string, BusinessUnitWhatsAppChannel> = {};
   protected editingBusinessUnitId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
+  protected connectingWhatsAppId: string | null = null;
+  protected loadingWhatsAppStatusId: string | null = null;
   protected successMessage = '';
   protected errorMessage = '';
 
   constructor(
     private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService
+    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly authSession: AuthSessionService
   ) {
     this.loadTenants();
     this.tenantControl.valueChanges.subscribe(() => {
@@ -192,7 +272,8 @@ export class BusinessUnitsPage {
   protected loadTenants(): void {
     this.tenantsApi.list().subscribe({
       next: (result) => {
-        this.tenants = result.items;
+        this.tenants = this.filterTenantsByScope(result.items);
+        this.syncTenantSelection();
       },
       error: (failure: ApiFailure) => {
         this.errorMessage = failure.error.message;
@@ -203,6 +284,7 @@ export class BusinessUnitsPage {
   protected loadBusinessUnits(): void {
     const tenantId = this.tenantControl.value;
     this.businessUnits = [];
+    this.whatsappChannels = {};
 
     if (!tenantId) {
       return;
@@ -215,7 +297,8 @@ export class BusinessUnitsPage {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (result) => {
-          this.businessUnits = result.items;
+          this.businessUnits = this.filterBusinessUnitsByScope(result.items);
+          this.loadWhatsAppChannels(this.businessUnits);
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -224,6 +307,11 @@ export class BusinessUnitsPage {
   }
 
   protected submit(): void {
+    if (!this.canEditBusinessUnits()) {
+      this.errorMessage = 'Seu usuario nao tem permissao para alterar unidades.';
+      return;
+    }
+
     const tenantId = this.tenantControl.value;
     if (!tenantId) {
       this.errorMessage = 'Selecione uma empresa antes de salvar a unidade.';
@@ -256,26 +344,52 @@ export class BusinessUnitsPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
+  protected get filteredBusinessUnits(): BusinessUnitListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.businessUnits;
+    }
+
+    return this.businessUnits.filter((unit) =>
+      unit.name.toLowerCase().includes(term) ||
+      (unit.phone ?? '').toLowerCase().includes(term) ||
+      (unit.address ?? '').toLowerCase().includes(term));
+  }
+
   protected startEdit(unit: BusinessUnitListItem): void {
+    if (!this.canEditBusinessUnits()) {
+      this.errorMessage = 'Seu usuario nao tem permissao para editar unidades.';
+      return;
+    }
+
     this.editingBusinessUnitId = unit.id;
     this.form.setValue({
       name: unit.name,
       phone: unit.phone ?? null,
       address: unit.address ?? null,
       fixedDeliveryFee: unit.fixedDeliveryFee,
+      whatsAppWelcomeMessage: unit.whatsAppWelcomeMessage ?? null,
       status: unit.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingBusinessUnitId = null;
+    this.isEditorOpen = false;
     this.form.reset({
       name: '',
       phone: null,
       address: null,
       fixedDeliveryFee: 0,
+      whatsAppWelcomeMessage: null,
       status: 'Active'
     });
   }
@@ -289,6 +403,88 @@ export class BusinessUnitsPage {
     return status === 'Active' ? 'Ativa' : 'Inativa';
   }
 
+  protected connectWhatsApp(unit: BusinessUnitListItem): void {
+    const tenantId = this.tenantControl.value;
+    if (!tenantId) {
+      return;
+    }
+
+    this.connectingWhatsAppId = unit.id;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.businessUnitsApi.connectWhatsApp(tenantId, unit.id)
+      .pipe(finalize(() => (this.connectingWhatsAppId = null)))
+      .subscribe({
+        next: (channel) => {
+          this.whatsappChannels = {
+            ...this.whatsappChannels,
+            [unit.id]: channel
+          };
+          this.successMessage = this.isWhatsAppOpen(channel)
+            ? 'WhatsApp conectado para a unidade.'
+            : 'Instância criada. Escaneie o QR Code para conectar o WhatsApp.';
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
+  protected refreshWhatsAppStatus(unit: BusinessUnitListItem): void {
+    const tenantId = this.tenantControl.value;
+    if (!tenantId) {
+      return;
+    }
+
+    this.loadingWhatsAppStatusId = unit.id;
+    this.errorMessage = '';
+
+    this.businessUnitsApi.getWhatsAppStatus(tenantId, unit.id)
+      .pipe(finalize(() => (this.loadingWhatsAppStatusId = null)))
+      .subscribe({
+        next: (channel) => {
+          this.whatsappChannels = {
+            ...this.whatsappChannels,
+            [unit.id]: this.mergeWhatsAppChannel(unit.id, channel)
+          };
+        },
+        error: (failure: ApiFailure) => {
+          this.errorMessage = failure.error.message;
+        }
+      });
+  }
+
+  protected whatsappStatusLabel(unitId: string): string {
+    const channel = this.whatsappChannels[unitId];
+    if (!channel) {
+      return 'Não configurado';
+    }
+
+    if (this.isWhatsAppOpen(channel)) {
+      return 'Conectado';
+    }
+
+    if (channel.qrCode) {
+      return 'Aguardando QR Code';
+    }
+
+    return channel.connectionStatus || 'Pendente';
+  }
+
+  protected hasWhatsAppQrCode(unitId: string): boolean {
+    return Boolean(this.whatsappChannels[unitId]?.qrCode?.trim());
+  }
+
+  protected whatsappQrCodeSource(unitId: string): string | null {
+    const qrCode = this.whatsappChannels[unitId]?.qrCode;
+    if (!qrCode) {
+      return null;
+    }
+
+    return this.normalizeQrCodeImageSource(qrCode);
+  }
+
   protected formatCurrency(value: number): string {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
@@ -297,13 +493,131 @@ export class BusinessUnitsPage {
     const value = this.form.getRawValue();
     const phone = value.phone?.trim();
     const address = value.address?.trim();
+    const whatsAppWelcomeMessage = value.whatsAppWelcomeMessage?.trim();
 
     return {
       name: value.name.trim(),
       phone: phone ? phone : null,
       address: address ? address : null,
       fixedDeliveryFee: Number(value.fixedDeliveryFee),
+      whatsAppWelcomeMessage: whatsAppWelcomeMessage ? whatsAppWelcomeMessage : null,
       status: value.status
     };
+  }
+
+  protected hasCustomWelcomeMessage(unit: BusinessUnitListItem): boolean {
+    return Boolean(unit.whatsAppWelcomeMessage?.trim());
+  }
+
+  private loadWhatsAppChannels(units: BusinessUnitListItem[]): void {
+    const tenantId = this.tenantControl.value;
+    if (!tenantId) {
+      return;
+    }
+
+    for (const unit of units) {
+      this.businessUnitsApi.getWhatsApp(tenantId, unit.id).subscribe({
+        next: (channel) => {
+          this.whatsappChannels = {
+            ...this.whatsappChannels,
+            [unit.id]: channel
+          };
+        },
+        error: () => {
+          // Unidade sem canal configurado ainda.
+        }
+      });
+    }
+  }
+
+  protected tenantSelectionLocked(): boolean {
+    return Boolean(this.authSession.user()?.tenantId);
+  }
+
+  protected canEditBusinessUnits(): boolean {
+    return this.authSession.isSystemAdmin() || this.authSession.isCompanyAdmin();
+  }
+
+  private syncTenantSelection(): void {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    if (scopedTenantId) {
+      this.tenantControl.setValue(scopedTenantId);
+      return;
+    }
+
+    if (!this.tenantControl.value && this.tenants.length === 1) {
+      this.tenantControl.setValue(this.tenants[0].id);
+    }
+  }
+
+  private filterTenantsByScope(tenants: TenantListItem[]): TenantListItem[] {
+    const scopedTenantId = this.authSession.user()?.tenantId;
+    return scopedTenantId ? tenants.filter((tenant) => tenant.id === scopedTenantId) : tenants;
+  }
+
+  private filterBusinessUnitsByScope(units: BusinessUnitListItem[]): BusinessUnitListItem[] {
+    const scopedBusinessUnitId = this.authSession.user()?.businessUnitId;
+    return scopedBusinessUnitId ? units.filter((unit) => unit.id === scopedBusinessUnitId) : units;
+  }
+
+  private isWhatsAppOpen(channel: BusinessUnitWhatsAppChannel): boolean {
+    return channel.connectionStatus.toLowerCase() === 'open';
+  }
+
+  private mergeWhatsAppChannel(unitId: string, channel: BusinessUnitWhatsAppChannel): BusinessUnitWhatsAppChannel {
+    const previous = this.whatsappChannels[unitId];
+    if (!previous || channel.qrCode || this.isWhatsAppOpen(channel)) {
+      return channel;
+    }
+
+    return {
+      ...channel,
+      qrCode: previous.qrCode
+    };
+  }
+
+  private normalizeQrCodeImageSource(qrCode: string): string | null {
+    const value = qrCode.trim().replace(/^["']|["']$/g, '');
+    if (!value) {
+      return null;
+    }
+
+    if (/^data:image\//i.test(value) || /^(https?:|blob:)/i.test(value)) {
+      return value;
+    }
+
+    if (value.startsWith('<svg')) {
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}`;
+    }
+
+    const base64Value = value.replace(/^base64,/i, '').replace(/\s/g, '');
+    if (!this.looksLikeBase64Image(base64Value)) {
+      return null;
+    }
+
+    return `data:image/${this.detectBase64ImageType(base64Value)};base64,${base64Value}`;
+  }
+
+  private looksLikeBase64Image(value: string): boolean {
+    return value.length > 24 &&
+      value.length % 4 === 0 &&
+      /^[A-Za-z0-9+/]+={0,2}$/.test(value) &&
+      /^(iVBORw0KGgo|\/9j\/|R0lGOD|UklGR)/.test(value);
+  }
+
+  private detectBase64ImageType(value: string): 'png' | 'jpeg' | 'gif' | 'webp' {
+    if (value.startsWith('/9j/')) {
+      return 'jpeg';
+    }
+
+    if (value.startsWith('R0lGOD')) {
+      return 'gif';
+    }
+
+    if (value.startsWith('UklGR')) {
+      return 'webp';
+    }
+
+    return 'png';
   }
 }

@@ -1,7 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
+    "rootDir": "./src",
     "outDir": "./dist/out-tsc",
     "strict": true,
     "noImplicitOverride": true,
@@ -16,10 +16,10 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "paths": {
-      "@core/*": ["src/app/core/*"],
-      "@shared/*": ["src/app/shared/*"],
-      "@features/*": ["src/app/features/*"],
-      "@env/*": ["src/environments/*"]
+      "@core/*": ["./src/app/core/*"],
+      "@shared/*": ["./src/app/shared/*"],
+      "@features/*": ["./src/app/features/*"],
+      "@env/*": ["./src/environments/*"]
     }
   },
   "angularCompilerOptions": {

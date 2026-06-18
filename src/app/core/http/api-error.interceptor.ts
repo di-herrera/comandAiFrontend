@@ -22,6 +22,13 @@ function normalizeApiError(error: HttpErrorResponse): ApiError {
     return error.error;
   }
 
+  if (error.status === 403) {
+    return {
+      code: 'Forbidden',
+      message: 'Seu usuario nao tem permissao para acessar este recurso.'
+    };
+  }
+
   if (isSimpleError(error.error)) {
     return {
       code: error.status ? `Http${error.status}` : 'RequestError',

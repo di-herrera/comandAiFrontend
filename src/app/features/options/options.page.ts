@@ -1,15 +1,12 @@
-import { Component } from '@angular/core';
+﻿import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { OptionsApiService } from '@core/api/options-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
+import { CatalogContextService } from '@core/context/catalog-context.service';
 import {
-  BusinessUnitListItem,
   ProductOptionCreateRequest,
-  ProductOptionListItem,
-  TenantListItem
+  ProductOptionListItem
 } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
@@ -25,6 +22,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <h1 class="page-title">Opções e adicionais</h1>
           <p class="page-description">Cadastre adicionais globais da unidade e associe aos produtos na composição.</p>
         </div>
+        <div class="crud-toolbar">
+          <button class="btn btn-primary" type="button" (click)="openCreate()" [disabled]="!canUseCatalogContext">
+            Nova opção
+          </button>
+          <button class="btn" type="button" (click)="loadOptions()" [disabled]="loading || !canUseCatalogContext">
+            Atualizar
+          </button>
+        </div>
       </header>
 
       @if (successMessage) {
@@ -35,40 +40,18 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <p class="feedback error">{{ errorMessage }}</p>
       }
 
-      <section class="card">
-        <div class="form-grid">
-          <label class="field">
-            <span>Empresa</span>
-            <select [formControl]="tenantControl">
-              <option value="">Selecione uma empresa</option>
-              @for (tenant of tenants; track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Unidade</span>
-            <select [formControl]="businessUnitControl">
-              <option value="">Selecione uma unidade</option>
-              @for (unit of businessUnits; track unit.id) {
-                <option [value]="unit.id">{{ unit.name }}</option>
-              }
-            </select>
-          </label>
-
-          <div class="context-panel">
-            <strong>Filtro ativo</strong>
-            <span>Empresa: {{ selectedTenantName || 'nenhuma selecionada' }}</span>
-            <span>Unidade: {{ selectedBusinessUnitName || 'nenhuma selecionada' }}</span>
+      @if (isEditorOpen) {
+      <div class="editor-backdrop">
+        <section class="editor-panel">
+          <div class="editor-header">
+            <div>
+              <h2>{{ editingOptionId ? 'Editar opção' : 'Nova opção' }}</h2>
+              <p>{{ catalogContext.selectedTenantName() || 'empresa não selecionada' }} / {{ catalogContext.selectedBusinessUnitName() || 'unidade não selecionada' }}</p>
+            </div>
+            <button class="btn editor-close" type="button" (click)="cancelEdit()" [disabled]="saving" title="Fechar">X</button>
           </div>
-        </div>
-      </section>
 
-      <section class="card">
-        <h2>{{ editingOptionId ? 'Editar opção' : 'Nova opção' }}</h2>
-
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
             <span>Código</span>
             <input type="text" formControlName="code" placeholder="O001" />
@@ -105,24 +88,24 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <button class="btn btn-primary" type="submit" [disabled]="saving || !canUseCatalogContext">
               {{ saving ? 'Salvando...' : editingOptionId ? 'Salvar edição' : 'Cadastrar opção' }}
             </button>
-            @if (editingOptionId) {
-              <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
-                Cancelar edição
-              </button>
-            }
+            <button class="btn" type="button" (click)="cancelEdit()" [disabled]="saving">
+              Cancelar
+            </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
+      }
 
       <section class="card">
         <div class="section-heading">
           <div>
             <h2>Opções cadastradas</h2>
-            <p>Filtro ativo: {{ selectedTenantName || 'empresa não selecionada' }} / {{ selectedBusinessUnitName || 'unidade não selecionada' }}.</p>
           </div>
-          <button class="btn" type="button" (click)="loadOptions()" [disabled]="loading || !canUseCatalogContext">
-            Atualizar
-          </button>
+          <label class="field list-search">
+            <span>Buscar</span>
+            <input type="search" [formControl]="searchControl" placeholder="Codigo ou nome" />
+          </label>
         </div>
 
         @if (!canUseCatalogContext) {
@@ -131,8 +114,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <p class="muted">Carregando opções...</p>
         } @else if (options.length === 0) {
           <p class="muted">Nenhuma opção cadastrada para este contexto.</p>
+        } @else if (filteredOptions.length === 0) {
+          <p class="muted">Nenhuma opção encontrada para a busca.</p>
         } @else {
-          <table class="table">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Código</th>
@@ -144,14 +129,14 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               </tr>
             </thead>
             <tbody>
-              @for (option of options; track option.id) {
+              @for (option of filteredOptions; track option.id) {
                 <tr>
-                  <td>{{ option.code }}</td>
-                  <td>{{ option.name }}</td>
-                  <td>{{ formatCurrency(option.additionalPrice) }}</td>
-                  <td>{{ option.isAvailable ? 'Sim' : 'Não' }}</td>
-                  <td><span class="status-pill">{{ statusLabel(option.status) }}</span></td>
-                  <td>
+                  <td data-label="Código">{{ option.code }}</td>
+                  <td data-label="Opção">{{ option.name }}</td>
+                  <td data-label="Preço adicional">{{ formatCurrency(option.additionalPrice) }}</td>
+                  <td data-label="Disponível">{{ option.isAvailable ? 'Sim' : 'Não' }}</td>
+                  <td data-label="Status"><span class="status-pill">{{ statusLabel(option.status) }}</span></td>
+                  <td data-label="Ação">
                     <button class="btn btn-small" type="button" (click)="startEdit(option)">
                       Editar
                     </button>
@@ -166,86 +151,52 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
   `
 })
 export class OptionsPage {
-  protected readonly tenantControl = new FormControl('', { nonNullable: true });
-  protected readonly businessUnitControl = new FormControl('', { nonNullable: true });
   protected readonly form = new FormGroup({
     code: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(32)] }),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(160)] }),
     additionalPrice: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected tenants: TenantListItem[] = [];
-  protected businessUnits: BusinessUnitListItem[] = [];
   protected options: ProductOptionListItem[] = [];
   protected editingOptionId: string | null = null;
+  protected isEditorOpen = false;
   protected loading = false;
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
 
   constructor(
-    private readonly tenantsApi: TenantsApiService,
-    private readonly businessUnitsApi: BusinessUnitsApiService,
+    protected readonly catalogContext: CatalogContextService,
     private readonly optionsApi: OptionsApiService
   ) {
-    this.loadTenants();
-    this.tenantControl.valueChanges.subscribe(() => {
-      this.businessUnitControl.setValue('');
-      this.businessUnits = [];
-      this.options = [];
-      this.cancelEdit();
-      this.loadBusinessUnits();
-    });
-    this.businessUnitControl.valueChanges.subscribe(() => {
+    effect(() => {
+      this.catalogContext.selectedTenantId();
+      this.catalogContext.selectedBusinessUnitId();
       this.cancelEdit();
       this.loadOptions();
     });
   }
 
   protected get canUseCatalogContext(): boolean {
-    return Boolean(this.tenantControl.value && this.businessUnitControl.value);
+    return this.catalogContext.hasCatalogContext();
   }
 
-  protected get selectedTenantName(): string {
-    const tenant = this.tenants.find((item) => item.id === this.tenantControl.value);
-    return tenant?.tradeName || tenant?.name || '';
-  }
-
-  protected get selectedBusinessUnitName(): string {
-    return this.businessUnits.find((item) => item.id === this.businessUnitControl.value)?.name ?? '';
-  }
-
-  protected loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
-  }
-
-  protected loadBusinessUnits(): void {
-    const tenantId = this.tenantControl.value;
-    if (!tenantId) {
-      return;
+  protected get filteredOptions(): ProductOptionListItem[] {
+    const term = this.searchControl.value.trim().toLowerCase();
+    if (!term) {
+      return this.options;
     }
 
-    this.businessUnitsApi.list(tenantId).subscribe({
-      next: (result) => {
-        this.businessUnits = result.items;
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
+    return this.options.filter((option) =>
+      option.code.toLowerCase().includes(term) ||
+      option.name.toLowerCase().includes(term));
   }
 
   protected loadOptions(): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     this.options = [];
 
     if (!tenantId || !businessUnitId) {
@@ -268,8 +219,8 @@ export class OptionsPage {
   }
 
   protected submit(): void {
-    const tenantId = this.tenantControl.value;
-    const businessUnitId = this.businessUnitControl.value;
+    const tenantId = this.catalogContext.selectedTenantId();
+    const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     if (!tenantId || !businessUnitId) {
       this.errorMessage = 'Selecione empresa e unidade antes de salvar a opção.';
       return;
@@ -301,6 +252,11 @@ export class OptionsPage {
     });
   }
 
+  protected openCreate(): void {
+    this.cancelEdit();
+    this.isEditorOpen = true;
+  }
+
   protected startEdit(option: ProductOptionListItem): void {
     this.editingOptionId = option.id;
     this.form.setValue({
@@ -309,12 +265,14 @@ export class OptionsPage {
       additionalPrice: option.additionalPrice,
       status: option.status
     });
+    this.isEditorOpen = true;
     this.successMessage = '';
     this.errorMessage = '';
   }
 
   protected cancelEdit(): void {
     this.editingOptionId = null;
+    this.isEditorOpen = false;
     this.form.reset({
       code: '',
       name: '',
@@ -347,3 +305,5 @@ export class OptionsPage {
     };
   }
 }
+
+

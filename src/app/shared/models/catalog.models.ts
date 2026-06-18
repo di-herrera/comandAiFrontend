@@ -24,6 +24,7 @@ export interface BusinessUnitListItem {
   phone?: string | null;
   address?: string | null;
   fixedDeliveryFee: number;
+  whatsAppWelcomeMessage?: string | null;
   status: EntityStatus;
 }
 
@@ -32,10 +33,23 @@ export interface BusinessUnitCreateRequest {
   phone?: string | null;
   address?: string | null;
   fixedDeliveryFee: number;
+  whatsAppWelcomeMessage?: string | null;
   status: EntityStatus;
 }
 
 export interface BusinessUnitUpdateRequest extends BusinessUnitCreateRequest {}
+
+export interface BusinessUnitWhatsAppChannel {
+  channelId?: string | null;
+  tenantId: string;
+  businessUnitId: string;
+  provider: string;
+  instanceId: string;
+  channelStatus: string;
+  connectionStatus: string;
+  qrCode?: string | null;
+  pairingCode?: string | null;
+}
 
 export interface ProductListItem {
   id: string;
@@ -53,6 +67,7 @@ export interface ProductListItem {
 }
 
 export interface ProductCreateRequest {
+  categoryId?: string | null;
   code: string;
   name: string;
   description?: string | null;
@@ -64,18 +79,43 @@ export interface ProductCreateRequest {
 
 export interface ProductUpdateRequest extends ProductCreateRequest {}
 
+export interface ProductCategoryListItem {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  name: string;
+  description?: string | null;
+  displayOrder: number;
+  status: EntityStatus;
+}
+
+export interface ProductCategoryCreateRequest {
+  name: string;
+  description?: string | null;
+  displayOrder: number;
+  status: EntityStatus;
+}
+
+export interface ProductCategoryUpdateRequest extends ProductCategoryCreateRequest {}
+
 export interface ProductVariant {
   id: string;
+  /** Codigo da variante global reutilizada pela unidade, como G, M, P ou COCA. */
   code: string;
+  /** Nome da variante global. */
   name: string;
+  /** Preco do vinculo produto-variante. */
   price: number;
+  /** Disponibilidade do vinculo produto-variante. */
   isAvailable: boolean;
   displayOrder: number;
 }
 
 export interface ProductVariantRequest {
+  /** Codigo da variante global. Se ja existir na unidade, o backend reutiliza. */
   code: string;
   name: string;
+  /** Preco da variante neste produto. */
   price: number;
   isAvailable: boolean;
   displayOrder: number;
@@ -149,4 +189,40 @@ export interface ProductCompositionUpdateIngredient {
 export interface ProductCompositionUpdateRequest {
   ingredients: ProductCompositionUpdateIngredient[];
   optionIds: string[];
+}
+
+export interface OptionGroup {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  name: string;
+  minSelected: number;
+  maxSelected: number;
+  isRequired: boolean;
+  linkSource: 'None' | 'Product' | 'Category' | 'ProductAndCategory';
+  options: OptionGroupOption[];
+}
+
+export interface OptionGroupOption {
+  id: string;
+  optionId: string;
+  code: string;
+  name: string;
+  additionalPrice: number;
+  isAvailable: boolean;
+  displayOrder: number;
+}
+
+export interface OptionGroupRequest {
+  name: string;
+  minSelected: number;
+  maxSelected: number;
+  isRequired: boolean;
+  options: OptionGroupOptionRequest[];
+}
+
+export interface OptionGroupOptionRequest {
+  optionId: string;
+  isAvailable: boolean;
+  displayOrder: number;
 }
