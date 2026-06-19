@@ -226,3 +226,36 @@ export interface OptionGroupOptionRequest {
   isAvailable: boolean;
   displayOrder: number;
 }
+
+export interface CompositionGroup {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  code: string;
+  name: string;
+  status: EntityStatus;
+  productIds: string[];
+  variantRules: CompositionGroupVariantRule[];
+}
+
+export interface CompositionGroupVariantRule {
+  variantId: string;
+  variantCode: string;
+  variantName: string;
+  minParts: number;
+  maxParts: number;
+}
+
+export interface CompositionGroupRequest {
+  code: string;
+  name: string;
+  status: EntityStatus;
+  productIds: string[];
+  variantRules: CompositionGroupVariantRuleRequest[];
+}
+
+export interface CompositionGroupVariantRuleRequest {
+  variantCode: string;
+  minParts: number;
+  maxParts: number;
+}

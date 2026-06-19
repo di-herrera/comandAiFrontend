@@ -174,6 +174,15 @@ import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@share
                       <p class="muted">Obs.: {{ item.notes }}</p>
                     }
 
+                    @if (item.parts.length > 0) {
+                      <div class="compact-detail-list">
+                        <strong>Sabores / partes</strong>
+                        @for (part of item.parts; track part.productId) {
+                          <span>1/{{ part.totalParts }} {{ part.productName }} - valor inteiro {{ formatCurrency(part.fullPrice) }}</span>
+                        }
+                      </div>
+                    }
+
                     @if (item.options.length > 0) {
                       <div class="compact-detail-list">
                         <strong>Adicionais</strong>

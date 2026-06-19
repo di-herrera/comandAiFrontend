@@ -80,6 +80,22 @@ export interface OrderDetailItem {
   notes?: string | null;
   options: OrderDetailItemOption[];
   removedIngredients: OrderDetailRemovedIngredient[];
+  itemKind: 'Simple' | 'Composed';
+  compositionGroupId?: string | null;
+  compositionGroupName?: string | null;
+  parts: OrderDetailItemPart[];
+}
+
+export interface OrderDetailItemPart {
+  productId: string;
+  productCode?: string | null;
+  productName: string;
+  productVariantId: string;
+  variantCode?: string | null;
+  variantName: string;
+  fullPrice: number;
+  partNumber: number;
+  totalParts: number;
 }
 
 export interface OrderDetailItemOption {

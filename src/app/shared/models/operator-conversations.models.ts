@@ -73,6 +73,15 @@ export interface OperatorOrderDraftItemSummary {
   variantName: string;
   notes?: string | null;
   subtotal: number;
+  itemKind: 'Simple' | 'Composed';
+  parts: OperatorOrderDraftItemPart[];
+}
+
+export interface OperatorOrderDraftItemPart {
+  productName: string;
+  variantName: string;
+  partNumber: number;
+  totalParts: number;
 }
 
 export interface EnableConversationHandoffRequest {
