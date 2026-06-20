@@ -2,11 +2,13 @@
 import { finalize, forkJoin } from 'rxjs';
 
 import { ProductCompositionApiService } from '@core/api/product-composition-api.service';
+import { CompositionGroupsApiService } from '@core/api/composition-groups-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
 import {
   ProductComposition,
-  ProductListItem
+  ProductListItem,
+  CompositionGroup
 } from '@shared/models/catalog.models';
 import { ApiFailure } from '@shared/models/common.models';
 
@@ -51,6 +53,11 @@ interface MenuProduct {
         } @else if (menuProducts.length === 0) {
           <p class="muted">Nenhum produto cadastrado para este contexto.</p>
         } @else {
+          @if (compositionGroups.length > 0) {
+            <div class="compact-detail-list"><strong>Itens compostos</strong>
+              @for (group of compositionGroups; track group.id) { <span>{{ group.name }}: @for (rule of group.variantRules; track rule.variantId) { {{ rule.variantName }} ({{ rule.minParts }}-{{ rule.maxParts }} partes) } </span> }
+            </div>
+          }
           <div class="menu-preview">
             @for (group of groupedMenu; track group.categoryName) {
               <section class="menu-category">
@@ -152,11 +159,13 @@ export class MenuPreviewPage {
   protected menuProducts: MenuProduct[] = [];
   protected loading = false;
   protected errorMessage = '';
+  protected compositionGroups: CompositionGroup[] = [];
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
     private readonly productsApi: ProductsApiService,
-    private readonly compositionApi: ProductCompositionApiService
+    private readonly compositionApi: ProductCompositionApiService,
+    private readonly compositionGroupsApi: CompositionGroupsApiService
   ) {
     effect(() => {
       this.catalogContext.selectedTenantId();
@@ -185,6 +194,7 @@ export class MenuPreviewPage {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
     this.menuProducts = [];
+    this.compositionGroups = [];
 
     if (!tenantId || !businessUnitId) {
       return;
@@ -193,9 +203,10 @@ export class MenuPreviewPage {
     this.loading = true;
     this.errorMessage = '';
 
-    this.productsApi.list(tenantId, businessUnitId).subscribe({
+    forkJoin({ products: this.productsApi.list(tenantId, businessUnitId), groups: this.compositionGroupsApi.list(tenantId, businessUnitId) }).subscribe({
       next: (result) => {
-        this.loadCompositions(tenantId, businessUnitId, result.items);
+        this.compositionGroups = result.groups.items;
+        this.loadCompositions(tenantId, businessUnitId, result.products.items);
       },
       error: (failure: ApiFailure) => {
         this.loading = false;

@@ -260,6 +260,9 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                             @if (item.notes) {
                               <p class="muted">Obs.: {{ item.notes }}</p>
                             }
+                            @if (item.parts.length > 0) {
+                              <p class="muted">@for (part of item.parts; track part.partNumber) { <span>1/{{ part.totalParts }} {{ part.productName }} </span> }</p>
+                            }
                           </article>
                         }
                       </div>

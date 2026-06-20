@@ -1,5 +1,12 @@
 # Contratos HTTP — ComandIA Admin
 
+## Itens compostos
+
+O painel usa `GET/POST .../composition-groups` e `PUT .../composition-groups/{id}`
+para configurar grupos, produtos e limites por variante. Pedidos e rascunhos
+podem retornar `itemKind: "Composed"` e `parts` com produto, variante, numero e
+total de partes. Preco e validacoes permanecem exclusivos do backend.
+
 Este documento define os contratos esperados entre o frontend Angular e a API `ComandIA.Api`.
 
 A API é a fonte da verdade. O frontend deve seguir estes contratos e registrar qualquer mudança em documentação antes de implementar telas definitivas.
