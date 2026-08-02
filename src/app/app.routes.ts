@@ -91,6 +91,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/ai-audit/ai-audit.page').then((m) => m.AiAuditPage)
   },
   {
+    path: 'prompts-ia',
+    canActivate: [authGuard],
+    data: { roles: ['SystemAdmin'] },
+    loadComponent: () => import('./features/ai-prompts/ai-prompts.page').then((m) => m.AiPromptsPage)
+  },
+  {
     path: 'cardapio',
     canActivate: [authGuard],
     data: { requiresCatalogContext: true },

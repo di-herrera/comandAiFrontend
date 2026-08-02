@@ -95,6 +95,9 @@ export const ApiEndpoints = {
     list: (tenantId: string, businessUnitId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/ai-interactions`
   },
+  aiPrompts: {
+    orderInterpretation: `${adminPrefix}/ai-prompts/order-interpretation`
+  },
   dev: {
     simulateMessage: '/dev/simulate-message'
   }

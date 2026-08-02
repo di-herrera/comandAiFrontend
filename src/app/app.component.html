@@ -50,6 +50,9 @@
       <a routerLink="/painel-operador" routerLinkActive="active" (click)="closeMobileMenu()">Painel operador</a>
       <a routerLink="/pedidos" routerLinkActive="active" (click)="closeMobileMenu()">Pedidos</a>
       <a routerLink="/auditoria-ia" routerLinkActive="active" (click)="closeMobileMenu()">Auditoria IA</a>
+      @if (authSession.canManageAiPrompts()) {
+        <a routerLink="/prompts-ia" routerLinkActive="active" (click)="closeMobileMenu()">Prompts IA</a>
+      }
 
       @if (authSession.canUseChatSimulator()) {
         <span class="nav-label">Teste</span>
