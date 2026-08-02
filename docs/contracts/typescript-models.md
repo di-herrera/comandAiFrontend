@@ -126,6 +126,19 @@ export interface OperatorConversationSummary {
   total: number;
 }
 
+export interface AiPrompt {
+  key: string;
+  content: string;
+  version: number;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  updatedByUserId?: string | null;
+}
+
+export interface UpdateAiPromptRequest {
+  content: string;
+}
+
 export interface OperatorConversationDetail {
   summary: OperatorConversationSummary;
   messages: OperatorConversationMessage[];
@@ -156,6 +169,12 @@ Modelos de auditoria de IA ficam em:
 
 ```text
 src/app/shared/models/ai-audit.models.ts
+```
+
+Modelos de prompts de IA ficam em:
+
+```text
+src/app/shared/models/ai-prompts.models.ts
 ```
 
 Modelos do painel operador ficam em:

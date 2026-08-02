@@ -773,6 +773,41 @@ Resposta:
 
 O backend nao retorna secrets, API keys ou headers sensiveis.
 
+## 9. Prompts de IA
+
+Endpoints exclusivos para `SystemAdmin`.
+
+```http
+GET /api/admin/ai-prompts/order-interpretation
+PUT /api/admin/ai-prompts/order-interpretation
+```
+
+Resposta:
+
+```json
+{
+  "key": "order_interpretation",
+  "content": "Role: ComandIA order interpreter...",
+  "version": 1,
+  "createdAtUtc": "1970-01-01T00:00:00Z",
+  "updatedAtUtc": "1970-01-01T00:00:00Z",
+  "updatedByUserId": null
+}
+```
+
+Atualizacao:
+
+```json
+{
+  "content": "Role: ComandIA order interpreter..."
+}
+```
+
+O frontend deve permitir editar apenas `content`. O backend salva em banco,
+incrementa a versao e atualiza o cache usado pelo processamento de mensagens.
+Usuarios sem role `SystemAdmin` nao devem ver a rota no menu e recebem bloqueio
+pelo guard caso tentem acessar `/prompts-ia` diretamente.
+
 ## Decisões abertas
 
 - Confirmar se `status` será string `Active/Inactive` ou boolean `isActive`.
