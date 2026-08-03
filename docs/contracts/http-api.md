@@ -735,6 +735,12 @@ O backend retorna `operatorStatus`, `operatorStatusLabel` e `isReadyToConfirm`
 prontos para exibicao no Painel operador. O frontend nao deve recalcular estes
 estados a partir de `draftStatus`, itens, entrega ou pagamento.
 
+No Painel operador, conversas com `requiresHumanAttention: true` devem ser
+exibidas primeiro, em uma secao separada de atendimento humano. As demais
+conversas devem aparecer abaixo, na secao de atendimento pela IA. Essa
+priorizacao e somente de apresentacao e deve reagir aos eventos em tempo real
+com o mesmo campo retornado pela API.
+
 ## 8. Auditoria de IA
 
 ### Listar interacoes

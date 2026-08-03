@@ -1,4 +1,5 @@
 ﻿import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild, effect, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -11,7 +12,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
 @Component({
   selector: 'app-operator-panel',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [NgTemplateOutlet, ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -61,8 +62,40 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
           <p class="muted">Nenhuma conversa em andamento nesta unidade.</p>
         </section>
       } @else {
+        <div class="operator-sections">
+          @if (handoffConversations.length > 0) {
+            <section class="operator-section handoff-section" aria-labelledby="handoff-heading">
+              <header class="operator-section-header">
+                <div>
+                  <p class="eyebrow">Prioridade operacional</p>
+                  <h2 id="handoff-heading">Atendimento humano</h2>
+                </div>
+                <span class="status-pill attention">{{ handoffConversations.length }} em handoff</span>
+              </header>
+              <ng-container [ngTemplateOutlet]="conversationCards" [ngTemplateOutletContext]="{ $implicit: handoffConversations }" />
+            </section>
+          }
+
+          <section class="operator-section" aria-labelledby="ai-heading">
+            <header class="operator-section-header">
+              <div>
+                <p class="eyebrow">Atendimento automatico</p>
+                <h2 id="ai-heading">Atendimento pela IA</h2>
+              </div>
+              <span class="status-pill">{{ aiConversations.length }} com IA</span>
+            </header>
+            @if (aiConversations.length === 0) {
+              <p class="muted">Nenhuma conversa esta em atendimento automatico.</p>
+            } @else {
+              <ng-container [ngTemplateOutlet]="conversationCards" [ngTemplateOutletContext]="{ $implicit: aiConversations }" />
+            }
+          </section>
+        </div>
+      }
+
+      <ng-template #conversationCards let-items>
         <section class="operator-grid" aria-label="Conversas em andamento">
-          @for (conversation of conversations; track conversation.conversationId) {
+          @for (conversation of items; track conversation.conversationId) {
             <article class="operator-card" [class]="cardClass(conversation)">
               <header class="operator-card-header">
                 <div>
@@ -140,7 +173,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
             </article>
           }
         </section>
-      }
+      </ng-template>
 
       @if (selectedDetail) {
         <div class="operator-modal-backdrop" role="presentation">
@@ -308,6 +341,38 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
       gap: 1rem;
     }
 
+    .operator-sections {
+      display: grid;
+      gap: 2rem;
+    }
+
+    .operator-section {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .operator-section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: .75rem;
+    }
+
+    .operator-section-header h2,
+    .operator-section-header .eyebrow {
+      margin: 0;
+    }
+
+    .operator-section-header .eyebrow {
+      margin-bottom: .2rem;
+    }
+
+    .handoff-section .operator-section-header {
+      border-bottom-color: #f4c784;
+    }
+
     .operator-card {
       display: grid;
       gap: .85rem;
@@ -448,7 +513,8 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
 
       .operator-card-header,
       .operator-card-facts,
-      .operator-actions {
+      .operator-actions,
+      .operator-section-header {
         display: grid;
         justify-content: stretch;
       }
@@ -517,7 +583,15 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
   }
 
   protected get handoffCount(): number {
-    return this.conversations.filter((conversation) => conversation.requiresHumanAttention).length;
+    return this.handoffConversations.length;
+  }
+
+  protected get handoffConversations(): OperatorConversationSummary[] {
+    return this.conversations.filter((conversation) => conversation.requiresHumanAttention);
+  }
+
+  protected get aiConversations(): OperatorConversationSummary[] {
+    return this.conversations.filter((conversation) => !conversation.requiresHumanAttention);
   }
 
   protected get readyToConfirmCount(): number {
