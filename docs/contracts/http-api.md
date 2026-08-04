@@ -770,6 +770,12 @@ Resposta:
       "parsedSuccessfully": true,
       "errorMessage": null,
       "durationMs": 123,
+      "inputTokens": 2450,
+      "cachedInputTokens": 1792,
+      "cacheWriteInputTokens": 0,
+      "outputTokens": 180,
+      "totalTokens": 2630,
+      "estimatedCostUsd": 0.001156,
       "createdAtUtc": "2026-05-17T09:00:00Z"
     }
   ],
@@ -777,7 +783,9 @@ Resposta:
 }
 ```
 
-O backend nao retorna secrets, API keys ou headers sensiveis.
+Os campos de tokens e custo podem vir nulos quando o provider nao retorna uso ou
+quando o backend nao conhece o preco do modelo. O backend nao retorna secrets,
+API keys ou headers sensiveis.
 
 ## 9. Prompts de IA
 
