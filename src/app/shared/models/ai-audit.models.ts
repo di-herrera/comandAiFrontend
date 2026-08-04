@@ -4,6 +4,8 @@ export interface AiInteractionFilters {
   parsedSuccessfully?: boolean | null;
   createdFromUtc?: string | null;
   createdToUtc?: string | null;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface AiInteractionListItem {

@@ -749,6 +749,11 @@ Filtros opcionais:
 - `parsedSuccessfully`: `true` ou `false`.
 - `createdFromUtc`: data/hora inicial em ISO 8601.
 - `createdToUtc`: data/hora final em ISO 8601.
+- `page`: pagina solicitada, iniciando em `1`.
+- `pageSize`: quantidade por pagina. A tela usa `20`.
+
+A tela `/auditoria-ia` abre inicialmente com `createdFromUtc` preenchido como
+D-1 para evitar carregar todo o historico no primeiro acesso.
 
 Resposta:
 
@@ -779,9 +784,12 @@ Resposta:
       "createdAtUtc": "2026-05-17T09:00:00Z"
     }
   ],
-  "total": 1
+  "total": 192
 }
 ```
+
+`total` representa o total filtrado antes da paginacao. `items` contem apenas a
+pagina solicitada.
 
 Os campos de tokens e custo podem vir nulos quando o provider nao retorna uso ou
 quando o backend nao conhece o preco do modelo. O backend nao retorna secrets,
