@@ -109,6 +109,12 @@ export interface AiInteractionListItem {
   parsedSuccessfully: boolean;
   errorMessage?: string | null;
   durationMs: number;
+  inputTokens?: number | null;
+  cachedInputTokens?: number | null;
+  cacheWriteInputTokens?: number | null;
+  outputTokens?: number | null;
+  totalTokens?: number | null;
+  estimatedCostUsd?: number | null;
   createdAtUtc: string;
 }
 
