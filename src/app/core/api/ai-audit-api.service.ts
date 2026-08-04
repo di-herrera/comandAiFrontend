@@ -47,6 +47,14 @@ export class AiAuditApiService {
       params = params.set('createdToUtc', filters.createdToUtc);
     }
 
+    if (filters.page) {
+      params = params.set('page', String(filters.page));
+    }
+
+    if (filters.pageSize) {
+      params = params.set('pageSize', String(filters.pageSize));
+    }
+
     return params;
   }
 }
