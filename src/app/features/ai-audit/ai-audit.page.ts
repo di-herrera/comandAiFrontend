@@ -103,6 +103,8 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
                   <span class="audit-facts">
                     <span>{{ formatDate(interaction.createdAtUtc) }}</span>
                     <span>{{ interaction.durationMs }} ms</span>
+                    <span>{{ formatTokenSummary(interaction) }}</span>
+                    <span>{{ formatEstimatedCost(interaction.estimatedCostUsd) }}</span>
                     @if (interaction.errorMessage) {
                       <span class="error-inline">{{ interaction.errorMessage }}</span>
                     }
@@ -139,6 +141,30 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
               <div>
                 <dt>Duração</dt>
                 <dd>{{ selectedInteraction.durationMs }} ms</dd>
+              </div>
+              <div>
+                <dt>Tokens entrada</dt>
+                <dd>{{ formatNumber(selectedInteraction.inputTokens) }}</dd>
+              </div>
+              <div>
+                <dt>Tokens cache hit</dt>
+                <dd>{{ formatNumber(selectedInteraction.cachedInputTokens) }}</dd>
+              </div>
+              <div>
+                <dt>Tokens cache write</dt>
+                <dd>{{ formatNumber(selectedInteraction.cacheWriteInputTokens) }}</dd>
+              </div>
+              <div>
+                <dt>Tokens saída</dt>
+                <dd>{{ formatNumber(selectedInteraction.outputTokens) }}</dd>
+              </div>
+              <div>
+                <dt>Tokens total</dt>
+                <dd>{{ formatNumber(selectedInteraction.totalTokens) }}</dd>
+              </div>
+              <div>
+                <dt>Custo estimado</dt>
+                <dd>{{ formatEstimatedCost(selectedInteraction.estimatedCostUsd) }}</dd>
               </div>
               <div>
                 <dt>Registro</dt>
@@ -262,6 +288,36 @@ export class AiAuditPage {
     } catch {
       return value;
     }
+  }
+
+  protected formatNumber(value?: number | null): string {
+    if (value === null || value === undefined) {
+      return 'Nao informado';
+    }
+
+    return new Intl.NumberFormat('pt-BR').format(value);
+  }
+
+  protected formatEstimatedCost(value?: number | null): string {
+    if (value === null || value === undefined) {
+      return 'Custo nao estimado';
+    }
+
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 6,
+      maximumFractionDigits: 8
+    }).format(value);
+  }
+
+  protected formatTokenSummary(interaction: AiInteractionListItem): string {
+    if (interaction.totalTokens === null || interaction.totalTokens === undefined) {
+      return 'Tokens nao informados';
+    }
+
+    const cached = interaction.cachedInputTokens ?? 0;
+    return `${this.formatNumber(interaction.totalTokens)} tokens (${this.formatNumber(cached)} cache)`;
   }
 
   private buildFilters(): AiInteractionFilters {
