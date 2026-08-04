@@ -1,4 +1,5 @@
-﻿import { Component, effect } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -12,7 +13,7 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
 @Component({
   selector: 'app-ai-audit',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -28,7 +29,7 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
       }
 
       <section class="card">
-        <form class="form-grid" [formGroup]="filtersForm" (ngSubmit)="loadInteractions()">
+        <form class="form-grid" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
           <label class="field">
             <span>Status de parse</span>
             <select formControlName="parsedStatus">
@@ -72,7 +73,7 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
           <div class="section-heading">
             <div>
               <h2>Registros</h2>
-              <p>{{ interactions.length }} interacao(oes) no contexto selecionado.</p>
+              <p>{{ total }} interacao(oes) no contexto selecionado.</p>
             </div>
             <button class="btn" type="button" (click)="loadInteractions()" [disabled]="loading || !canUseContext">Atualizar</button>
           </div>
@@ -112,99 +113,133 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
                 </button>
               }
             </div>
+
+            <nav class="pagination-bar" aria-label="Paginacao de auditoria de IA">
+              <div>
+                <strong>Pagina {{ currentPage }} de {{ totalPages }}</strong>
+                <span>{{ pageRangeLabel }}</span>
+              </div>
+              <div class="button-row">
+                <button class="btn" type="button" (click)="previousPage()" [disabled]="loading || currentPage <= 1">Anterior</button>
+                <button class="btn" type="button" (click)="nextPage()" [disabled]="loading || currentPage >= totalPages">Proxima</button>
+              </div>
+            </nav>
           }
         </section>
 
-        <section class="card audit-detail-card">
+        <section class="card audit-detail-card desktop-audit-detail">
           @if (!selectedInteraction) {
             <p class="muted">Selecione uma interacao para ver mensagem, prompt, resposta e JSON parseado.</p>
           } @else {
-            <div class="section-heading">
+            <ng-container [ngTemplateOutlet]="auditDetailContent" [ngTemplateOutletContext]="{ $implicit: selectedInteraction }" />
+          }
+        </section>
+      </section>
+
+      @if (detailModalOpen && selectedInteraction) {
+        <div class="operator-modal-backdrop audit-modal-backdrop" role="presentation" (click)="closeDetailModal()">
+          <section class="operator-modal audit-modal" role="dialog" aria-modal="true" aria-label="Detalhe da interacao de IA" (click)="$event.stopPropagation()">
+            <header class="operator-modal-header">
               <div>
                 <h2>Detalhe da interacao</h2>
                 <p>{{ selectedInteraction.provider }} / {{ selectedInteraction.model }} - {{ formatDate(selectedInteraction.createdAtUtc) }}</p>
               </div>
-              <span class="status-pill" [class.attention]="!selectedInteraction.parsedSuccessfully">
-                {{ selectedInteraction.parsedSuccessfully ? 'Sucesso' : 'Falha' }}
-              </span>
-            </div>
+              <button class="btn editor-close" type="button" (click)="closeDetailModal()" aria-label="Fechar detalhe">x</button>
+            </header>
 
-            <dl class="detail-grid">
-              <div>
-                <dt>ConversationId</dt>
-                <dd>{{ selectedInteraction.conversationId }}</dd>
-              </div>
-              <div>
-                <dt>IncomingMessageId</dt>
-                <dd>{{ selectedInteraction.incomingMessageId }}</dd>
-              </div>
-              <div>
-                <dt>Duração</dt>
-                <dd>{{ selectedInteraction.durationMs }} ms</dd>
-              </div>
-              <div>
-                <dt>Tokens entrada</dt>
-                <dd>{{ formatNumber(selectedInteraction.inputTokens) }}</dd>
-              </div>
-              <div>
-                <dt>Tokens cache hit</dt>
-                <dd>{{ formatNumber(selectedInteraction.cachedInputTokens) }}</dd>
-              </div>
-              <div>
-                <dt>Tokens cache write</dt>
-                <dd>{{ formatNumber(selectedInteraction.cacheWriteInputTokens) }}</dd>
-              </div>
-              <div>
-                <dt>Tokens saída</dt>
-                <dd>{{ formatNumber(selectedInteraction.outputTokens) }}</dd>
-              </div>
-              <div>
-                <dt>Tokens total</dt>
-                <dd>{{ formatNumber(selectedInteraction.totalTokens) }}</dd>
-              </div>
-              <div>
-                <dt>Custo estimado</dt>
-                <dd>{{ formatEstimatedCost(selectedInteraction.estimatedCostUsd) }}</dd>
-              </div>
-              <div>
-                <dt>Registro</dt>
-                <dd>{{ selectedInteraction.id }}</dd>
-              </div>
-            </dl>
+            <ng-container [ngTemplateOutlet]="auditDetailContent" [ngTemplateOutletContext]="{ $implicit: selectedInteraction }" />
+          </section>
+        </div>
+      }
 
-            @if (selectedInteraction.errorMessage) {
-              <p class="feedback error">{{ selectedInteraction.errorMessage }}</p>
-            }
+      <ng-template #auditDetailContent let-interaction>
+        <div class="section-heading audit-detail-heading">
+          <div>
+            <h2>Detalhe da interacao</h2>
+            <p>{{ interaction.provider }} / {{ interaction.model }} - {{ formatDate(interaction.createdAtUtc) }}</p>
+          </div>
+          <span class="status-pill" [class.attention]="!interaction.parsedSuccessfully">
+            {{ interaction.parsedSuccessfully ? 'Sucesso' : 'Falha' }}
+          </span>
+        </div>
 
-            <section class="audit-detail-section">
-              <h3>Mensagem do cliente</h3>
-              <pre>{{ selectedInteraction.customerMessage || 'Nao informado' }}</pre>
-            </section>
+        <dl class="detail-grid">
+          <div>
+            <dt>ConversationId</dt>
+            <dd>{{ interaction.conversationId }}</dd>
+          </div>
+          <div>
+            <dt>IncomingMessageId</dt>
+            <dd>{{ interaction.incomingMessageId }}</dd>
+          </div>
+          <div>
+            <dt>Duração</dt>
+            <dd>{{ interaction.durationMs }} ms</dd>
+          </div>
+          <div>
+            <dt>Tokens entrada</dt>
+            <dd>{{ formatNumber(interaction.inputTokens) }}</dd>
+          </div>
+          <div>
+            <dt>Tokens cache hit</dt>
+            <dd>{{ formatNumber(interaction.cachedInputTokens) }}</dd>
+          </div>
+          <div>
+            <dt>Tokens cache write</dt>
+            <dd>{{ formatNumber(interaction.cacheWriteInputTokens) }}</dd>
+          </div>
+          <div>
+            <dt>Tokens saída</dt>
+            <dd>{{ formatNumber(interaction.outputTokens) }}</dd>
+          </div>
+          <div>
+            <dt>Tokens total</dt>
+            <dd>{{ formatNumber(interaction.totalTokens) }}</dd>
+          </div>
+          <div>
+            <dt>Custo estimado</dt>
+            <dd>{{ formatEstimatedCost(interaction.estimatedCostUsd) }}</dd>
+          </div>
+          <div>
+            <dt>Registro</dt>
+            <dd>{{ interaction.id }}</dd>
+          </div>
+        </dl>
 
-            <section class="audit-detail-section">
-              <h3>Prompt enviado</h3>
-              <pre>{{ selectedInteraction.prompt }}</pre>
-            </section>
+        @if (interaction.errorMessage) {
+          <p class="feedback error">{{ interaction.errorMessage }}</p>
+        }
 
-            <section class="audit-detail-section">
-              <h3>Resposta bruta</h3>
-              <pre>{{ selectedInteraction.responseText || 'Nao informado' }}</pre>
-            </section>
-
-            <section class="audit-detail-section">
-              <h3>JSON parseado</h3>
-              <pre>{{ formatJson(selectedInteraction.parsedResultJson) }}</pre>
-            </section>
-          }
+        <section class="audit-detail-section">
+          <h3>Mensagem do cliente</h3>
+          <pre>{{ interaction.customerMessage || 'Nao informado' }}</pre>
         </section>
-      </section>
+
+        <section class="audit-detail-section">
+          <h3>Prompt enviado</h3>
+          <pre>{{ interaction.prompt }}</pre>
+        </section>
+
+        <section class="audit-detail-section">
+          <h3>Resposta bruta</h3>
+          <pre>{{ interaction.responseText || 'Nao informado' }}</pre>
+        </section>
+
+        <section class="audit-detail-section">
+          <h3>JSON parseado</h3>
+          <pre>{{ formatJson(interaction.parsedResultJson) }}</pre>
+        </section>
+      </ng-template>
     </section>
   `
 })
 export class AiAuditPage {
+  private static readonly PageSize = 20;
+  private static readonly MobileBreakpoint = 980;
+
   protected readonly filtersForm = new FormGroup({
     parsedStatus: new FormControl<ParsedStatusFilter>('', { nonNullable: true }),
-    createdFrom: new FormControl('', { nonNullable: true }),
+    createdFrom: new FormControl(AiAuditPage.defaultCreatedFromDate(), { nonNullable: true }),
     createdTo: new FormControl('', { nonNullable: true }),
     conversationId: new FormControl('', { nonNullable: true }),
     incomingMessageId: new FormControl('', { nonNullable: true })
@@ -212,6 +247,10 @@ export class AiAuditPage {
 
   protected interactions: AiInteractionListItem[] = [];
   protected selectedInteraction: AiInteractionListItem | null = null;
+  protected currentPage = 1;
+  protected total = 0;
+  protected readonly pageSize = AiAuditPage.PageSize;
+  protected detailModalOpen = false;
   protected loading = false;
   protected errorMessage = '';
 
@@ -222,6 +261,7 @@ export class AiAuditPage {
     effect(() => {
       this.catalogContext.selectedTenantId();
       this.catalogContext.selectedBusinessUnitId();
+      this.currentPage = 1;
       this.resetInteractions();
       this.loadInteractions();
     });
@@ -229,6 +269,25 @@ export class AiAuditPage {
 
   protected get canUseContext(): boolean {
     return this.catalogContext.hasCatalogContext();
+  }
+
+  protected get totalPages(): number {
+    return Math.max(1, Math.ceil(this.total / this.pageSize));
+  }
+
+  protected get pageRangeLabel(): string {
+    if (this.total === 0) {
+      return 'Nenhum registro';
+    }
+
+    const start = (this.currentPage - 1) * this.pageSize + 1;
+    const end = Math.min(this.currentPage * this.pageSize, this.total);
+    return `${start}-${end} de ${this.total}`;
+  }
+
+  protected applyFilters(): void {
+    this.currentPage = 1;
+    this.loadInteractions();
   }
 
   protected loadInteractions(): void {
@@ -248,7 +307,8 @@ export class AiAuditPage {
       .subscribe({
         next: (result) => {
           this.interactions = result.items;
-          this.selectedInteraction = this.interactions[0] ?? null;
+          this.total = result.total;
+          this.selectedInteraction = this.isMobileViewport() ? null : this.interactions[0] ?? null;
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -258,17 +318,40 @@ export class AiAuditPage {
 
   protected selectInteraction(interaction: AiInteractionListItem): void {
     this.selectedInteraction = interaction;
+    this.detailModalOpen = this.isMobileViewport();
+  }
+
+  protected closeDetailModal(): void {
+    this.detailModalOpen = false;
+  }
+
+  protected previousPage(): void {
+    if (this.currentPage <= 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.loadInteractions();
+  }
+
+  protected nextPage(): void {
+    if (this.currentPage >= this.totalPages) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.loadInteractions();
   }
 
   protected clearFilters(): void {
     this.filtersForm.reset({
       parsedStatus: '',
-      createdFrom: '',
+      createdFrom: AiAuditPage.defaultCreatedFromDate(),
       createdTo: '',
       conversationId: '',
       incomingMessageId: ''
     });
-    this.loadInteractions();
+    this.applyFilters();
   }
 
   protected formatDate(value: string): string {
@@ -328,7 +411,9 @@ export class AiAuditPage {
       incomingMessageId: this.trimOrNull(value.incomingMessageId),
       parsedSuccessfully: this.toParsedSuccessfully(value.parsedStatus),
       createdFromUtc: this.dateToUtcStart(value.createdFrom),
-      createdToUtc: this.dateToUtcEnd(value.createdTo)
+      createdToUtc: this.dateToUtcEnd(value.createdTo),
+      page: this.currentPage,
+      pageSize: this.pageSize
     };
   }
 
@@ -360,6 +445,22 @@ export class AiAuditPage {
   private resetInteractions(): void {
     this.interactions = [];
     this.selectedInteraction = null;
+    this.detailModalOpen = false;
+    this.total = 0;
+  }
+
+  private isMobileViewport(): boolean {
+    return window.innerWidth <= AiAuditPage.MobileBreakpoint;
+  }
+
+  private static defaultCreatedFromDate(): string {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0')
+    ].join('-');
   }
 }
-
