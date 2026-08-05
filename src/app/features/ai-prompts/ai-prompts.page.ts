@@ -80,15 +80,16 @@ import { ApiFailure } from '@shared/models/common.models';
           <p class="muted">Carregando prompt...</p>
         } @else {
           <form class="prompt-form" [formGroup]="form" (ngSubmit)="submit()">
-            <label class="field">
-              <span>Conteudo do prompt</span>
-              <textarea class="prompt-editor" formControlName="content" spellcheck="false"></textarea>
-              @if (isContentInvalid()) {
-                <small>Informe o conteudo do prompt.</small>
-              } @else {
-                <small class="field-hint">O backend acrescenta o contexto dinamico e o formato JSON esperado.</small>
-              }
-            </label>
+            @for (section of sections; track section.title) {
+              <label class="field">
+                <span>{{ section.title }}</span>
+                <textarea class="prompt-editor" [value]="section.content" [readOnly]="!section.editable" [disabled]="!section.editable" spellcheck="false" (input)="updateCustomSection($any($event.target).value)"></textarea>
+                <small class="field-hint">{{ section.editable ? 'Use este espaço para orientações adicionais da loja.' : 'Seção de plataforma: mantida pelo sistema para preservar regras e contratos.' }}</small>
+              </label>
+            }
+            @if (isContentInvalid()) {
+              <small>Informe o conteúdo do prompt.</small>
+            }
 
             <div class="button-row form-actions">
               <button class="btn btn-primary" type="submit" [disabled]="!canSave">
@@ -125,6 +126,21 @@ export class AiPromptsPage {
 
   protected get canSave(): boolean {
     return !this.loading && !this.saving && this.form.valid && this.hasChanges;
+  }
+
+  protected get sections(): PromptSection[] {
+    return parseSections(this.form.controls.content.value);
+  }
+
+  protected updateCustomSection(content: string): void {
+    const marker = '## Instruções personalizadas';
+    const current = this.form.controls.content.value;
+    const index = current.indexOf(marker);
+    if (index < 0) {
+      return;
+    }
+
+    this.form.controls.content.setValue(`${current.slice(0, index + marker.length)}\n${content.trim()}`);
   }
 
   protected loadPrompt(): void {
@@ -198,4 +214,28 @@ export class AiPromptsPage {
       timeStyle: 'medium'
     }).format(new Date(value));
   }
+}
+
+interface PromptSection {
+  title: string;
+  content: string;
+  editable: boolean;
+}
+
+function parseSections(document: string): PromptSection[] {
+  const matches = [...document.matchAll(/^## (.+)$/gm)];
+  if (matches.length === 0) {
+    return [{ title: 'Instruções personalizadas', content: document, editable: true }];
+  }
+
+  return matches.map((match, index) => {
+    const contentStart = (match.index ?? 0) + match[0].length;
+    const contentEnd = matches[index + 1]?.index ?? document.length;
+    const title = match[1].trim();
+    return {
+      title,
+      content: document.slice(contentStart, contentEnd).trim(),
+      editable: title === 'Instruções personalizadas'
+    };
+  });
 }
