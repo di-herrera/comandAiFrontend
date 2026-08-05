@@ -832,10 +832,17 @@ Atualizacao:
 }
 ```
 
-O frontend deve permitir editar apenas `content`. O backend salva em banco,
-incrementa a versao e atualiza o cache usado pelo processamento de mensagens.
-Usuarios sem role `SystemAdmin` nao devem ver a rota no menu e recebem bloqueio
-pelo guard caso tentem acessar `/prompts-ia` diretamente.
+O frontend envia apenas `content`. Para facilitar a manutencao, a tela
+`/prompts-ia` apresenta esse texto dividido pelas secoes Markdown de nivel dois
+(`##`), preservando a ordem usada na montagem do prompt. No MVP, somente a
+secao `Instruções personalizadas` e editavel; as demais secoes sao exibidas como
+referencia do comportamento padrao da IA. Ao salvar, o frontend envia o
+documento completo no mesmo contrato.
+
+O backend salva em banco, incrementa a versao e atualiza o cache usado pelo
+processamento de mensagens. Usuarios sem role `SystemAdmin` nao devem ver a
+rota no menu e recebem bloqueio pelo guard caso tentem acessar `/prompts-ia`
+diretamente. A organizacao visual das secoes nao altera essa regra de acesso.
 
 ## Decisões abertas
 
