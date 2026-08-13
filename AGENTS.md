@@ -95,7 +95,11 @@ src/app/
 - Não adicionar bibliotecas novas sem necessidade clara.
 - Se uma decisão não estiver documentada, registre em `docs/decisions.md`.
 - Ao finalizar uma tarefa, rode `npm run build`.
+- Crie um PR da atividade apontando para `main`.
 - Atualize o backlog movendo a tarefa para `Review`, não para `Done`.
+- O processo só é considerado concluído quando o PR for aprovado/validado, mergeado em `main` usando squash merge, e a branch remota/local da atividade for deletada.
+- Sempre usar squash merge para concluir PRs.
+- Sempre deletar a branch da atividade após o merge.
 - O usuário move para `Done` após revisar.
 
 - As referencias antigas ao backlog em arquivo nao se aplicam mais; a fonte de trabalho e revisao agora sao issues/cards no GitHub.
@@ -106,3 +110,4 @@ src/app/
 - Não deixar imports quebrados.
 - Garantir que as rotas básicas continuem funcionando.
 - Atualizar documentação se mudar contrato, estrutura ou decisão técnica.
+- Criar PR para `main`, concluir com squash merge após validação/revisão e deletar as branches remota/local da atividade.
