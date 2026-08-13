@@ -228,6 +228,7 @@ Resposta:
       "address": "Rua Exemplo, 123",
       "fixedDeliveryFee": 7.0,
       "whatsAppWelcomeMessage": "Ola! Este e o atendimento automatico da loja. Posso montar seu pedido e chamar uma pessoa quando for necessario.",
+      "publicSlug": "unidade-principal",
       "status": "Active"
     }
   ],
@@ -250,6 +251,7 @@ Request:
   "address": "Rua Exemplo, 123",
   "fixedDeliveryFee": 7.0,
   "whatsAppWelcomeMessage": "Ola! Este e o atendimento automatico da loja. Posso montar seu pedido e chamar uma pessoa quando for necessario.",
+  "publicSlug": "unidade-principal",
   "status": "Active"
 }
 ```
@@ -257,6 +259,11 @@ Request:
 `whatsAppWelcomeMessage` e opcional. Quando enviado como `null`, vazio ou
 somente com espacos, o backend usa a mensagem padrao no primeiro contato do
 cliente pelo WhatsApp.
+
+`publicSlug` e opcional e define o cardapio publico em
+`{publicSlug}.comandia.com.br`. O frontend valida apenas formato basico:
+3 a 63 caracteres, letras minusculas, numeros e hifens. Slugs reservados,
+unicidade e normalizacao definitiva sao responsabilidade do backend.
 
 ### Atualizar unidade
 
