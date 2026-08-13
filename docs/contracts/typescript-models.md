@@ -22,6 +22,7 @@ export interface BusinessUnitListItem {
   id: string;
   tenantId: string;
   name: string;
+  publicSlug?: string | null;
   phone?: string | null;
   address?: string | null;
   fixedDeliveryFee: number;

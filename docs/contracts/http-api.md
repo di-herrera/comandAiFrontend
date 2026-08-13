@@ -224,6 +224,7 @@ Resposta:
       "id": "uuid",
       "tenantId": "uuid",
       "name": "Unidade Principal",
+      "publicSlug": "unidade-principal",
       "phone": "+5517999999999",
       "address": "Rua Exemplo, 123",
       "fixedDeliveryFee": 7.0,
@@ -246,6 +247,7 @@ Request:
 ```json
 {
   "name": "Unidade Principal",
+  "publicSlug": "unidade-principal",
   "phone": "+5517999999999",
   "address": "Rua Exemplo, 123",
   "fixedDeliveryFee": 7.0,
@@ -257,6 +259,12 @@ Request:
 `whatsAppWelcomeMessage` e opcional. Quando enviado como `null`, vazio ou
 somente com espacos, o backend usa a mensagem padrao no primeiro contato do
 cliente pelo WhatsApp.
+
+`publicSlug` e opcional e identifica a unidade em URLs publicas como
+`unidade-principal.comandia.com.br`. Quando preenchido, deve usar apenas letras
+minusculas, numeros e hifen, sem hifen no inicio ou no fim. O frontend bloqueia
+nomes reservados como `app`, `api`, `admin`, `www`, `login`, `painel`,
+`dashboard` e `suporte`; o backend continua sendo a validacao final.
 
 ### Atualizar unidade
 

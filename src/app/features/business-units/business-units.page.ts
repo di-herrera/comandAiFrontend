@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
@@ -89,6 +89,23 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           <label class="field">
             <span>Telefone WhatsApp</span>
             <input type="text" formControlName="phone" placeholder="+5517999999999" />
+          </label>
+
+          <label class="field">
+            <span>Nome publico para URL</span>
+            <input
+              type="text"
+              formControlName="publicSlug"
+              placeholder="pizzaria-teste"
+              inputmode="url"
+              autocapitalize="none"
+              autocomplete="off"
+            />
+            @if (isInvalid('publicSlug')) {
+              <small>{{ publicSlugErrorMessage() }}</small>
+            } @else {
+              <small class="field-hint">Use letras minusculas, numeros e hifen. Exemplo: pizzaria-teste.</small>
+            }
           </label>
 
           <label class="field">
@@ -185,6 +202,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <thead>
               <tr>
                 <th>Unidade</th>
+                <th>Cardapio publico</th>
                 <th>Telefone</th>
                 <th>Endereço</th>
                 <th>Taxa entrega</th>
@@ -199,6 +217,13 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               @for (unit of filteredBusinessUnits; track unit.id) {
                 <tr>
                   <td data-label="Unidade">{{ unit.name }}</td>
+                  <td data-label="Cardapio publico">
+                    @if (unit.publicSlug) {
+                      <span class="public-menu-link">{{ publicMenuUrl(unit.publicSlug) }}</span>
+                    } @else {
+                      <span class="muted">Nao configurado</span>
+                    }
+                  </td>
                   <td data-label="Telefone">{{ unit.phone || '-' }}</td>
                   <td data-label="Endereco">{{ unit.address || '-' }}</td>
                   <td data-label="Taxa entrega">{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
@@ -263,10 +288,19 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
   `
 })
 export class BusinessUnitsPage {
+  protected readonly publicMenuDomain = 'comandia.com.br';
   protected readonly defaultWhatsAppWelcomeMessage = 'Ola! Este e o atendimento automatico da loja. Eu posso ajudar a montar seu pedido, validar itens do cardapio, anotar entrega ou retirada e chamar uma pessoa da equipe quando for necessario. Me diga o que voce gostaria de pedir.';
   protected readonly tenantControl = new FormControl('', { nonNullable: true });
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(120)] }),
+    publicSlug: new FormControl<string | null>(null, {
+      validators: [
+        Validators.minLength(3),
+        Validators.maxLength(63),
+        Validators.pattern(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/),
+        BusinessUnitsPage.reservedSlugValidator
+      ]
+    }),
     phone: new FormControl<string | null>(null, { validators: [Validators.maxLength(32)] }),
     address: new FormControl<string | null>(null, { validators: [Validators.maxLength(240)] }),
     fixedDeliveryFee: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
@@ -394,6 +428,7 @@ export class BusinessUnitsPage {
 
     return this.businessUnits.filter((unit) =>
       unit.name.toLowerCase().includes(term) ||
+      (unit.publicSlug ?? '').toLowerCase().includes(term) ||
       (unit.phone ?? '').toLowerCase().includes(term) ||
       (unit.address ?? '').toLowerCase().includes(term));
   }
@@ -407,6 +442,7 @@ export class BusinessUnitsPage {
     this.editingBusinessUnitId = unit.id;
     this.form.setValue({
       name: unit.name,
+      publicSlug: unit.publicSlug ?? null,
       phone: unit.phone ?? null,
       address: unit.address ?? null,
       fixedDeliveryFee: unit.fixedDeliveryFee,
@@ -425,6 +461,7 @@ export class BusinessUnitsPage {
     this.isEditorOpen = false;
     this.form.reset({
       name: '',
+      publicSlug: null,
       phone: null,
       address: null,
       fixedDeliveryFee: 0,
@@ -532,6 +569,7 @@ export class BusinessUnitsPage {
 
   private buildRequest(): BusinessUnitCreateRequest {
     const value = this.form.getRawValue();
+    const publicSlug = value.publicSlug?.trim().toLowerCase();
     const phone = value.phone?.trim();
     const address = value.address?.trim();
     const whatsAppWelcomeMessage = value.whatsAppWelcomeMessage?.trim();
@@ -539,6 +577,7 @@ export class BusinessUnitsPage {
 
     return {
       name: value.name.trim(),
+      publicSlug: publicSlug ? publicSlug : null,
       phone: phone ? phone : null,
       address: address ? address : null,
       fixedDeliveryFee: Number(value.fixedDeliveryFee),
@@ -551,6 +590,31 @@ export class BusinessUnitsPage {
 
   protected hasCustomWelcomeMessage(unit: BusinessUnitListItem): boolean {
     return Boolean(unit.whatsAppWelcomeMessage?.trim());
+  }
+
+  protected publicMenuUrl(publicSlug: string): string {
+    return `${publicSlug}.${this.publicMenuDomain}`;
+  }
+
+  protected publicSlugErrorMessage(): string {
+    const errors = this.form.controls.publicSlug.errors;
+    if (!errors) {
+      return '';
+    }
+
+    if (errors['reservedSlug']) {
+      return 'Este nome e reservado para a aplicacao.';
+    }
+
+    if (errors['minlength']) {
+      return 'Use pelo menos 3 caracteres.';
+    }
+
+    if (errors['maxlength']) {
+      return 'Use no maximo 63 caracteres.';
+    }
+
+    return 'Use apenas letras minusculas, numeros e hifen, sem hifen no inicio ou no fim.';
   }
 
   protected hasReturnMessage(unit: BusinessUnitListItem): boolean {
@@ -678,5 +742,16 @@ export class BusinessUnitsPage {
     }
 
     return 'png';
+  }
+
+  private static reservedSlugValidator(control: AbstractControl<string | null>): ValidationErrors | null {
+    const value = control.value?.trim().toLowerCase();
+    if (!value) {
+      return null;
+    }
+
+    return ['app', 'api', 'admin', 'www', 'login', 'painel', 'dashboard', 'suporte'].includes(value)
+      ? { reservedSlug: true }
+      : null;
   }
 }

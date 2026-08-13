@@ -23,6 +23,7 @@ export interface BusinessUnitListItem {
   id: string;
   tenantId: string;
   name: string;
+  publicSlug?: string | null;
   phone?: string | null;
   address?: string | null;
   fixedDeliveryFee: number;
@@ -34,6 +35,7 @@ export interface BusinessUnitListItem {
 
 export interface BusinessUnitCreateRequest {
   name: string;
+  publicSlug?: string | null;
   phone?: string | null;
   address?: string | null;
   fixedDeliveryFee: number;

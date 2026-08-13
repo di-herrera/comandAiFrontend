@@ -119,6 +119,7 @@ button, input, textarea, select { font: inherit; }
 .editor-close { width: 2.35rem; height: 2.35rem; display: inline-grid; place-items: center; padding: 0; border-radius: 999px; }
 .whatsapp-cell { display: grid; gap: .45rem; align-items: start; }
 .whatsapp-cell small { color: var(--muted); overflow-wrap: anywhere; }
+.public-menu-link { overflow-wrap: anywhere; }
 .qr-code { width: 132px; aspect-ratio: 1; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; padding: .35rem; }
 .qr-code-error { max-width: 160px; color: var(--danger) !important; }
 .flow-list { margin: 0; padding-left: 1.25rem; display: grid; gap: .8rem; }
