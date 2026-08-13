@@ -29,6 +29,7 @@ export interface BusinessUnitListItem {
   whatsAppWelcomeMessage?: string | null;
   whatsAppReturnMessage?: string | null;
   whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
+  publicSlug?: string | null;
   status: EntityStatus;
 }
 
@@ -40,6 +41,7 @@ export interface BusinessUnitCreateRequest {
   whatsAppWelcomeMessage?: string | null;
   whatsAppReturnMessage?: string | null;
   whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
+  publicSlug?: string | null;
   status: EntityStatus;
 }
 

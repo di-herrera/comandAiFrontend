@@ -118,3 +118,22 @@ O filtro de empresa/unidade muda pouco durante a operação e ocupava espaço re
 
 Referência:
 `docs/architecture/frontend-structure.md`
+
+## ADR-FE-011 - Slug publico da unidade no admin
+
+Status: Accepted
+
+Decisao:
+O painel administrativo permite informar `publicSlug` no cadastro da unidade e
+exibe o link `{publicSlug}.comandia.com.br` na listagem.
+
+Motivo:
+O frontend store sera um projeto separado, mas a publicacao do cardapio depende
+de um campo operacional da unidade. O painel admin deve cadastrar esse valor sem
+duplicar regras de publicacao, pedido ou seguranca.
+
+Regras:
+- O frontend valida apenas formato, tamanho e preview do dominio.
+- Slugs reservados, unicidade e normalizacao sao validados pelo backend.
+- O link exibido e informativo; a disponibilidade real do cardapio depende do
+  frontend store, DNS wildcard e API publica.
