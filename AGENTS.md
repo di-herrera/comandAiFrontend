@@ -89,7 +89,10 @@ src/app/
 
 ## Regras para Codex
 
+- Toda tarefa de implementação deve ter uma issue/card no GitHub antes de qualquer alteração de código ou documentação.
 - Leia a issue/card no GitHub antes de implementar.
+- Se o usuário não informar uma issue/card, ou se a issue/card informada não existir, criar a issue no GitHub antes de implementar.
+- A issue criada deve descrever contexto, objetivo, escopo, critérios de aceite e validações esperadas quando aplicável.
 - Implemente apenas uma tarefa por vez.
 - Não antecipe tarefas futuras.
 - Não adicionar bibliotecas novas sem necessidade clara.
@@ -106,8 +109,10 @@ src/app/
 
 ## Antes de finalizar qualquer tarefa
 
+- Garantir que existe uma issue/card no GitHub para a tarefa; se não existir, criar antes de implementar.
 - Rodar `npm run build`.
 - Não deixar imports quebrados.
 - Garantir que as rotas básicas continuem funcionando.
 - Atualizar documentação se mudar contrato, estrutura ou decisão técnica.
+- Registrar na issue/card as notas de implementação, validações executadas e link do PR.
 - Criar PR para `main`, concluir com squash merge após validação/revisão e deletar as branches remota/local da atividade.
