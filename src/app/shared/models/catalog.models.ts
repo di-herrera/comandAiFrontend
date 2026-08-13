@@ -1,5 +1,7 @@
 import { EntityStatus } from './common.models';
 
+export type WhatsAppReturnMessageCadence = 'Daily' | 'Weekly' | 'Monthly';
+
 export interface TenantListItem {
   id: string;
   name: string;
@@ -25,6 +27,8 @@ export interface BusinessUnitListItem {
   address?: string | null;
   fixedDeliveryFee: number;
   whatsAppWelcomeMessage?: string | null;
+  whatsAppReturnMessage?: string | null;
+  whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
   status: EntityStatus;
 }
 
@@ -34,6 +38,8 @@ export interface BusinessUnitCreateRequest {
   address?: string | null;
   fixedDeliveryFee: number;
   whatsAppWelcomeMessage?: string | null;
+  whatsAppReturnMessage?: string | null;
+  whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
   status: EntityStatus;
 }
 

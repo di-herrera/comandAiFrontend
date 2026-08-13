@@ -88,6 +88,26 @@ button, input, textarea, select { font: inherit; }
 .table th, .table td { border-bottom: 1px solid var(--border); padding: .75rem; text-align: left; }
 .table th { background: var(--surface-soft); font-size: .85rem; color: var(--muted); }
 .status-pill { display: inline-flex; border-radius: 999px; padding: .2rem .55rem; font-size: .8rem; background: var(--primary-soft); }
+
+.info-hover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  margin-left: .35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1;
+  cursor: help;
+}
+
+.info-hover:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 .crud-toolbar { display: flex; gap: .75rem; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
 .list-search { width: min(320px, 100%); }
 .editor-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; justify-items: end; background: rgba(17, 24, 39, .36); }
