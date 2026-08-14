@@ -77,7 +77,9 @@ export const ApiEndpoints = {
     list: (tenantId: string, businessUnitId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders`,
     detail: (tenantId: string, businessUnitId: string, orderId: string) =>
-      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}`
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}`,
+    status: (tenantId: string, businessUnitId: string, orderId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}/status`
   },
   operatorConversations: {
     list: (tenantId: string, businessUnitId: string) =>
