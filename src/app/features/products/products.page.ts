@@ -49,6 +49,9 @@ type VariantForm = FormGroup<{
 
       @if (errorMessage) {
         <p class="feedback error">{{ errorMessage }}</p>
+        <div class="toast-stack" aria-live="assertive">
+          <p class="toast toast-error" role="alert">{{ errorMessage }}</p>
+        </div>
       }
 
       @if (isEditorOpen) {
