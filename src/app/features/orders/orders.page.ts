@@ -19,6 +19,13 @@ interface StatusSection {
   orders: OrderSummary[];
 }
 
+interface SavedOrderFilters {
+  statuses: OrderStatus[];
+  createdFrom: string;
+  createdTo: string;
+  search: string;
+}
+
 @Component({
   selector: 'app-orders',
   standalone: true,
@@ -89,11 +96,18 @@ interface StatusSection {
             <button class="btn btn-primary" type="submit" [disabled]="loading || !canUseContext">
               {{ loading ? 'Carregando...' : 'Aplicar filtros' }}
             </button>
+            <button class="btn" type="button" (click)="saveFilters()" [disabled]="loading">
+              Salvar filtros
+            </button>
             <button class="btn" type="button" (click)="clearFilters()" [disabled]="loading">
               Limpar filtros
             </button>
           </div>
         </form>
+
+        @if (filtersSavedMessage) {
+          <p class="feedback success filter-feedback">{{ filtersSavedMessage }}</p>
+        }
       </section>
 
       <section class="orders-layout">
@@ -354,6 +368,12 @@ interface StatusSection {
       margin: 0;
     }
 
+    .filter-feedback {
+      grid-column: 1 / -1;
+      margin-top: 1rem;
+      padding: .65rem .75rem;
+    }
+
     .status-filter legend {
       padding: 0 .35rem;
       font-size: .9rem;
@@ -550,6 +570,7 @@ interface StatusSection {
   `]
 })
 export class OrdersPage {
+  private static readonly FiltersStorageKey = 'comandia.admin.orders.filters';
   private static readonly PageSize = 12;
   private static readonly DeliveryFlow: OrderStatus[] = [
     'OrderAccepted',
@@ -604,11 +625,14 @@ export class OrdersPage {
   protected detailLoading = false;
   protected statusUpdating = false;
   protected errorMessage = '';
+  protected filtersSavedMessage = '';
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
     private readonly ordersApi: OrdersApiService
   ) {
+    this.restoreSavedFilters();
+
     effect(() => {
       this.catalogContext.selectedTenantId();
       this.catalogContext.selectedBusinessUnitId();
@@ -746,7 +770,18 @@ export class OrdersPage {
       search: ''
     });
     this.selectedStatuses.set([]);
-    this.applyFilters();
+    this.removeSavedFilters();
+    this.filtersSavedMessage = 'Filtros limpos. A proxima visita abrira sem filtro salvo.';
+    this.currentPage = 1;
+    this.loadOrders();
+  }
+
+  protected saveFilters(): void {
+    const filters = this.currentFilters();
+    localStorage.setItem(OrdersPage.FiltersStorageKey, JSON.stringify(filters));
+    this.filtersSavedMessage = 'Filtros salvos. Eles serao aplicados automaticamente ao abrir esta tela.';
+    this.currentPage = 1;
+    this.loadOrders();
   }
 
   protected toggleStatus(status: OrderStatus, event: Event): void {
@@ -898,17 +933,75 @@ export class OrdersPage {
   }
 
   private buildFilters(): OrderListFilters {
-    const value = this.filtersForm.getRawValue();
-    const statuses = this.selectedStatuses();
+    const value = this.currentFilters();
 
     return {
-      status: statuses.length > 0 ? statuses : undefined,
+      status: value.statuses.length > 0 ? value.statuses : undefined,
       createdFromUtc: this.dateToUtcStart(value.createdFrom),
       createdToUtc: this.dateToUtcEnd(value.createdTo),
       search: value.search,
       page: this.currentPage,
       pageSize: this.pageSize
     };
+  }
+
+  private currentFilters(): SavedOrderFilters {
+    const value = this.filtersForm.getRawValue();
+
+    return {
+      statuses: this.selectedStatuses(),
+      createdFrom: value.createdFrom,
+      createdTo: value.createdTo,
+      search: value.search
+    };
+  }
+
+  private restoreSavedFilters(): void {
+    const saved = this.readSavedFilters();
+    if (!saved) {
+      return;
+    }
+
+    this.selectedStatuses.set(saved.statuses);
+    this.filtersForm.reset({
+      createdFrom: saved.createdFrom,
+      createdTo: saved.createdTo,
+      search: saved.search
+    });
+    this.filtersSavedMessage = 'Filtros salvos aplicados automaticamente.';
+  }
+
+  private readSavedFilters(): SavedOrderFilters | null {
+    const raw = localStorage.getItem(OrdersPage.FiltersStorageKey);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Partial<SavedOrderFilters>;
+      const statuses = Array.isArray(parsed.statuses) ? parsed.statuses : [];
+      const validStatuses = statuses
+        .filter((status): status is OrderStatus => this.isKnownStatus(status));
+
+      return {
+        statuses: validStatuses,
+        createdFrom: typeof parsed.createdFrom === 'string' ? parsed.createdFrom : '',
+        createdTo: typeof parsed.createdTo === 'string' ? parsed.createdTo : '',
+        search: typeof parsed.search === 'string' ? parsed.search : ''
+      };
+    } catch {
+      this.removeSavedFilters();
+      return null;
+    }
+  }
+
+  private removeSavedFilters(): void {
+    localStorage.removeItem(OrdersPage.FiltersStorageKey);
+  }
+
+  private isKnownStatus(value: unknown): value is OrderStatus {
+    return typeof value === 'string' &&
+      this.filterStatusOptions.some((option) => option.value === value);
   }
 
   private normalizedStatus(status: OrderStatus): OrderStatus {
