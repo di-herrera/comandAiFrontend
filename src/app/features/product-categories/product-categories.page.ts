@@ -4,6 +4,7 @@ import { finalize, forkJoin } from 'rxjs';
 
 import { ProductCategoriesApiService } from '@core/api/product-categories-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
+import { PagedListState } from '@shared/state/paged-list.state';
 import {
   OptionGroup,
   ProductCategoryCreateRequest,
@@ -229,11 +230,11 @@ export class ProductCategoriesPage {
   protected readonly existingGroupControl = new FormControl('', { nonNullable: true });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  private readonly categoriesState = signal<ProductCategoryListItem[]>([]);
+  private readonly categoriesList = new PagedListState<ProductCategoryListItem>();
   private readonly optionGroupsState = signal<OptionGroup[]>([]);
   private readonly reusableOptionGroupsState = signal<OptionGroup[]>([]);
-  protected get categories(): ProductCategoryListItem[] { return this.categoriesState(); }
-  protected set categories(value: ProductCategoryListItem[]) { this.categoriesState.set(value); }
+  protected get categories(): ProductCategoryListItem[] { return this.categoriesList.items(); }
+  protected set categories(value: ProductCategoryListItem[]) { this.categoriesList.items.set(value); }
   protected get optionGroups(): OptionGroup[] { return this.optionGroupsState(); }
   protected set optionGroups(value: OptionGroup[]) { this.optionGroupsState.set(value); }
   protected get reusableOptionGroups(): OptionGroup[] { return this.reusableOptionGroupsState(); }
@@ -241,9 +242,8 @@ export class ProductCategoriesPage {
   protected selectedCategoryId = '';
   protected editingCategoryId: string | null = null;
   protected isEditorOpen = false;
-  private readonly loadingState = signal(false);
-  protected get loading(): boolean { return this.loadingState(); }
-  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get loading(): boolean { return this.categoriesList.loading(); }
+  protected set loading(value: boolean) { this.categoriesList.loading.set(value); }
   protected loadingGroups = false;
   protected saving = false;
   protected savingGroup = false;
@@ -260,6 +260,12 @@ export class ProductCategoriesPage {
       this.cancelEdit();
       this.clearGroupContext();
       this.loadCategories();
+    });
+    effect(() => {
+      this.categoriesList.items();
+      if (this.selectedCategoryId && !this.selectedCategory) {
+        this.clearGroupContext();
+      }
     });
   }
 
@@ -294,28 +300,17 @@ export class ProductCategoriesPage {
   protected loadCategories(): void {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
-    this.categories = [];
+    this.categoriesList.reset();
 
     if (!tenantId || !businessUnitId) {
       return;
     }
 
-    this.loading = true;
     this.errorMessage = '';
-
-    this.productCategoriesApi.list(tenantId, businessUnitId)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (result) => {
-          this.categories = result.items;
-          if (this.selectedCategoryId && !this.selectedCategory) {
-            this.clearGroupContext();
-          }
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
-        }
-      });
+    this.categoriesList.load(this.productCategoriesApi.list(tenantId, businessUnitId), {
+      errorMessage: 'Nao foi possivel carregar as categorias. Tente novamente.',
+      onError: (message) => this.errorMessage = message
+    });
   }
 
   protected submit(): void {

@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 
 import { IngredientsApiService } from '@core/api/ingredients-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
+import { PagedListState } from '@shared/state/paged-list.state';
 import {
   IngredientCreateRequest,
   IngredientListItem
@@ -146,14 +147,13 @@ export class IngredientsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  private readonly ingredientsState = signal<IngredientListItem[]>([]);
-  protected get ingredients(): IngredientListItem[] { return this.ingredientsState(); }
-  protected set ingredients(value: IngredientListItem[]) { this.ingredientsState.set(value); }
+  private readonly ingredientsList = new PagedListState<IngredientListItem>();
+  protected get ingredients(): IngredientListItem[] { return this.ingredientsList.items(); }
+  protected set ingredients(value: IngredientListItem[]) { this.ingredientsList.items.set(value); }
   protected editingIngredientId: string | null = null;
   protected isEditorOpen = false;
-  private readonly loadingState = signal(false);
-  protected get loading(): boolean { return this.loadingState(); }
-  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get loading(): boolean { return this.ingredientsList.loading(); }
+  protected set loading(value: boolean) { this.ingredientsList.loading.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -188,25 +188,17 @@ export class IngredientsPage {
   protected loadIngredients(): void {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
-    this.ingredients = [];
+    this.ingredientsList.reset();
 
     if (!tenantId || !businessUnitId) {
       return;
     }
 
-    this.loading = true;
     this.errorMessage = '';
-
-    this.ingredientsApi.list(tenantId, businessUnitId)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (result) => {
-          this.ingredients = result.items;
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
-        }
-      });
+    this.ingredientsList.load(this.ingredientsApi.list(tenantId, businessUnitId), {
+      errorMessage: 'Nao foi possivel carregar os ingredientes. Tente novamente.',
+      onError: (message) => this.errorMessage = message
+    });
   }
 
   protected submit(): void {
@@ -291,4 +283,3 @@ export class IngredientsPage {
 }
 
 
-import { signal } from '@angular/core';

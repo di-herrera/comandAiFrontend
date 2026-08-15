@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 import { ProductCategoriesApiService } from '@core/api/product-categories-api.service';
 import { ProductsApiService } from '@core/api/products-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
+import { PagedListState } from '@shared/state/paged-list.state';
 import {
   ProductCreateRequest,
   ProductCategoryListItem,
@@ -253,17 +254,16 @@ export class ProductsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  private readonly productsState = signal<ProductListItem[]>([]);
+  private readonly productsList = new PagedListState<ProductListItem>();
   private readonly categoriesState = signal<ProductCategoryListItem[]>([]);
-  protected get products(): ProductListItem[] { return this.productsState(); }
-  protected set products(value: ProductListItem[]) { this.productsState.set(value); }
+  protected get products(): ProductListItem[] { return this.productsList.items(); }
+  protected set products(value: ProductListItem[]) { this.productsList.items.set(value); }
   protected get categories(): ProductCategoryListItem[] { return this.categoriesState(); }
   protected set categories(value: ProductCategoryListItem[]) { this.categoriesState.set(value); }
   protected editingProductId: string | null = null;
   protected isEditorOpen = false;
-  private readonly loadingState = signal(false);
-  protected get loading(): boolean { return this.loadingState(); }
-  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get loading(): boolean { return this.productsList.loading(); }
+  protected set loading(value: boolean) { this.productsList.loading.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -305,25 +305,17 @@ export class ProductsPage {
   protected loadProducts(): void {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
-    this.products = [];
+    this.productsList.reset();
 
     if (!tenantId || !businessUnitId) {
       return;
     }
 
-    this.loading = true;
     this.errorMessage = '';
-
-    this.productsApi.list(tenantId, businessUnitId)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (result) => {
-          this.products = result.items;
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
-        }
-      });
+    this.productsList.load(this.productsApi.list(tenantId, businessUnitId), {
+      errorMessage: 'Nao foi possivel carregar os produtos. Tente novamente.',
+      onError: (message) => this.errorMessage = message
+    });
   }
 
   protected loadCategories(): void {

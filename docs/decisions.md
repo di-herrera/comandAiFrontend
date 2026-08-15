@@ -162,3 +162,22 @@ Regras:
   tela sobreposta, evitando que o usuario role listas longas para agir.
 - Migracoes visuais devem ser incrementais e aproveitar tokens globais antes de
   criar CSS novo por feature.
+
+## ADR-FE-013 - Estado compartilhado para listagens HTTP
+
+Status: Accepted
+
+Decisao:
+Listagens administrativas que consomem `PagedResult<T>` devem usar
+`PagedListState<T>` para centralizar `items`, `total`, `loading`, timeout,
+tratamento de erro e descarte de respostas obsoletas. O componente da tela
+continua responsavel por filtros, formularios e regras especificas da entidade.
+
+Motivo:
+Manter esse ciclo de vida duplicado em cada tela permitiu que uma mudanca no
+Angular deixasse varias listagens presas no estado inicial ao mesmo tempo.
+Uma abstracao pequena reduz a superficie de regressao sem acoplar formularios
+ou contratos de negocio entre features.
+
+Referencia:
+`src/app/shared/state/paged-list.state.ts`

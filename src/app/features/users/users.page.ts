@@ -6,6 +6,7 @@ import { AdminUsersApiService } from '@core/api/admin-users-api.service';
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { AuthSessionService } from '@core/auth/auth-session.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
+import { PagedListState } from '@shared/state/paged-list.state';
 import {
   AdminRole,
   AdminUser,
@@ -234,25 +235,24 @@ export class UsersPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  private readonly usersState = signal<AdminUser[]>([]);
+  private readonly usersList = new PagedListState<AdminUser>();
   private readonly businessUnitsState = signal<BusinessUnitListItem[]>([]);
   private readonly loadingState = signal(false);
   private readonly savingState = signal(false);
   private readonly savingPasswordState = signal(false);
   private readonly successMessageState = signal('');
   private readonly errorMessageState = signal('');
-  private usersRequestId = 0;
   private businessUnitsRequestId = 0;
 
-  protected get users(): AdminUser[] { return this.usersState(); }
-  protected set users(value: AdminUser[]) { this.usersState.set(value); }
+  protected get users(): AdminUser[] { return this.usersList.items(); }
+  protected set users(value: AdminUser[]) { this.usersList.items.set(value); }
   protected get tenants(): TenantListItem[] { return this.catalogContext.tenants(); }
   protected get businessUnits(): BusinessUnitListItem[] { return this.businessUnitsState(); }
   protected set businessUnits(value: BusinessUnitListItem[]) { this.businessUnitsState.set(value); }
   protected editingUserId: string | null = null;
   protected isEditorOpen = false;
-  protected get loading(): boolean { return this.loadingState(); }
-  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get loading(): boolean { return this.usersList.loading(); }
+  protected set loading(value: boolean) { this.usersList.loading.set(value); }
   protected get saving(): boolean { return this.savingState(); }
   protected set saving(value: boolean) { this.savingState.set(value); }
   protected get savingPassword(): boolean { return this.savingPasswordState(); }
@@ -278,35 +278,11 @@ export class UsersPage {
   }
 
   protected loadUsers(): void {
-    const requestId = ++this.usersRequestId;
-    this.loading = true;
     this.errorMessage = '';
-
-    this.usersApi.list()
-      .pipe(
-        timeout(UsersPage.RequestTimeoutMs),
-        take(1),
-        catchError((failure: unknown) => {
-          if (requestId === this.usersRequestId) {
-            this.errorMessage = this.failureMessage(failure, 'usuarios');
-          }
-
-          return of(null);
-        }),
-        finalize(() => {
-          if (requestId === this.usersRequestId) {
-            this.loading = false;
-          }
-        })
-      )
-      .subscribe({
-        next: (result) => {
-          if (!result || requestId !== this.usersRequestId) {
-            return;
-          }
-
-          this.users = this.filterUsersByScope(Array.isArray(result.items) ? result.items : []);
-        }
+    this.usersList.load(this.usersApi.list(), {
+      errorMessage: 'Nao foi possivel carregar os usuarios. Tente novamente.',
+      onError: (message) => this.errorMessage = message,
+      mapItems: (items) => this.filterUsersByScope(items)
       });
   }
 
