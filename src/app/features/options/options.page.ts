@@ -159,10 +159,14 @@ export class OptionsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected options: ProductOptionListItem[] = [];
+  private readonly optionsState = signal<ProductOptionListItem[]>([]);
+  protected get options(): ProductOptionListItem[] { return this.optionsState(); }
+  protected set options(value: ProductOptionListItem[]) { this.optionsState.set(value); }
   protected editingOptionId: string | null = null;
   protected isEditorOpen = false;
-  protected loading = false;
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -307,3 +311,4 @@ export class OptionsPage {
 }
 
 
+import { signal } from '@angular/core';

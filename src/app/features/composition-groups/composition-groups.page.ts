@@ -55,8 +55,16 @@ type RuleForm = FormGroup<{ variantCode: FormControl<string>; variantName: FormC
 })
 export class CompositionGroupsPage {
   readonly form = new FormGroup({ code: new FormControl('', { nonNullable: true, validators: [Validators.required] }), name: new FormControl('', { nonNullable: true, validators: [Validators.required] }), status: new FormControl<'Active' | 'Inactive'>('Active', { nonNullable: true }), rules: new FormArray<RuleForm>([]) });
-  groups: CompositionGroup[] = []; products: ProductListItem[] = []; selectedProductIds = new Set<string>();
-  loading = false; saving = false; editorOpen = false; editingId: string | null = null; errorMessage = ''; successMessage = '';
+  private readonly groupsState = signal<CompositionGroup[]>([]);
+  private readonly productsState = signal<ProductListItem[]>([]);
+  get groups(): CompositionGroup[] { return this.groupsState(); }
+  set groups(value: CompositionGroup[]) { this.groupsState.set(value); }
+  get products(): ProductListItem[] { return this.productsState(); }
+  set products(value: ProductListItem[]) { this.productsState.set(value); }
+  private readonly loadingState = signal(false);
+  get loading(): boolean { return this.loadingState(); }
+  set loading(value: boolean) { this.loadingState.set(value); }
+  saving = false; editorOpen = false; editingId: string | null = null; errorMessage = ''; successMessage = ''; selectedProductIds = new Set<string>();
   private lastContext = '';
   constructor(private readonly api: CompositionGroupsApiService, private readonly productsApi: ProductsApiService, private readonly context: CatalogContextService) {
     effect(() => { const key = `${context.selectedTenantId()}|${context.selectedBusinessUnitId()}`; if (key !== this.lastContext) { this.lastContext = key; this.loadData(); } });
@@ -87,3 +95,4 @@ export class CompositionGroupsPage {
   }
   private ruleForm(code: string, name: string, min: number, max: number): RuleForm { return new FormGroup({ variantCode: new FormControl(code, { nonNullable: true }), variantName: new FormControl(name, { nonNullable: true }), minParts: new FormControl(min, { nonNullable: true, validators: [Validators.min(1)] }), maxParts: new FormControl(max, { nonNullable: true, validators: [Validators.min(1)] }) }); }
 }
+import { signal } from '@angular/core';

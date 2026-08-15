@@ -156,10 +156,16 @@ interface MenuProduct {
   `
 })
 export class MenuPreviewPage {
-  protected menuProducts: MenuProduct[] = [];
-  protected loading = false;
+  private readonly menuProductsState = signal<MenuProduct[]>([]);
+  protected get menuProducts(): MenuProduct[] { return this.menuProductsState(); }
+  protected set menuProducts(value: MenuProduct[]) { this.menuProductsState.set(value); }
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected errorMessage = '';
-  protected compositionGroups: CompositionGroup[] = [];
+  private readonly compositionGroupsState = signal<CompositionGroup[]>([]);
+  protected get compositionGroups(): CompositionGroup[] { return this.compositionGroupsState(); }
+  protected set compositionGroups(value: CompositionGroup[]) { this.compositionGroupsState.set(value); }
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
@@ -242,3 +248,4 @@ export class MenuPreviewPage {
 }
 
 
+import { signal } from '@angular/core';
