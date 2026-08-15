@@ -551,7 +551,9 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
   protected get detailLoading(): boolean { return this.detailLoadingState(); }
   protected set detailLoading(value: boolean) { this.detailLoadingState.set(value); }
   protected sendingMessage = false;
-  protected realtimeConnected = false;
+  private readonly realtimeConnectedState = signal(false);
+  protected get realtimeConnected(): boolean { return this.realtimeConnectedState(); }
+  protected set realtimeConnected(value: boolean) { this.realtimeConnectedState.set(value); }
   protected get errorMessage(): string { return this.errorMessageState(); }
   protected set errorMessage(value: string) { this.errorMessageState.set(value); }
   protected get detailErrorMessage(): string { return this.detailErrorMessageState(); }
