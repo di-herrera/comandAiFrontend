@@ -5,6 +5,7 @@ import { finalize, forkJoin } from 'rxjs';
 import { OptionGroupsApiService } from '@core/api/option-groups-api.service';
 import { OptionsApiService } from '@core/api/options-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
+import { PagedListState } from '@shared/state/paged-list.state';
 import {
   OptionGroup,
   OptionGroupOptionRequest,
@@ -202,14 +203,13 @@ export class OptionGroupsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  private readonly optionGroupsState = signal<OptionGroup[]>([]);
-  protected get optionGroups(): OptionGroup[] { return this.optionGroupsState(); }
-  protected set optionGroups(value: OptionGroup[]) { this.optionGroupsState.set(value); }
+  private readonly optionGroupsList = new PagedListState<OptionGroup>();
+  protected get optionGroups(): OptionGroup[] { return this.optionGroupsList.items(); }
+  protected set optionGroups(value: OptionGroup[]) { this.optionGroupsList.items.set(value); }
   protected availableOptions: ProductOptionListItem[] = [];
   protected isEditorOpen = false;
-  private readonly loadingState = signal(false);
-  protected get loading(): boolean { return this.loadingState(); }
-  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get loading(): boolean { return this.optionGroupsList.loading(); }
+  protected set loading(value: boolean) { this.optionGroupsList.loading.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -252,7 +252,7 @@ export class OptionGroupsPage {
   protected loadData(): void {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
-    this.optionGroups = [];
+    this.optionGroupsList.reset();
     this.availableOptions = [];
 
     if (!tenantId || !businessUnitId) {
@@ -449,4 +449,3 @@ export class OptionGroupsPage {
 }
 
 
-import { signal } from '@angular/core';

@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 
 import { OptionsApiService } from '@core/api/options-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
+import { PagedListState } from '@shared/state/paged-list.state';
 import {
   ProductOptionCreateRequest,
   ProductOptionListItem
@@ -159,14 +160,13 @@ export class OptionsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  private readonly optionsState = signal<ProductOptionListItem[]>([]);
-  protected get options(): ProductOptionListItem[] { return this.optionsState(); }
-  protected set options(value: ProductOptionListItem[]) { this.optionsState.set(value); }
+  private readonly optionsList = new PagedListState<ProductOptionListItem>();
+  protected get options(): ProductOptionListItem[] { return this.optionsList.items(); }
+  protected set options(value: ProductOptionListItem[]) { this.optionsList.items.set(value); }
   protected editingOptionId: string | null = null;
   protected isEditorOpen = false;
-  private readonly loadingState = signal(false);
-  protected get loading(): boolean { return this.loadingState(); }
-  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get loading(): boolean { return this.optionsList.loading(); }
+  protected set loading(value: boolean) { this.optionsList.loading.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -201,25 +201,17 @@ export class OptionsPage {
   protected loadOptions(): void {
     const tenantId = this.catalogContext.selectedTenantId();
     const businessUnitId = this.catalogContext.selectedBusinessUnitId();
-    this.options = [];
+    this.optionsList.reset();
 
     if (!tenantId || !businessUnitId) {
       return;
     }
 
-    this.loading = true;
     this.errorMessage = '';
-
-    this.optionsApi.list(tenantId, businessUnitId)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (result) => {
-          this.options = result.items;
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
-        }
-      });
+    this.optionsList.load(this.optionsApi.list(tenantId, businessUnitId), {
+      errorMessage: 'Nao foi possivel carregar as opcoes. Tente novamente.',
+      onError: (message) => this.errorMessage = message
+    });
   }
 
   protected submit(): void {
@@ -311,4 +303,3 @@ export class OptionsPage {
 }
 
 
-import { signal } from '@angular/core';
