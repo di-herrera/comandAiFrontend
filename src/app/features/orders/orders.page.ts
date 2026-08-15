@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -29,7 +30,7 @@ interface SavedOrderFilters {
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [NgTemplateOutlet, ReactiveFormsModule],
   template: `
     <section class="page">
       <header class="page-header">
@@ -190,144 +191,164 @@ interface SavedOrderFilters {
         </section>
 
         <section class="card order-detail-card">
-          @if (detailLoading) {
-            <p class="muted">Carregando detalhe da comanda...</p>
-          } @else if (!selectedOrderId) {
-            <p class="muted">Selecione uma comanda para ver itens, entrega, totais e alterar status.</p>
-          } @else if (!selectedDetail) {
-            <p class="muted">Detalhe nao disponivel para a comanda selecionada.</p>
-          } @else {
-            <div class="section-heading">
-              <div>
-                <h2>Comanda {{ selectedDetail.orderNumber }}</h2>
-                <p>{{ selectedDetail.customer.name || 'Cliente sem nome' }} - {{ selectedDetail.customer.phoneNumber }}</p>
-              </div>
-              <span [class]="statusPillClass(selectedDetail.status)">{{ statusLabel(selectedDetail.status) }}</span>
-            </div>
-
-            @if (selectedDetail.requiresHumanHandoff) {
-              <p class="feedback warning">Atencao humana: {{ selectedDetail.humanHandoffReason || 'pedido marcado para revisao.' }}</p>
-            }
-
-            <section class="status-actions">
-              <div>
-                <p class="eyebrow">Proximo passo</p>
-                <h3>{{ nextStepLabel(selectedDetail) }}</h3>
-              </div>
-              <div class="button-row">
-                @for (status of nextStatuses(selectedDetail); track status) {
-                  <button
-                    class="btn btn-primary btn-small"
-                    type="button"
-                    (click)="updateStatus(status)"
-                    [disabled]="statusUpdating"
-                  >
-                    {{ statusUpdating ? 'Salvando...' : actionLabel(status) }}
-                  </button>
-                }
-                @if (canCancel(selectedDetail)) {
-                  <button
-                    class="btn btn-danger btn-small"
-                    type="button"
-                    (click)="updateStatus('Cancelled')"
-                    [disabled]="statusUpdating"
-                  >
-                    Cancelar
-                  </button>
-                }
-              </div>
-            </section>
-
-            <ol class="status-flow">
-              @for (status of flowFor(selectedDetail.fulfillmentType); track status) {
-                <li [class.done]="isStatusReached(selectedDetail.status, selectedDetail.fulfillmentType, status)" [class.current]="selectedDetail.status === status">
-                  {{ statusLabel(status) }}
-                </li>
-              }
-            </ol>
-
-            <dl class="detail-grid">
-              <div>
-                <dt>Origem</dt>
-                <dd>{{ selectedDetail.conversation.channelType || 'Canal' }} / {{ selectedDetail.conversation.channelProvider || 'provedor' }}</dd>
-              </div>
-              <div>
-                <dt>Confirmado em</dt>
-                <dd>{{ formatDate(selectedDetail.readyForExecutionAtUtc || selectedDetail.createdAtUtc) }}</dd>
-              </div>
-              <div>
-                <dt>Entrega</dt>
-                <dd>{{ fulfillmentLabel(selectedDetail.fulfillmentType) }}</dd>
-              </div>
-              <div>
-                <dt>Pagamento informado</dt>
-                <dd>{{ selectedDetail.paymentMethod || 'Nao informado' }}</dd>
-              </div>
-            </dl>
-
-            @if (selectedDetail.customer.deliveryAddress) {
-              <section class="detail-section">
-                <h3>Endereco</h3>
-                <p>{{ selectedDetail.customer.deliveryAddress }}</p>
-              </section>
-            }
-
-            <section class="detail-section">
-              <h3>Itens</h3>
-              <div class="detail-items">
-                @for (item of selectedDetail.items; track item.orderItemId) {
-                  <article class="detail-item">
-                    <div class="detail-item-header">
-                      <div>
-                        <strong>{{ item.quantity }}x {{ item.productName }}</strong>
-                        <span>{{ item.productVariantName }} @if (item.productVariantCode) {({{ item.productVariantCode }})}</span>
-                      </div>
-                      <strong>{{ formatCurrency(item.subtotal) }}</strong>
-                    </div>
-
-                    @if (item.notes) {
-                      <p class="muted">Obs.: {{ item.notes }}</p>
-                    }
-
-                    @if (item.parts.length > 0) {
-                      <div class="compact-detail-list">
-                        <strong>Sabores / partes</strong>
-                        @for (part of item.parts; track part.productId) {
-                          <span>1/{{ part.totalParts }} {{ part.productName }} - valor inteiro {{ formatCurrency(part.fullPrice) }}</span>
-                        }
-                      </div>
-                    }
-
-                    @if (item.options.length > 0) {
-                      <div class="compact-detail-list">
-                        <strong>Adicionais</strong>
-                        @for (option of item.options; track option.orderItemOptionId) {
-                          <span>{{ option.quantity }}x {{ option.optionName }} - {{ formatCurrency(option.total) }}</span>
-                        }
-                      </div>
-                    }
-
-                    @if (item.removedIngredients.length > 0) {
-                      <div class="compact-detail-list">
-                        <strong>Remover</strong>
-                        @for (ingredient of item.removedIngredients; track ingredient.orderItemRemovedIngredientId) {
-                          <span>{{ ingredient.ingredientName }}</span>
-                        }
-                      </div>
-                    }
-                  </article>
-                }
-              </div>
-            </section>
-
-            <dl class="totals">
-              <div><dt>Subtotal</dt><dd>{{ formatCurrency(selectedDetail.subtotal) }}</dd></div>
-              <div><dt>Taxa de entrega</dt><dd>{{ formatCurrency(selectedDetail.deliveryFee) }}</dd></div>
-              <div class="total-line"><dt>Total</dt><dd>{{ formatCurrency(selectedDetail.total) }}</dd></div>
-            </dl>
-          }
+          <ng-container [ngTemplateOutlet]="orderDetailContent" />
         </section>
       </section>
+
+      @if (detailModalOpen) {
+        <div class="detail-backdrop" role="presentation" (click)="closeDetailModal()">
+          <section class="detail-modal" role="dialog" aria-modal="true" aria-label="Detalhe da comanda" (click)="$event.stopPropagation()">
+            <header class="section-heading order-detail-modal-header">
+              <div>
+                <p class="eyebrow">Comanda</p>
+                <h2>{{ selectedDetail?.orderNumber || 'Detalhe do pedido' }}</h2>
+              </div>
+              <button class="btn editor-close" type="button" (click)="closeDetailModal()" aria-label="Fechar detalhe">x</button>
+            </header>
+
+            <ng-container [ngTemplateOutlet]="orderDetailContent" />
+          </section>
+        </div>
+      }
+
+      <ng-template #orderDetailContent>
+        @if (detailLoading) {
+          <p class="muted">Carregando detalhe da comanda...</p>
+        } @else if (!selectedOrderId) {
+          <p class="muted">Selecione uma comanda para ver itens, entrega, totais e alterar status.</p>
+        } @else if (!selectedDetail) {
+          <p class="muted">Detalhe nao disponivel para a comanda selecionada.</p>
+        } @else {
+          <div class="section-heading">
+            <div>
+              <h2>Comanda {{ selectedDetail.orderNumber }}</h2>
+              <p>{{ selectedDetail.customer.name || 'Cliente sem nome' }} - {{ selectedDetail.customer.phoneNumber }}</p>
+            </div>
+            <span [class]="statusPillClass(selectedDetail.status)">{{ statusLabel(selectedDetail.status) }}</span>
+          </div>
+
+          @if (selectedDetail.requiresHumanHandoff) {
+            <p class="feedback warning">Atencao humana: {{ selectedDetail.humanHandoffReason || 'pedido marcado para revisao.' }}</p>
+          }
+
+          <section class="status-actions">
+            <div>
+              <p class="eyebrow">Proximo passo</p>
+              <h3>{{ nextStepLabel(selectedDetail) }}</h3>
+            </div>
+            <div class="button-row">
+              @for (status of nextStatuses(selectedDetail); track status) {
+                <button
+                  class="btn btn-primary btn-small"
+                  type="button"
+                  (click)="updateStatus(status)"
+                  [disabled]="statusUpdating"
+                >
+                  {{ statusUpdating ? 'Salvando...' : actionLabel(status) }}
+                </button>
+              }
+              @if (canCancel(selectedDetail)) {
+                <button
+                  class="btn btn-danger btn-small"
+                  type="button"
+                  (click)="updateStatus('Cancelled')"
+                  [disabled]="statusUpdating"
+                >
+                  Cancelar
+                </button>
+              }
+            </div>
+          </section>
+
+          <ol class="status-flow">
+            @for (status of flowFor(selectedDetail.fulfillmentType); track status) {
+              <li [class.done]="isStatusReached(selectedDetail.status, selectedDetail.fulfillmentType, status)" [class.current]="selectedDetail.status === status">
+                {{ statusLabel(status) }}
+              </li>
+            }
+          </ol>
+
+          <dl class="detail-grid">
+            <div>
+              <dt>Origem</dt>
+              <dd>{{ selectedDetail.conversation.channelType || 'Canal' }} / {{ selectedDetail.conversation.channelProvider || 'provedor' }}</dd>
+            </div>
+            <div>
+              <dt>Confirmado em</dt>
+              <dd>{{ formatDate(selectedDetail.readyForExecutionAtUtc || selectedDetail.createdAtUtc) }}</dd>
+            </div>
+            <div>
+              <dt>Entrega</dt>
+              <dd>{{ fulfillmentLabel(selectedDetail.fulfillmentType) }}</dd>
+            </div>
+            <div>
+              <dt>Pagamento informado</dt>
+              <dd>{{ selectedDetail.paymentMethod || 'Nao informado' }}</dd>
+            </div>
+          </dl>
+
+          @if (selectedDetail.customer.deliveryAddress) {
+            <section class="detail-section">
+              <h3>Endereco</h3>
+              <p>{{ selectedDetail.customer.deliveryAddress }}</p>
+            </section>
+          }
+
+          <section class="detail-section">
+            <h3>Itens</h3>
+            <div class="detail-items">
+              @for (item of selectedDetail.items; track item.orderItemId) {
+                <article class="detail-item">
+                  <div class="detail-item-header">
+                    <div>
+                      <strong>{{ item.quantity }}x {{ item.productName }}</strong>
+                      <span>{{ item.productVariantName }} @if (item.productVariantCode) {({{ item.productVariantCode }})}</span>
+                    </div>
+                    <strong>{{ formatCurrency(item.subtotal) }}</strong>
+                  </div>
+
+                  @if (item.notes) {
+                    <p class="muted">Obs.: {{ item.notes }}</p>
+                  }
+
+                  @if (item.parts.length > 0) {
+                    <div class="compact-detail-list">
+                      <strong>Sabores / partes</strong>
+                      @for (part of item.parts; track part.productId) {
+                        <span>1/{{ part.totalParts }} {{ part.productName }} - valor inteiro {{ formatCurrency(part.fullPrice) }}</span>
+                      }
+                    </div>
+                  }
+
+                  @if (item.options.length > 0) {
+                    <div class="compact-detail-list">
+                      <strong>Adicionais</strong>
+                      @for (option of item.options; track option.orderItemOptionId) {
+                        <span>{{ option.quantity }}x {{ option.optionName }} - {{ formatCurrency(option.total) }}</span>
+                      }
+                    </div>
+                  }
+
+                  @if (item.removedIngredients.length > 0) {
+                    <div class="compact-detail-list">
+                      <strong>Remover</strong>
+                      @for (ingredient of item.removedIngredients; track ingredient.orderItemRemovedIngredientId) {
+                        <span>{{ ingredient.ingredientName }}</span>
+                      }
+                    </div>
+                  }
+                </article>
+              }
+            </div>
+          </section>
+
+          <dl class="totals">
+            <div><dt>Subtotal</dt><dd>{{ formatCurrency(selectedDetail.subtotal) }}</dd></div>
+            <div><dt>Taxa de entrega</dt><dd>{{ formatCurrency(selectedDetail.deliveryFee) }}</dd></div>
+            <div class="total-line"><dt>Total</dt><dd>{{ formatCurrency(selectedDetail.total) }}</dd></div>
+          </dl>
+        }
+      </ng-template>
     </section>
   `,
   styles: [`
@@ -567,10 +588,34 @@ interface SavedOrderFilters {
         padding-left: .65rem;
       }
     }
+
+    .detail-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: end;
+      background: rgba(0, 0, 0, .42);
+    }
+
+    .detail-modal {
+      width: 100%;
+      max-height: 94vh;
+      overflow: auto;
+      background: var(--surface);
+      padding: .9rem;
+    }
+
+    @media (max-width: 980px) {
+      .order-detail-card {
+        display: none;
+      }
+    }
   `]
 })
 export class OrdersPage {
   private static readonly FiltersStorageKey = 'comandia.admin.orders.filters';
+  private static readonly MobileBreakpoint = 980;
   private static readonly PageSize = 12;
   private static readonly DeliveryFlow: OrderStatus[] = [
     'OrderAccepted',
@@ -626,6 +671,7 @@ export class OrdersPage {
   protected statusUpdating = false;
   protected errorMessage = '';
   protected filtersSavedMessage = '';
+  protected detailModalOpen = false;
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
@@ -686,7 +732,7 @@ export class OrdersPage {
           const preferred = this.orders.find((order) => order.orderId === preferredOrderId);
           const nextOrder = preferred ?? this.orders[0];
 
-          if (nextOrder) {
+          if (nextOrder && (!this.isMobileViewport() || Boolean(preferredOrderId))) {
             this.selectOrder(nextOrder);
           }
         },
@@ -707,6 +753,7 @@ export class OrdersPage {
     this.selectedDetail = null;
     this.detailLoading = true;
     this.errorMessage = '';
+    this.detailModalOpen = this.isMobileViewport();
 
     this.ordersApi.detail(tenantId, businessUnitId, order.orderId)
       .pipe(finalize(() => (this.detailLoading = false)))
@@ -718,6 +765,10 @@ export class OrdersPage {
           this.errorMessage = failure.error.message;
         }
       });
+  }
+
+  protected closeDetailModal(): void {
+    this.detailModalOpen = false;
   }
 
   protected updateStatus(status: OrderStatus): void {
@@ -1029,5 +1080,10 @@ export class OrdersPage {
     this.selectedOrderId = '';
     this.selectedDetail = null;
     this.total = 0;
+    this.detailModalOpen = false;
+  }
+
+  private isMobileViewport(): boolean {
+    return window.innerWidth <= OrdersPage.MobileBreakpoint;
   }
 }
