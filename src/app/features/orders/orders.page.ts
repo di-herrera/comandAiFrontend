@@ -7,6 +7,7 @@ import { OrdersApiService } from '@core/api/orders-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
 import { ApiFailure } from '@shared/models/common.models';
 import { OrderDetail, OrderListFilters, OrderStatus, OrderSummary } from '@shared/models/orders.models';
+import { paymentMethodLabel } from '@shared/utils/payment-method.utils';
 
 interface StatusOption {
   value: OrderStatus;
@@ -286,7 +287,7 @@ interface SavedOrderFilters {
             </div>
             <div>
               <dt>Pagamento informado</dt>
-              <dd>{{ detail.paymentMethod || 'Nao informado' }}</dd>
+              <dd>{{ paymentMethodLabel(detail.paymentMethod) }}</dd>
             </div>
           </dl>
 
@@ -977,6 +978,10 @@ export class OrdersPage {
 
   protected fulfillmentLabel(value: OrderDetail['fulfillmentType']): string {
     return value === 'Delivery' ? 'Entrega' : 'Retirada';
+  }
+
+  protected paymentMethodLabel(value?: string | null): string {
+    return paymentMethodLabel(value);
   }
 
   protected formatCurrency(value: number): string {
