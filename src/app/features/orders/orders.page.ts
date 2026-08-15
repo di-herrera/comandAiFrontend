@@ -128,7 +128,7 @@ interface SavedOrderFilters {
                 <div class="order-skeleton"></div>
               }
             </div>
-          } @else if (orders.length === 0) {
+          } @else if (orders().length === 0) {
             <div class="orders-empty">
               <div class="empty-mark">C</div>
               <h2>Nenhuma comanda encontrada</h2>
@@ -626,7 +626,7 @@ export class OrdersPage {
       .map((status) => ({
         status,
         label: this.statusLabel(status),
-        orders: this.orders.filter((order) => this.normalizedStatus(order.status) === status)
+        orders: this.orders().filter((order) => this.normalizedStatus(order.status) === status)
       }))
       .filter((section) => section.orders.length > 0);
   });
@@ -643,7 +643,7 @@ export class OrdersPage {
   protected readonly visibleStatusOptions = this.filterStatusOptions;
   protected readonly skeletonItems = [1, 2, 3];
 
-  protected orders: OrderSummary[] = [];
+  protected readonly orders = signal<OrderSummary[]>([]);
   protected selectedOrderId = '';
   protected selectedDetail: OrderDetail | null = null;
   protected currentPage = 1;
@@ -710,10 +710,11 @@ export class OrdersPage {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (result) => {
-          this.orders = result.items;
-          this.total = result.total;
-          const preferred = this.orders.find((order) => order.orderId === preferredOrderId);
-          const nextOrder = preferred ?? this.orders[0];
+          const orders = Array.isArray(result.items) ? result.items : [];
+          this.orders.set(orders);
+          this.total = typeof result.total === 'number' ? result.total : orders.length;
+          const preferred = orders.find((order) => order.orderId === preferredOrderId);
+          const nextOrder = preferred ?? orders[0];
 
           if (nextOrder && (!this.isMobileViewport() || Boolean(preferredOrderId))) {
             this.selectOrder(nextOrder);
@@ -832,7 +833,7 @@ export class OrdersPage {
   }
 
   protected statusCount(status: OrderStatus): number {
-    return this.orders.filter((order) => this.normalizedStatus(order.status) === status).length;
+    return this.orders().filter((order) => this.normalizedStatus(order.status) === status).length;
   }
 
   protected statusLabel(status: OrderStatus): string {
@@ -1059,7 +1060,7 @@ export class OrdersPage {
   }
 
   private resetOrders(): void {
-    this.orders = [];
+    this.orders.set([]);
     this.selectedOrderId = '';
     this.selectedDetail = null;
     this.total = 0;
