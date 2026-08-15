@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, take, timeout } from 'rxjs';
 
 import { AiPromptsApiService } from '@core/api/ai-prompts-api.service';
 import { AiPrompt } from '@shared/models/ai-prompts.models';
@@ -106,15 +106,30 @@ import { ApiFailure } from '@shared/models/common.models';
   `
 })
 export class AiPromptsPage {
+  private static readonly RequestTimeoutMs = 15000;
+
   protected readonly form = new FormGroup({
     content: new FormControl('', { nonNullable: true, validators: [Validators.required] })
   });
 
-  protected prompt: AiPrompt | null = null;
-  protected loading = false;
-  protected saving = false;
-  protected successMessage = '';
-  protected errorMessage = '';
+  private readonly promptState = signal<AiPrompt | null>(null);
+  private readonly loadingState = signal(false);
+  private readonly savingState = signal(false);
+  private readonly successMessageState = signal('');
+  private readonly errorMessageState = signal('');
+  private loadRequestId = 0;
+  private saveRequestId = 0;
+
+  protected get prompt(): AiPrompt | null { return this.promptState(); }
+  protected set prompt(value: AiPrompt | null) { this.promptState.set(value); }
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get saving(): boolean { return this.savingState(); }
+  protected set saving(value: boolean) { this.savingState.set(value); }
+  protected get successMessage(): string { return this.successMessageState(); }
+  protected set successMessage(value: string) { this.successMessageState.set(value); }
+  protected get errorMessage(): string { return this.errorMessageState(); }
+  protected set errorMessage(value: string) { this.errorMessageState.set(value); }
 
   constructor(private readonly aiPromptsApi: AiPromptsApiService) {
     this.loadPrompt();
@@ -144,20 +159,36 @@ export class AiPromptsPage {
   }
 
   protected loadPrompt(): void {
+    const requestId = ++this.loadRequestId;
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
 
     this.aiPromptsApi.getOrderInterpretation()
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        timeout(AiPromptsPage.RequestTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.loadRequestId) {
+            this.errorMessage = this.failureMessage(failure);
+          }
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.loadRequestId) {
+            this.loading = false;
+          }
+        })
+      )
       .subscribe({
         next: (prompt) => {
+          if (!prompt || requestId !== this.loadRequestId) {
+            return;
+          }
+
           this.prompt = prompt;
           this.form.setValue({ content: prompt.content });
           this.form.markAsPristine();
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
         }
       });
   }
@@ -172,6 +203,7 @@ export class AiPromptsPage {
       return;
     }
 
+    const requestId = ++this.saveRequestId;
     this.saving = true;
     this.errorMessage = '';
     this.successMessage = '';
@@ -179,18 +211,44 @@ export class AiPromptsPage {
     this.aiPromptsApi.updateOrderInterpretation({
       content: this.form.controls.content.value.trim()
     })
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(
+        timeout(AiPromptsPage.RequestTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.saveRequestId) {
+            this.errorMessage = this.failureMessage(failure);
+          }
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.saveRequestId) {
+            this.saving = false;
+          }
+        })
+      )
       .subscribe({
         next: (prompt) => {
+          if (!prompt || requestId !== this.saveRequestId) {
+            return;
+          }
+
           this.prompt = prompt;
           this.form.setValue({ content: prompt.content });
           this.form.markAsPristine();
           this.successMessage = 'Prompt atualizado com sucesso.';
         },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
-        }
       });
+  }
+
+  private failureMessage(failure: unknown): string {
+    if (failure && typeof failure === 'object') {
+      const candidate = failure as Partial<ApiFailure>;
+      if (candidate.error && typeof candidate.error.message === 'string') {
+        return candidate.error.message;
+      }
+    }
+
+    return 'Nao foi possivel carregar o prompt da IA. Tente novamente.';
   }
 
   protected resetForm(): void {
