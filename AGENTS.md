@@ -10,10 +10,11 @@ O frontend não é o produto principal para o cliente final. Ele é um painel op
 
 ## Premissas fixas
 
-- Framework: Angular 21 ou versão estável equivalente instalada no momento da criação.
+- Framework: Angular 22 ou versão estável equivalente instalada no momento da criação.
 - Linguagem: TypeScript.
 - Usar componentes standalone.
 - Usar Angular Router nativo.
+- Usar lazy loading por rota/feature com `loadComponent`.
 - Usar Reactive Forms.
 - Usar HttpClient para comunicação com API.
 - Manter tipagem forte para contratos HTTP.
@@ -79,6 +80,9 @@ src/app/
 - Priorizar telas claras, formulários objetivos e feedbacks de sucesso/erro.
 - Sempre mostrar quando uma listagem está filtrada por empresa e unidade.
 - Não esconder contexto do usuário: empresa/unidade selecionada devem ficar visíveis.
+- Novas implementações visuais devem seguir `docs/design/ui-ux-angular-guidelines.md`.
+- Usar o mesmo padrão visual moderno do StoreFront como referência compartilhada: base neutra `slate`, destaque `indigo-600`, cantos `rounded-xl`/`rounded-2xl`, sombras sutis, foco acessível e microinterações discretas.
+- Adaptar o padrão ao contexto administrativo: telas podem ser mais densas e orientadas à operação, mas não devem sacrificar clareza, toque mobile ou hierarquia de ações.
 
 - Cadastros CRUD devem seguir o padrao lista primeiro + busca local + botao Novo + edicao em painel sobreposto.
 - No desktop, o painel de criacao/edicao deve abrir como drawer lateral, preservando a lista como contexto.
@@ -86,6 +90,14 @@ src/app/
 - Listagens principais de cadastro devem virar cards no mobile, mantendo tabela no desktop quando isso ajudar a leitura.
 - Modal central deve ser reservado para confirmacoes curtas e acoes pequenas, como excluir, ativar ou desativar.
 - Toda listagem de cadastro deve facilitar encontrar registros por busca local simples quando os dados ja estiverem carregados.
+
+## Regras de Angular moderno
+
+- Novos componentes devem ser standalone com `standalone: true`.
+- Usar controle de fluxo nativo: `@if`, `@for` e `@switch`.
+- Usar Angular Signals para estado local e derivado: `signal()` e `computed()`.
+- Preferir `inject()` para injeção de dependência em novas implementações quando isso mantiver a classe mais simples.
+- Manter lazy loading por rota/feature com `loadComponent`.
 
 ## Regras para Codex
 

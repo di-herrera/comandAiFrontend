@@ -47,10 +47,15 @@ src/app/
 ## Decisões técnicas
 
 - Componentes standalone.
+- Angular 22 com builder `@angular/build`.
+- Lazy loading por rota/feature com `loadComponent`.
+- Controle de fluxo nativo (`@if`, `@for`, `@switch`) em novas telas.
+- Signals (`signal()`/`computed()`) para estado local quando simplificar a implementação.
 - Reactive Forms.
 - HttpClient.
-- CSS simples no MVP.
-- Sem UI kit obrigatório no início.
+- CSS global próprio no admin, guiado pelos tokens e premissas de `docs/design/ui-ux-angular-guidelines.md`.
+- O StoreFront e o admin compartilham a mesma direção visual moderna, mas o admin pode ser mais denso e operacional.
+- Sem UI kit obrigatório.
 
 ## Evolução futura
 
@@ -58,7 +63,7 @@ Poderá ser adicionado depois:
 
 - autenticação;
 - guards;
-- design system;
+- evolucao incremental para componentes/tokens compartilhados;
 - interceptors para token;
 - testes E2E;
 - paginação avançada;
