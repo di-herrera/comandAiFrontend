@@ -8,6 +8,7 @@ import { OperatorConversationsRealtimeService } from '@core/api/operator-convers
 import { CatalogContextService } from '@core/context/catalog-context.service';
 import { ApiFailure } from '@shared/models/common.models';
 import { OperatorConversationDetail, OperatorConversationSummary } from '@shared/models/operator-conversations.models';
+import { paymentMethodLabel } from '@shared/utils/payment-method.utils';
 
 @Component({
   selector: 'app-operator-panel',
@@ -254,7 +255,7 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
                     </div>
                     <div>
                       <dt>Pagamento</dt>
-                      <dd>{{ selectedDetail.draft.paymentMethod || 'Pendente' }}</dd>
+                      <dd>{{ selectedDetail.draft.paymentMethod ? paymentMethodLabel(selectedDetail.draft.paymentMethod) : 'Pendente' }}</dd>
                     </div>
                     <div>
                       <dt>Total</dt>
@@ -797,6 +798,10 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
 
   protected formatCurrency(value: number): string {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  }
+
+  protected paymentMethodLabel(value?: string | null): string {
+    return paymentMethodLabel(value);
   }
 
   protected formatDate(value: string): string {
