@@ -1,11 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, take, timeout } from 'rxjs';
 
 import { AdminUsersApiService } from '@core/api/admin-users-api.service';
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
 import { AuthSessionService } from '@core/auth/auth-session.service';
+import { CatalogContextService } from '@core/context/catalog-context.service';
 import {
   AdminRole,
   AdminUser,
@@ -216,6 +216,8 @@ import { ApiFailure } from '@shared/models/common.models';
   `
 })
 export class UsersPage {
+  private static readonly RequestTimeoutMs = 15000;
+
   protected readonly roleOptions: AdminRole[] = ['SystemAdmin', 'CompanyAdmin', 'UnitAdmin'];
   protected readonly form = new FormGroup({
     displayName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(120)] }),
@@ -232,24 +234,40 @@ export class UsersPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected users: AdminUser[] = [];
-  protected tenants: TenantListItem[] = [];
-  protected businessUnits: BusinessUnitListItem[] = [];
+  private readonly usersState = signal<AdminUser[]>([]);
+  private readonly businessUnitsState = signal<BusinessUnitListItem[]>([]);
+  private readonly loadingState = signal(false);
+  private readonly savingState = signal(false);
+  private readonly savingPasswordState = signal(false);
+  private readonly successMessageState = signal('');
+  private readonly errorMessageState = signal('');
+  private usersRequestId = 0;
+  private businessUnitsRequestId = 0;
+
+  protected get users(): AdminUser[] { return this.usersState(); }
+  protected set users(value: AdminUser[]) { this.usersState.set(value); }
+  protected get tenants(): TenantListItem[] { return this.catalogContext.tenants(); }
+  protected get businessUnits(): BusinessUnitListItem[] { return this.businessUnitsState(); }
+  protected set businessUnits(value: BusinessUnitListItem[]) { this.businessUnitsState.set(value); }
   protected editingUserId: string | null = null;
   protected isEditorOpen = false;
-  protected loading = false;
-  protected saving = false;
-  protected savingPassword = false;
-  protected successMessage = '';
-  protected errorMessage = '';
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get saving(): boolean { return this.savingState(); }
+  protected set saving(value: boolean) { this.savingState.set(value); }
+  protected get savingPassword(): boolean { return this.savingPasswordState(); }
+  protected set savingPassword(value: boolean) { this.savingPasswordState.set(value); }
+  protected get successMessage(): string { return this.successMessageState(); }
+  protected set successMessage(value: string) { this.successMessageState.set(value); }
+  protected get errorMessage(): string { return this.errorMessageState(); }
+  protected set errorMessage(value: string) { this.errorMessageState.set(value); }
 
   constructor(
     private readonly usersApi: AdminUsersApiService,
-    private readonly tenantsApi: TenantsApiService,
     private readonly businessUnitsApi: BusinessUnitsApiService,
-    protected readonly authSession: AuthSessionService
+    protected readonly authSession: AuthSessionService,
+    protected readonly catalogContext: CatalogContextService
   ) {
-    this.loadTenants();
     this.loadUsers();
     this.form.controls.role.valueChanges.subscribe(() => this.syncScopeControls());
     this.form.controls.tenantId.valueChanges.subscribe((tenantId) => {
@@ -260,17 +278,34 @@ export class UsersPage {
   }
 
   protected loadUsers(): void {
+    const requestId = ++this.usersRequestId;
     this.loading = true;
     this.errorMessage = '';
 
     this.usersApi.list()
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        timeout(UsersPage.RequestTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.usersRequestId) {
+            this.errorMessage = this.failureMessage(failure, 'usuarios');
+          }
+
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.usersRequestId) {
+            this.loading = false;
+          }
+        })
+      )
       .subscribe({
         next: (result) => {
-          this.users = this.filterUsersByScope(result.items);
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
+          if (!result || requestId !== this.usersRequestId) {
+            return;
+          }
+
+          this.users = this.filterUsersByScope(Array.isArray(result.items) ? result.items : []);
         }
       });
   }
@@ -487,19 +522,8 @@ export class UsersPage {
     };
   }
 
-  private loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants = this.filterTenantsByScope(result.items);
-        this.syncTenantControl();
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
-  }
-
   private loadBusinessUnits(tenantId: string, selectedBusinessUnitId = ''): void {
+    const requestId = ++this.businessUnitsRequestId;
     this.businessUnits = [];
     this.form.controls.businessUnitId.setValue('');
 
@@ -507,15 +531,26 @@ export class UsersPage {
       return;
     }
 
-    this.businessUnitsApi.list(tenantId).subscribe({
+    this.businessUnitsApi.list(tenantId).pipe(
+      timeout(UsersPage.RequestTimeoutMs),
+      take(1),
+      catchError((failure: unknown) => {
+        if (requestId === this.businessUnitsRequestId) {
+          this.errorMessage = this.failureMessage(failure, 'unidades');
+        }
+
+        return of(null);
+      })
+    ).subscribe({
       next: (result) => {
+        if (!result || requestId !== this.businessUnitsRequestId) {
+          return;
+        }
+
         this.businessUnits = this.filterBusinessUnitsByScope(result.items);
         if (selectedBusinessUnitId && this.businessUnits.some((unit) => unit.id === selectedBusinessUnitId)) {
           this.form.controls.businessUnitId.setValue(selectedBusinessUnitId);
         }
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
       }
     });
   }
@@ -581,5 +616,16 @@ export class UsersPage {
     }
 
     return this.authSession.user()?.tenantId ?? selectedTenantId;
+  }
+
+  private failureMessage(failure: unknown, resource: string): string {
+    if (failure && typeof failure === 'object') {
+      const candidate = failure as Partial<ApiFailure>;
+      if (candidate.error && typeof candidate.error.message === 'string') {
+        return candidate.error.message;
+      }
+    }
+
+    return `Nao foi possivel carregar ${resource}. Tente novamente.`;
   }
 }

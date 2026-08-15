@@ -253,11 +253,17 @@ export class ProductsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected products: ProductListItem[] = [];
-  protected categories: ProductCategoryListItem[] = [];
+  private readonly productsState = signal<ProductListItem[]>([]);
+  private readonly categoriesState = signal<ProductCategoryListItem[]>([]);
+  protected get products(): ProductListItem[] { return this.productsState(); }
+  protected set products(value: ProductListItem[]) { this.productsState.set(value); }
+  protected get categories(): ProductCategoryListItem[] { return this.categoriesState(); }
+  protected set categories(value: ProductCategoryListItem[]) { this.categoriesState.set(value); }
   protected editingProductId: string | null = null;
   protected isEditorOpen = false;
-  protected loading = false;
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -483,3 +489,4 @@ export class ProductsPage {
 }
 
 
+import { signal } from '@angular/core';

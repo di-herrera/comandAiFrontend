@@ -262,14 +262,20 @@ export class ProductCompositionPage {
   protected readonly productControl = new FormControl('', { nonNullable: true });
   protected readonly existingGroupControl = new FormControl('', { nonNullable: true });
 
-  protected products: ProductListItem[] = [];
+  private readonly productsState = signal<ProductListItem[]>([]);
+  protected get products(): ProductListItem[] { return this.productsState(); }
+  protected set products(value: ProductListItem[]) { this.productsState.set(value); }
   protected ingredientSelections: IngredientSelection[] = [];
   protected optionSelections: OptionSelection[] = [];
   protected availableOptions: ProductOptionListItem[] = [];
-  protected optionGroups: OptionGroup[] = [];
+  private readonly optionGroupsState = signal<OptionGroup[]>([]);
+  protected get optionGroups(): OptionGroup[] { return this.optionGroupsState(); }
+  protected set optionGroups(value: OptionGroup[]) { this.optionGroupsState.set(value); }
   protected categoryOptionGroups: OptionGroup[] = [];
   protected reusableOptionGroups: OptionGroup[] = [];
-  protected loading = false;
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected saving = false;
   protected savingGroup = false;
   protected successMessage = '';
@@ -554,3 +560,4 @@ export class ProductCompositionPage {
   }
 }
 
+import { signal } from '@angular/core';
