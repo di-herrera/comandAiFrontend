@@ -1,5 +1,7 @@
 import { EntityStatus } from './common.models';
 
+export type WhatsAppReturnMessageCadence = 'Daily' | 'Weekly' | 'Monthly';
+
 export interface TenantListItem {
   id: string;
   name: string;
@@ -25,6 +27,9 @@ export interface BusinessUnitListItem {
   address?: string | null;
   fixedDeliveryFee: number;
   whatsAppWelcomeMessage?: string | null;
+  whatsAppReturnMessage?: string | null;
+  whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
+  publicSlug?: string | null;
   status: EntityStatus;
 }
 
@@ -34,6 +39,9 @@ export interface BusinessUnitCreateRequest {
   address?: string | null;
   fixedDeliveryFee: number;
   whatsAppWelcomeMessage?: string | null;
+  whatsAppReturnMessage?: string | null;
+  whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
+  publicSlug?: string | null;
   status: EntityStatus;
 }
 
@@ -225,4 +233,37 @@ export interface OptionGroupOptionRequest {
   optionId: string;
   isAvailable: boolean;
   displayOrder: number;
+}
+
+export interface CompositionGroup {
+  id: string;
+  tenantId: string;
+  businessUnitId: string;
+  code: string;
+  name: string;
+  status: EntityStatus;
+  productIds: string[];
+  variantRules: CompositionGroupVariantRule[];
+}
+
+export interface CompositionGroupVariantRule {
+  variantId: string;
+  variantCode: string;
+  variantName: string;
+  minParts: number;
+  maxParts: number;
+}
+
+export interface CompositionGroupRequest {
+  code: string;
+  name: string;
+  status: EntityStatus;
+  productIds: string[];
+  variantRules: CompositionGroupVariantRuleRequest[];
+}
+
+export interface CompositionGroupVariantRuleRequest {
+  variantCode: string;
+  minParts: number;
+  maxParts: number;
 }

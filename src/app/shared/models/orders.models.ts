@@ -1,10 +1,27 @@
-export type OrderStatus = 'ReadyForExecution' | 'HumanReviewRequired' | 'Completed' | 'Cancelled';
+export type OrderStatus =
+  | 'ReadyForExecution'
+  | 'HumanReviewRequired'
+  | 'Completed'
+  | 'Cancelled'
+  | 'OrderAccepted'
+  | 'InExecution'
+  | 'ReadyForDelivery'
+  | 'AwaitingPickup'
+  | 'OutForDelivery'
+  | 'Delivered';
 
 export interface OrderListFilters {
-  status?: OrderStatus | '';
+  status?: OrderStatus[];
   createdFromUtc?: string | null;
   createdToUtc?: string | null;
   search?: string | null;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus;
+  reason?: string | null;
 }
 
 export interface OrderCustomerSummary {
@@ -27,6 +44,7 @@ export interface OrderSummary {
   tenantId: string;
   businessUnitId: string;
   status: OrderStatus;
+  fulfillmentType: 'Delivery' | 'Pickup';
   customer: OrderCustomerSummary;
   conversation: OrderConversationSummary;
   createdAtUtc: string;
@@ -80,6 +98,22 @@ export interface OrderDetailItem {
   notes?: string | null;
   options: OrderDetailItemOption[];
   removedIngredients: OrderDetailRemovedIngredient[];
+  itemKind: 'Simple' | 'Composed';
+  compositionGroupId?: string | null;
+  compositionGroupName?: string | null;
+  parts: OrderDetailItemPart[];
+}
+
+export interface OrderDetailItemPart {
+  productId: string;
+  productCode?: string | null;
+  productName: string;
+  productVariantId: string;
+  variantCode?: string | null;
+  variantName: string;
+  fullPrice: number;
+  partNumber: number;
+  totalParts: number;
 }
 
 export interface OrderDetailItemOption {

@@ -118,3 +118,47 @@ O filtro de empresa/unidade muda pouco durante a operação e ocupava espaço re
 
 Referência:
 `docs/architecture/frontend-structure.md`
+
+## ADR-FE-011 - Slug publico da unidade no admin
+
+Status: Accepted
+
+Decisao:
+O painel administrativo permite informar `publicSlug` no cadastro da unidade e
+exibe o link `{publicSlug}.comandia.com.br` na listagem.
+
+Motivo:
+O frontend store sera um projeto separado, mas a publicacao do cardapio depende
+de um campo operacional da unidade. O painel admin deve cadastrar esse valor sem
+duplicar regras de publicacao, pedido ou seguranca.
+
+Regras:
+- O frontend valida apenas formato, tamanho e preview do dominio.
+- Slugs reservados, unicidade e normalizacao sao validados pelo backend.
+- O link exibido e informativo; a disponibilidade real do cardapio depende do
+  frontend store, DNS wildcard e API publica.
+
+## ADR-FE-012 - Angular 22 e padrao visual compartilhado
+
+Status: Accepted
+
+Decisao:
+O frontend administrativo passa a usar Angular 22 e o builder `@angular/build`,
+alinhado ao StoreFront. Novas implementacoes visuais devem seguir
+`docs/design/ui-ux-angular-guidelines.md`, usando a mesma direcao visual moderna
+do StoreFront com adaptacao para operacao interna.
+
+Motivo:
+O StoreFront consolidou um padrao mais moderno para Angular e UI/UX. Alinhar o
+admin reduz divergencia entre os frontends ComandIA e melhora a experiencia em
+mobile, especialmente para telas operacionais como pedidos.
+
+Regras:
+- Usar base visual neutra `slate`, destaque `indigo-600`, cantos maiores,
+  sombras sutis e foco acessivel.
+- Manter o admin denso e eficiente para operacao, sem transformar telas
+  administrativas em landing pages.
+- Em mobile, detalhes e edicoes de item devem abrir como bottom sheet, modal ou
+  tela sobreposta, evitando que o usuario role listas longas para agir.
+- Migracoes visuais devem ser incrementais e aproveitar tokens globais antes de
+  criar CSS novo por feature.

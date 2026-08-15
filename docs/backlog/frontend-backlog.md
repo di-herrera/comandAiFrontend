@@ -1,0 +1,294 @@
+# Frontend Backlog — ComandAI Admin
+
+Este backlog separa a parte de frontend do painel administrativo Angular.
+
+O foco do painel é cadastrar dados mínimos para que o backend consiga interpretar mensagens do WhatsApp, validar catálogo e montar comandas. O painel não deve virar ERP, PDV, financeiro, marketplace ou sistema de atendimento em tempo real.
+
+## Colunas
+
+- Backlog: tarefas planejadas.
+- Ready: tarefas prontas para implementação.
+- Doing: tarefa em andamento.
+- Review: tarefa implementada aguardando revisão humana.
+- Done: tarefa aprovada pelo usuário.
+- Blocked: tarefa bloqueada.
+
+---
+
+## Ready
+
+## Backlog
+
+## Doing
+
+## Review
+
+### FE-010 Colapsar categorias no cardapio
+
+**Objetivo**
+Facilitar a leitura da tela de cardapio agrupando produtos em secoes recolhiveis por categoria.
+
+**Escopo**
+- Adicionar comportamento de expandir/recolher por categoria na tela de cardapio.
+- Manter categorias abertas por padrao apos carregar o cardapio.
+- Permitir alternar uma categoria individualmente.
+- Exibir quantidade de produtos por categoria.
+- Preservar filtros de empresa e unidade.
+
+**Criterios de aceite**
+- Cada categoria do cardapio pode ser recolhida e expandida.
+- Produtos, variantes, ingredientes e adicionais continuam visiveis quando a categoria esta aberta.
+- O build do Angular passa.
+
+**Notas de implementacao**
+- Tela de cardapio agora renderiza cada categoria como uma secao recolhivel.
+- Categorias carregam abertas por padrao e podem ser alternadas individualmente.
+- Cabecalho da categoria mostra a quantidade de produtos.
+- O estado de collapse e limpo ao trocar filtros ou recarregar o cardapio.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-009 Revisão de usabilidade do painel
+
+**Objetivo**
+Garantir que o painel seja simples para pequenos negócios e não pareça um ERP complexo.
+
+**Escopo**
+- Revisar textos.
+- Revisar navegação.
+- Revisar formulários.
+- Revisar feedbacks.
+- Garantir contexto visível de empresa/unidade.
+
+**Critérios de aceite**
+- Fluxo de cadastro é compreensível sem treinamento longo.
+- Cada tela deixa claro o que deve ser preenchido.
+
+**Notas de implementação**
+- Home revisada para orientar o fluxo de cadastro em ordem operacional.
+- Menu lateral agrupado em Base e Catálogo, com textos mais diretos.
+- Visual ajustado para painel simples, com raio de borda menor e espaçamentos mais contidos.
+- Telas operacionais mantêm empresa/unidade/produto visíveis nos filtros ativos quando aplicável.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-008 Tela de composição do produto
+
+**Objetivo**
+Permitir associar produtos a ingredientes e opções/adicionais.
+
+**Escopo**
+- Selecionar empresa, unidade e produto.
+- Exibir composição atual.
+- Associar ingredientes aplicáveis.
+- Definir se ingrediente pode ser removido.
+- Associar opções/adicionais aplicáveis.
+- Salvar composição via API.
+
+**Critérios de aceite**
+- Produto mostra seus ingredientes vinculados.
+- Produto mostra suas opções vinculadas.
+- A composição salva é carregada novamente com consistência.
+
+**Notas de implementação**
+- Criado `ProductCompositionApiService` para obter e atualizar composição pelo contrato HTTP.
+- Tela exige empresa, unidade e produto antes de carregar a composição.
+- Ingredientes e opções da unidade são mesclados com a composição atual para marcar vínculos existentes.
+- Usuário pode marcar ingredientes, definir padrão/removível e marcar opções aplicáveis.
+- Após salvar, a composição é recarregada para refletir o retorno persistido.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-007 Tela de opções e adicionais
+
+**Objetivo**
+Permitir listar, cadastrar e editar opções/adicionais por empresa e unidade.
+
+**Escopo**
+- Selecionar empresa e unidade.
+- Listar opções filtradas.
+- Criar opção com código persistido, exemplo `O001`.
+- Editar nome, preço adicional e status.
+
+**Critérios de aceite**
+- Opção sempre é criada com TenantId + BusinessUnitId + Code.
+- Preço adicional é obrigatório e maior ou igual a zero.
+
+**Notas de implementação**
+- Tela de opções exige empresa e unidade antes de listar ou salvar.
+- Listagem usa TenantId + BusinessUnitId e mostra o filtro ativo.
+- Formulário reativo cobre código persistido, nome, preço adicional e status.
+- Validação client-side exige preço adicional maior ou igual a zero.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-006 Tela de ingredientes
+
+**Objetivo**
+Permitir listar, cadastrar e editar ingredientes por empresa e unidade.
+
+**Escopo**
+- Selecionar empresa e unidade.
+- Listar ingredientes filtrados.
+- Criar ingrediente com código persistido, exemplo `I001`.
+- Editar nome e status.
+
+**Critérios de aceite**
+- Ingrediente sempre é criado com TenantId + BusinessUnitId + Code.
+
+**Notas de implementação**
+- Tela de ingredientes exige empresa e unidade antes de listar ou salvar.
+- Listagem usa TenantId + BusinessUnitId e mostra o filtro ativo.
+- Formulário reativo cobre criação e edição com código persistido, nome e status.
+- Salvamento envia TenantId e BusinessUnitId via `IngredientsApiService`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-005 Tela de produtos
+
+**Objetivo**
+Permitir listar, cadastrar e editar produtos por empresa e unidade.
+
+**Escopo**
+- Selecionar empresa e unidade.
+- Listar produtos filtrados.
+- Criar produto com código persistido, exemplo `P001`.
+- Editar nome, descrição, preço base, disponibilidade e status.
+
+**Critérios de aceite**
+- Produto sempre é criado com TenantId + BusinessUnitId + Code.
+- Preço é obrigatório e maior ou igual a zero.
+- Disponibilidade é editável.
+
+**Notas de implementação**
+- Tela de produtos exige empresa e unidade antes de listar ou salvar.
+- Listagem usa TenantId + BusinessUnitId e deixa o contexto visível no filtro ativo.
+- Formulário reativo cobre código, nome, descrição, preço base, disponibilidade e status.
+- Validação client-side exige código, nome e preço maior ou igual a zero.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-004 Tela de unidades de negócio
+
+**Objetivo**
+Permitir listar, cadastrar e editar unidades vinculadas a uma empresa.
+
+**Escopo**
+- Selecionar empresa.
+- Listar unidades da empresa.
+- Criar unidade.
+- Editar unidade.
+- Campo de taxa fixa de entrega.
+- Status ativo/inativo.
+
+**Critérios de aceite**
+- Toda listagem exige TenantId.
+- Criação e edição enviam TenantId corretamente.
+
+**Notas de implementação**
+- Tela de unidades carrega empresas e exige seleção de TenantId antes de listar ou salvar.
+- Listagem é filtrada via `BusinessUnitsApiService.list(tenantId)` e mostra o contexto ativo.
+- Formulário reativo cobre criação e edição com nome, telefone, endereço, taxa fixa de entrega e status.
+- Salvamento usa TenantId selecionado em criação e edição.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-003 Tela de empresas
+
+**Objetivo**
+Permitir listar, cadastrar e editar empresas/tenants.
+
+**Escopo**
+- Listagem de empresas.
+- Formulário reativo de criação.
+- Formulário reativo de edição.
+- Validações client-side alinhadas ao contrato.
+- Feedback de carregamento, sucesso e erro.
+
+**Critérios de aceite**
+- Usuário lista empresas.
+- Usuário cria empresa.
+- Usuário edita empresa.
+- Campos obrigatórios são validados antes do envio.
+
+**Notas de implementação**
+- Tela de empresas substitui o placeholder por listagem consumindo `TenantsApiService`.
+- Formulário reativo cobre criação e edição com razão social, nome comercial, documento e status.
+- Validação client-side impede envio sem razão social e nome comercial.
+- Estados de carregamento, salvamento, sucesso e erro são exibidos na própria tela.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-002 Contratos TypeScript e cliente HTTP base
+
+**Objetivo**
+Criar a camada base de comunicação com a API.
+
+**Escopo**
+- Criar modelos TypeScript alinhados a `docs/contracts/http-api.md`.
+- Criar serviço base para montar URLs da API.
+- Criar tratamento básico de erro.
+- Criar serviços iniciais: tenants, business units, products, ingredients, options.
+
+**Critérios de aceite**
+- Serviços tipados compilam.
+- Nenhum endpoint é chamado com URL hardcoded fora da camada de API.
+- Erros retornados pela API têm modelo tipado.
+
+**Fora do escopo**
+- Componentes finais de formulário.
+
+**Notas de implementação**
+- Contratos compartilhados criados para tenants, unidades, produtos, ingredientes, opções e composição de produto.
+- `ApiEndpoints` centraliza os caminhos administrativos e monta rotas com `TenantId` e `BusinessUnitId` quando exigido.
+- Serviços HTTP tipados adicionados para tenants, business units, products, ingredients e options.
+- Interceptor normaliza erros para o modelo tipado `ApiFailure`/`ApiError`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+### FE-001 Criar base Angular do painel administrativo
+
+**Objetivo**
+Criar o projeto Angular, estrutura base de rotas, layout e configurações essenciais.
+
+**Escopo**
+- Garantir que `npm install` e `npm start` funcionem.
+- Criar layout base com menu lateral.
+- Criar rotas iniciais para empresas, unidades, produtos, ingredientes, opções e composição.
+- Configurar environments com URL base da API.
+- Configurar aliases TypeScript.
+
+**Critérios de aceite**
+- `npm run build` passa.
+- `npm start` sobe o frontend em `localhost:4200`.
+- Todas as rotas iniciais carregam uma página placeholder.
+
+**Fora do escopo**
+- Consumo real da API.
+- Formulários finais.
+- Autenticação.
+
+**Notas de implementação**
+- Base Angular standalone validada com rotas lazy para início, empresas, unidades, produtos, ingredientes, opções e composição de produto.
+- Layout administrativo com menu lateral e páginas placeholder já carrega pelas rotas básicas.
+- Environments mantêm `apiBaseUrl`, com desenvolvimento apontando para `http://localhost:5080`.
+- Aliases TypeScript configurados para `@core/*`, `@shared/*`, `@features/*` e `@env/*`.
+- Adicionados placeholders rastreáveis para `core/errors`, `core/layout` e `shared/utils`.
+- Ajustadas versões de `@angular/cli` e `@angular-devkit/build-angular` para `^21.2.10`, versão disponível no npm para o tooling Angular 21.
+- `npm install` executado com sucesso usando `npm.cmd install`.
+- `npm run build` executado com sucesso usando `npm.cmd run build`.
+
+---
+
+## Done
+
+## Blocked

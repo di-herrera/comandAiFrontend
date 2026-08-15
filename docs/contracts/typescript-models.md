@@ -26,6 +26,9 @@ export interface BusinessUnitListItem {
   address?: string | null;
   fixedDeliveryFee: number;
   whatsAppWelcomeMessage?: string | null;
+  whatsAppReturnMessage?: string | null;
+  whatsAppReturnMessageCadence: 'Daily' | 'Weekly' | 'Monthly';
+  publicSlug?: string | null;
   status: EntityStatus;
 }
 

@@ -67,6 +67,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/product-composition/product-composition.page').then((m) => m.ProductCompositionPage)
   },
   {
+    path: 'composicoes',
+    canActivate: [authGuard],
+    data: { requiresCatalogContext: true },
+    loadComponent: () => import('./features/composition-groups/composition-groups.page').then((m) => m.CompositionGroupsPage)
+  },
+  {
     path: 'pedidos',
     canActivate: [authGuard],
     data: { requiresCatalogContext: true },

@@ -1,6 +1,10 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
+  "cli": {
+    "packageManager": "npm",
+    "analytics": "60808e03-1773-4ae3-b525-72be9f3593cf"
+  },
   "newProjectRoot": "projects",
   "projects": {
     "comandia-admin": {
@@ -17,7 +21,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": "dist/comandia-admin",
             "index": "src/index.html",
@@ -64,7 +68,7 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
             "allowedHosts": [".trycloudflare.com"]
           },
@@ -79,8 +83,9 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular-devkit/build-angular:karma",
+          "builder": "@angular/build:karma",
           "options": {
+            "karmaConfig": "karma.conf.cjs",
             "tsConfig": "tsconfig.spec.json",
             "polyfills": ["zone.js"],
             "assets": [
@@ -95,8 +100,5 @@
         }
       }
     }
-  },
-  "cli": {
-    "analytics": "60808e03-1773-4ae3-b525-72be9f3593cf"
   }
 }

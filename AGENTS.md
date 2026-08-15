@@ -10,10 +10,11 @@ O frontend não é o produto principal para o cliente final. Ele é um painel op
 
 ## Premissas fixas
 
-- Framework: Angular 21 ou versão estável equivalente instalada no momento da criação.
+- Framework: Angular 22 ou versão estável equivalente instalada no momento da criação.
 - Linguagem: TypeScript.
 - Usar componentes standalone.
 - Usar Angular Router nativo.
+- Usar lazy loading por rota/feature com `loadComponent`.
 - Usar Reactive Forms.
 - Usar HttpClient para comunicação com API.
 - Manter tipagem forte para contratos HTTP.
@@ -79,6 +80,9 @@ src/app/
 - Priorizar telas claras, formulários objetivos e feedbacks de sucesso/erro.
 - Sempre mostrar quando uma listagem está filtrada por empresa e unidade.
 - Não esconder contexto do usuário: empresa/unidade selecionada devem ficar visíveis.
+- Novas implementações visuais devem seguir `docs/design/ui-ux-angular-guidelines.md`.
+- Usar o mesmo padrão visual moderno do StoreFront como referência compartilhada: base neutra `slate`, destaque `indigo-600`, cantos `rounded-xl`/`rounded-2xl`, sombras sutis, foco acessível e microinterações discretas.
+- Adaptar o padrão ao contexto administrativo: telas podem ser mais densas e orientadas à operação, mas não devem sacrificar clareza, toque mobile ou hierarquia de ações.
 
 - Cadastros CRUD devem seguir o padrao lista primeiro + busca local + botao Novo + edicao em painel sobreposto.
 - No desktop, o painel de criacao/edicao deve abrir como drawer lateral, preservando a lista como contexto.
@@ -87,22 +91,40 @@ src/app/
 - Modal central deve ser reservado para confirmacoes curtas e acoes pequenas, como excluir, ativar ou desativar.
 - Toda listagem de cadastro deve facilitar encontrar registros por busca local simples quando os dados ja estiverem carregados.
 
+## Regras de Angular moderno
+
+- Novos componentes devem ser standalone com `standalone: true`.
+- Usar controle de fluxo nativo: `@if`, `@for` e `@switch`.
+- Usar Angular Signals para estado local e derivado: `signal()` e `computed()`.
+- Preferir `inject()` para injeção de dependência em novas implementações quando isso mantiver a classe mais simples.
+- Manter lazy loading por rota/feature com `loadComponent`.
+
 ## Regras para Codex
 
+- Toda tarefa de implementação deve ter uma issue/card no GitHub antes de qualquer alteração de código ou documentação.
 - Leia a issue/card no GitHub antes de implementar.
+- Se o usuário não informar uma issue/card, ou se a issue/card informada não existir, criar a issue no GitHub antes de implementar.
+- A issue criada deve descrever contexto, objetivo, escopo, critérios de aceite e validações esperadas quando aplicável.
 - Implemente apenas uma tarefa por vez.
 - Não antecipe tarefas futuras.
 - Não adicionar bibliotecas novas sem necessidade clara.
 - Se uma decisão não estiver documentada, registre em `docs/decisions.md`.
 - Ao finalizar uma tarefa, rode `npm run build`.
+- Crie um PR da atividade apontando para `main`.
 - Atualize o backlog movendo a tarefa para `Review`, não para `Done`.
+- O processo só é considerado concluído quando o PR for aprovado/validado, mergeado em `main` usando squash merge, e a branch remota/local da atividade for deletada.
+- Sempre usar squash merge para concluir PRs.
+- Sempre deletar a branch da atividade após o merge.
 - O usuário move para `Done` após revisar.
 
 - As referencias antigas ao backlog em arquivo nao se aplicam mais; a fonte de trabalho e revisao agora sao issues/cards no GitHub.
 
 ## Antes de finalizar qualquer tarefa
 
+- Garantir que existe uma issue/card no GitHub para a tarefa; se não existir, criar antes de implementar.
 - Rodar `npm run build`.
 - Não deixar imports quebrados.
 - Garantir que as rotas básicas continuem funcionando.
 - Atualizar documentação se mudar contrato, estrutura ou decisão técnica.
+- Registrar na issue/card as notas de implementação, validações executadas e link do PR.
+- Criar PR para `main`, concluir com squash merge após validação/revisão e deletar as branches remota/local da atividade.

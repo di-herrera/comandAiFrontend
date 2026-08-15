@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { ApiConfigService } from '@core/config/api-config.service';
 import { PagedResult } from '@shared/models/common.models';
-import { OrderDetail, OrderListFilters, OrderSummary } from '@shared/models/orders.models';
+import { OrderDetail, OrderListFilters, OrderSummary, UpdateOrderStatusRequest } from '@shared/models/orders.models';
 
 import { ApiEndpoints } from './api-endpoints';
 
@@ -28,11 +28,23 @@ export class OrdersApiService {
     return this.http.get<OrderDetail>(this.url(ApiEndpoints.orders.detail(tenantId, businessUnitId, orderId)));
   }
 
+  updateStatus(
+    tenantId: string,
+    businessUnitId: string,
+    orderId: string,
+    request: UpdateOrderStatusRequest
+  ): Observable<OrderDetail> {
+    return this.http.patch<OrderDetail>(
+      this.url(ApiEndpoints.orders.status(tenantId, businessUnitId, orderId)),
+      request
+    );
+  }
+
   private buildParams(filters: OrderListFilters): HttpParams {
     let params = new HttpParams();
 
-    if (filters.status) {
-      params = params.set('status', filters.status);
+    for (const status of filters.status ?? []) {
+      params = params.append('status', status);
     }
 
     if (filters.createdFromUtc) {
@@ -46,6 +58,14 @@ export class OrdersApiService {
     const search = filters.search?.trim();
     if (search) {
       params = params.set('search', search);
+    }
+
+    if (filters.page) {
+      params = params.set('page', String(filters.page));
+    }
+
+    if (filters.pageSize) {
+      params = params.set('pageSize', String(filters.pageSize));
     }
 
     return params;

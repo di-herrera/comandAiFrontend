@@ -9,6 +9,7 @@ import {
   BusinessUnitCreateRequest,
   BusinessUnitListItem,
   BusinessUnitWhatsAppChannel,
+  WhatsAppReturnMessageCadence,
   TenantListItem
 } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
@@ -91,6 +92,16 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           </label>
 
           <label class="field">
+            <span>Nome do link publico</span>
+            <input type="text" formControlName="publicSlug" placeholder="unidade-centro" />
+            @if (isInvalid('publicSlug')) {
+              <small>Use 3 a 63 caracteres: letras minusculas, numeros e hifens.</small>
+            } @else {
+              <small class="field-hint">{{ publicSlugPreview }}</small>
+            }
+          </label>
+
+          <label class="field">
             <span>Endereço</span>
             <input type="text" formControlName="address" />
           </label>
@@ -104,13 +115,38 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           </label>
 
           <label class="field full-span">
-            <span>Mensagem de boas-vindas no WhatsApp</span>
+            <span>Mensagem inicial no WhatsApp</span>
+            <span
+              class="info-hover"
+              tabindex="0"
+              [title]="'Se não for preenchida, será enviada a mensagem padrão: ' + defaultWhatsAppWelcomeMessage"
+            >?</span>
             <textarea rows="5" formControlName="whatsAppWelcomeMessage"></textarea>
             @if (isInvalid('whatsAppWelcomeMessage')) {
               <small>Use no máximo 1000 caracteres.</small>
             } @else {
               <small class="field-hint">Enviada automaticamente apenas no primeiro contato do cliente. Deixe em branco para usar a mensagem padrão.</small>
             }
+          </label>
+
+          <label class="field full-span">
+            <span>Mensagem de retorno no WhatsApp</span>
+            <textarea rows="5" formControlName="whatsAppReturnMessage"></textarea>
+            @if (isInvalid('whatsAppReturnMessage')) {
+              <small>Use no máximo 1000 caracteres.</small>
+            } @else {
+              <small class="field-hint">Se não for preenchida, nenhuma mensagem de retorno será enviada.</small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Recorrência da mensagem de retorno</span>
+            <select formControlName="whatsAppReturnMessageCadence">
+              <option value="Daily">Diária</option>
+              <option value="Weekly">Semanal</option>
+              <option value="Monthly">Mensal</option>
+            </select>
+            <small>Considera sempre o último pedido confirmado do cliente na unidade.</small>
           </label>
 
           <label class="field">
@@ -142,7 +178,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
           </div>
           <label class="field list-search">
             <span>Buscar</span>
-            <input type="search" [formControl]="searchControl" placeholder="Unidade, telefone ou endereco" />
+            <input type="search" [formControl]="searchControl" placeholder="Unidade, cardapio, telefone ou endereco" />
           </label>
         </div>
 
@@ -161,8 +197,10 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                 <th>Unidade</th>
                 <th>Telefone</th>
                 <th>Endereço</th>
+                <th>Cardapio</th>
                 <th>Taxa entrega</th>
                 <th>Boas-vindas</th>
+                <th>Retorno</th>
                 <th>Status</th>
                 <th>WhatsApp</th>
                 <th>Ação</th>
@@ -174,12 +212,26 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                   <td data-label="Unidade">{{ unit.name }}</td>
                   <td data-label="Telefone">{{ unit.phone || '-' }}</td>
                   <td data-label="Endereco">{{ unit.address || '-' }}</td>
+                  <td data-label="Cardapio">
+                    @if (publicMenuUrl(unit)) {
+                      <a [href]="publicMenuUrl(unit)" target="_blank" rel="noopener">{{ publicMenuHost(unit) }}</a>
+                    } @else {
+                      <span class="muted">Nao publicado</span>
+                    }
+                  </td>
                   <td data-label="Taxa entrega">{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
                   <td data-label="Boas-vindas">
                     @if (hasCustomWelcomeMessage(unit)) {
                       <span class="status-pill">Personalizada</span>
                     } @else {
                       <span class="muted">Padrão</span>
+                    }
+                  </td>
+                  <td data-label="Retorno">
+                    @if (hasReturnMessage(unit)) {
+                      <span class="status-pill">{{ cadenceLabel(unit.whatsAppReturnMessageCadence) }}</span>
+                    } @else {
+                      <span class="muted">Desativada</span>
                     }
                   </td>
                   <td data-label="Status"><span class="status-pill">{{ statusLabel(unit.status) }}</span></td>
@@ -192,7 +244,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                       @if (whatsappQrCodeSource(unit.id)) {
                         <img class="qr-code" [src]="whatsappQrCodeSource(unit.id)" alt="QR Code do WhatsApp" />
                       } @else if (hasWhatsAppQrCode(unit.id)) {
-                        <small class="qr-code-error">QR Code recebido em formato nÃ£o suportado para imagem.</small>
+                        <small class="qr-code-error">QR Code recebido em formato não suportado para imagem.</small>
                       }
                     </div>
                   </td>
@@ -229,13 +281,24 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
   `
 })
 export class BusinessUnitsPage {
+  protected readonly defaultWhatsAppWelcomeMessage = 'Ola! Este e o atendimento automatico da loja. Eu posso ajudar a montar seu pedido, validar itens do cardapio, anotar entrega ou retirada e chamar uma pessoa da equipe quando for necessario. Me diga o que voce gostaria de pedir.';
+  private readonly publicMenuBaseDomain = 'comandia.com.br';
   protected readonly tenantControl = new FormControl('', { nonNullable: true });
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(120)] }),
     phone: new FormControl<string | null>(null, { validators: [Validators.maxLength(32)] }),
+    publicSlug: new FormControl<string | null>(null, {
+      validators: [
+        Validators.minLength(3),
+        Validators.maxLength(63),
+        Validators.pattern(/^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/)
+      ]
+    }),
     address: new FormControl<string | null>(null, { validators: [Validators.maxLength(240)] }),
     fixedDeliveryFee: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     whatsAppWelcomeMessage: new FormControl<string | null>(null, { validators: [Validators.maxLength(1000)] }),
+    whatsAppReturnMessage: new FormControl<string | null>(null, { validators: [Validators.maxLength(1000)] }),
+    whatsAppReturnMessageCadence: new FormControl<WhatsAppReturnMessageCadence>('Monthly', { nonNullable: true, validators: [Validators.required] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
@@ -357,6 +420,7 @@ export class BusinessUnitsPage {
 
     return this.businessUnits.filter((unit) =>
       unit.name.toLowerCase().includes(term) ||
+      (unit.publicSlug ?? '').toLowerCase().includes(term) ||
       (unit.phone ?? '').toLowerCase().includes(term) ||
       (unit.address ?? '').toLowerCase().includes(term));
   }
@@ -371,9 +435,12 @@ export class BusinessUnitsPage {
     this.form.setValue({
       name: unit.name,
       phone: unit.phone ?? null,
+      publicSlug: unit.publicSlug ?? null,
       address: unit.address ?? null,
       fixedDeliveryFee: unit.fixedDeliveryFee,
       whatsAppWelcomeMessage: unit.whatsAppWelcomeMessage ?? null,
+      whatsAppReturnMessage: unit.whatsAppReturnMessage ?? null,
+      whatsAppReturnMessageCadence: unit.whatsAppReturnMessageCadence ?? 'Monthly',
       status: unit.status
     });
     this.isEditorOpen = true;
@@ -387,9 +454,12 @@ export class BusinessUnitsPage {
     this.form.reset({
       name: '',
       phone: null,
+      publicSlug: null,
       address: null,
       fixedDeliveryFee: 0,
       whatsAppWelcomeMessage: null,
+      whatsAppReturnMessage: null,
+      whatsAppReturnMessageCadence: 'Monthly',
       status: 'Active'
     });
   }
@@ -489,24 +559,58 @@ export class BusinessUnitsPage {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
 
+  protected get publicSlugPreview(): string {
+    const slug = this.form.controls.publicSlug.value?.trim();
+    return slug ? `${slug}.${this.publicMenuBaseDomain}` : `exemplo.${this.publicMenuBaseDomain}`;
+  }
+
+  protected publicMenuHost(unit: BusinessUnitListItem): string {
+    return unit.publicSlug ? `${unit.publicSlug}.${this.publicMenuBaseDomain}` : '';
+  }
+
+  protected publicMenuUrl(unit: BusinessUnitListItem): string {
+    const host = this.publicMenuHost(unit);
+    return host ? `https://${host}` : '';
+  }
+
   private buildRequest(): BusinessUnitCreateRequest {
     const value = this.form.getRawValue();
     const phone = value.phone?.trim();
+    const publicSlug = value.publicSlug?.trim();
     const address = value.address?.trim();
     const whatsAppWelcomeMessage = value.whatsAppWelcomeMessage?.trim();
+    const whatsAppReturnMessage = value.whatsAppReturnMessage?.trim();
 
     return {
       name: value.name.trim(),
       phone: phone ? phone : null,
+      publicSlug: publicSlug ? publicSlug : null,
       address: address ? address : null,
       fixedDeliveryFee: Number(value.fixedDeliveryFee),
       whatsAppWelcomeMessage: whatsAppWelcomeMessage ? whatsAppWelcomeMessage : null,
+      whatsAppReturnMessage: whatsAppReturnMessage ? whatsAppReturnMessage : null,
+      whatsAppReturnMessageCadence: value.whatsAppReturnMessageCadence,
       status: value.status
     };
   }
 
   protected hasCustomWelcomeMessage(unit: BusinessUnitListItem): boolean {
     return Boolean(unit.whatsAppWelcomeMessage?.trim());
+  }
+
+  protected hasReturnMessage(unit: BusinessUnitListItem): boolean {
+    return Boolean(unit.whatsAppReturnMessage?.trim());
+  }
+
+  protected cadenceLabel(cadence: WhatsAppReturnMessageCadence): string {
+    switch (cadence) {
+      case 'Daily':
+        return 'Diária';
+      case 'Weekly':
+        return 'Semanal';
+      default:
+        return 'Mensal';
+    }
   }
 
   private loadWhatsAppChannels(units: BusinessUnitListItem[]): void {

@@ -1,5 +1,12 @@
 # Contratos HTTP — ComandIA Admin
 
+## Itens compostos
+
+O painel usa `GET/POST .../composition-groups` e `PUT .../composition-groups/{id}`
+para configurar grupos, produtos e limites por variante. Pedidos e rascunhos
+podem retornar `itemKind: "Composed"` e `parts` com produto, variante, numero e
+total de partes. Preco e validacoes permanecem exclusivos do backend.
+
 Este documento define os contratos esperados entre o frontend Angular e a API `ComandIA.Api`.
 
 A API é a fonte da verdade. O frontend deve seguir estes contratos e registrar qualquer mudança em documentação antes de implementar telas definitivas.
@@ -221,6 +228,7 @@ Resposta:
       "address": "Rua Exemplo, 123",
       "fixedDeliveryFee": 7.0,
       "whatsAppWelcomeMessage": "Ola! Este e o atendimento automatico da loja. Posso montar seu pedido e chamar uma pessoa quando for necessario.",
+      "publicSlug": "unidade-principal",
       "status": "Active"
     }
   ],
@@ -243,6 +251,7 @@ Request:
   "address": "Rua Exemplo, 123",
   "fixedDeliveryFee": 7.0,
   "whatsAppWelcomeMessage": "Ola! Este e o atendimento automatico da loja. Posso montar seu pedido e chamar uma pessoa quando for necessario.",
+  "publicSlug": "unidade-principal",
   "status": "Active"
 }
 ```
@@ -250,6 +259,11 @@ Request:
 `whatsAppWelcomeMessage` e opcional. Quando enviado como `null`, vazio ou
 somente com espacos, o backend usa a mensagem padrao no primeiro contato do
 cliente pelo WhatsApp.
+
+`publicSlug` e opcional e define o cardapio publico em
+`{publicSlug}.comandia.com.br`. O frontend valida apenas formato basico:
+3 a 63 caracteres, letras minusculas, numeros e hifens. Slugs reservados,
+unicidade e normalizacao definitiva sao responsabilidade do backend.
 
 ### Atualizar unidade
 
@@ -825,10 +839,17 @@ Atualizacao:
 }
 ```
 
-O frontend deve permitir editar apenas `content`. O backend salva em banco,
-incrementa a versao e atualiza o cache usado pelo processamento de mensagens.
-Usuarios sem role `SystemAdmin` nao devem ver a rota no menu e recebem bloqueio
-pelo guard caso tentem acessar `/prompts-ia` diretamente.
+O frontend envia apenas `content`. Para facilitar a manutencao, a tela
+`/prompts-ia` apresenta esse texto dividido pelas secoes Markdown de nivel dois
+(`##`), preservando a ordem usada na montagem do prompt. No MVP, somente a
+secao `Instruções personalizadas` e editavel; as demais secoes sao exibidas como
+referencia do comportamento padrao da IA. Ao salvar, o frontend envia o
+documento completo no mesmo contrato.
+
+O backend salva em banco, incrementa a versao e atualiza o cache usado pelo
+processamento de mensagens. Usuarios sem role `SystemAdmin` nao devem ver a
+rota no menu e recebem bloqueio pelo guard caso tentem acessar `/prompts-ia`
+diretamente. A organizacao visual das secoes nao altera essa regra de acesso.
 
 ## Decisões abertas
 

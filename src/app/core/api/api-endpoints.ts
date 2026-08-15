@@ -45,6 +45,12 @@ export const ApiEndpoints = {
     detail: (tenantId: string, businessUnitId: string, optionGroupId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/option-groups/${enc(optionGroupId)}`
   },
+  compositionGroups: {
+    list: (tenantId: string, businessUnitId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/composition-groups`,
+    detail: (tenantId: string, businessUnitId: string, compositionGroupId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/composition-groups/${enc(compositionGroupId)}`
+  },
   productCategories: {
     list: (tenantId: string, businessUnitId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/product-categories`,
@@ -71,7 +77,9 @@ export const ApiEndpoints = {
     list: (tenantId: string, businessUnitId: string) =>
       `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders`,
     detail: (tenantId: string, businessUnitId: string, orderId: string) =>
-      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}`
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}`,
+    status: (tenantId: string, businessUnitId: string, orderId: string) =>
+      `${adminPrefix}/tenants/${enc(tenantId)}/business-units/${enc(businessUnitId)}/orders/${enc(orderId)}/status`
   },
   operatorConversations: {
     list: (tenantId: string, businessUnitId: string) =>
