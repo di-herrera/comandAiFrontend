@@ -1,9 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { catchError, finalize, of, take, timeout } from 'rxjs';
+import { finalize } from 'rxjs';
 
 import { TenantsApiService } from '@core/api/tenants-api.service';
 import { AuthSessionService } from '@core/auth/auth-session.service';
+import { PagedListState } from '@shared/state/paged-list.state';
 import { TenantCreateRequest, TenantListItem } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
@@ -144,8 +145,6 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
   `
 })
 export class TenantsPage {
-  private static readonly RequestTimeoutMs = 15000;
-
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(160)] }),
     tradeName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(120)] }),
@@ -154,18 +153,16 @@ export class TenantsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  private readonly tenantsState = signal<TenantListItem[]>([]);
-  private readonly loadingState = signal(false);
+  private readonly tenantsList = new PagedListState<TenantListItem>();
   private readonly successMessageState = signal('');
   private readonly errorMessageState = signal('');
-  private loadRequestId = 0;
 
-  protected get tenants(): TenantListItem[] { return this.tenantsState(); }
-  protected set tenants(value: TenantListItem[]) { this.tenantsState.set(value); }
+  protected get tenants(): TenantListItem[] { return this.tenantsList.items(); }
+  protected set tenants(value: TenantListItem[]) { this.tenantsList.items.set(value); }
   protected editingTenantId: string | null = null;
   protected isEditorOpen = false;
-  protected get loading(): boolean { return this.loadingState(); }
-  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get loading(): boolean { return this.tenantsList.loading(); }
+  protected set loading(value: boolean) { this.tenantsList.loading.set(value); }
   protected saving = false;
   protected get successMessage(): string { return this.successMessageState(); }
   protected set successMessage(value: string) { this.successMessageState.set(value); }
@@ -180,35 +177,11 @@ export class TenantsPage {
   }
 
   protected loadTenants(): void {
-    const requestId = ++this.loadRequestId;
-    this.loading = true;
     this.errorMessage = '';
-
-    this.tenantsApi.list()
-      .pipe(
-        timeout(TenantsPage.RequestTimeoutMs),
-        take(1),
-        catchError((failure: unknown) => {
-          if (requestId === this.loadRequestId) {
-            this.errorMessage = this.failureMessage(failure);
-          }
-
-          return of(null);
-        }),
-        finalize(() => {
-          if (requestId === this.loadRequestId) {
-            this.loading = false;
-          }
-        })
-      )
-      .subscribe({
-        next: (result) => {
-          if (!result || requestId !== this.loadRequestId) {
-            return;
-          }
-
-          this.tenants = this.filterTenantsByScope(Array.isArray(result.items) ? result.items : []);
-        }
+    this.tenantsList.load(this.tenantsApi.list(), {
+      errorMessage: 'Nao foi possivel carregar as empresas. Tente atualizar a tela.',
+      onError: (message) => this.errorMessage = message,
+      mapItems: (items) => this.filterTenantsByScope(items)
       });
   }
 
@@ -320,14 +293,4 @@ export class TenantsPage {
     return this.authSession.isSystemAdmin() || this.authSession.user()?.tenantId === tenant.id;
   }
 
-  private failureMessage(failure: unknown): string {
-    if (failure && typeof failure === 'object') {
-      const candidate = failure as Partial<ApiFailure>;
-      if (candidate.error && typeof candidate.error.message === 'string') {
-        return candidate.error.message;
-      }
-    }
-
-    return 'Nao foi possivel carregar as empresas. Tente atualizar a tela.';
-  }
 }
