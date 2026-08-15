@@ -589,23 +589,6 @@ interface SavedOrderFilters {
       }
     }
 
-    .detail-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 60;
-      display: flex;
-      align-items: end;
-      background: rgba(0, 0, 0, .42);
-    }
-
-    .detail-modal {
-      width: 100%;
-      max-height: 94vh;
-      overflow: auto;
-      background: var(--surface);
-      padding: .9rem;
-    }
-
     @media (max-width: 980px) {
       .order-detail-card {
         display: none;
