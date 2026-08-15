@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, take, timeout } from 'rxjs';
 
 import { TenantsApiService } from '@core/api/tenants-api.service';
 import { AuthSessionService } from '@core/auth/auth-session.service';
@@ -144,6 +144,8 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
   `
 })
 export class TenantsPage {
+  private static readonly RequestTimeoutMs = 15000;
+
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(160)] }),
     tradeName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(120)] }),
@@ -152,13 +154,23 @@ export class TenantsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected tenants: TenantListItem[] = [];
+  private readonly tenantsState = signal<TenantListItem[]>([]);
+  private readonly loadingState = signal(false);
+  private readonly successMessageState = signal('');
+  private readonly errorMessageState = signal('');
+  private loadRequestId = 0;
+
+  protected get tenants(): TenantListItem[] { return this.tenantsState(); }
+  protected set tenants(value: TenantListItem[]) { this.tenantsState.set(value); }
   protected editingTenantId: string | null = null;
   protected isEditorOpen = false;
-  protected loading = false;
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected saving = false;
-  protected successMessage = '';
-  protected errorMessage = '';
+  protected get successMessage(): string { return this.successMessageState(); }
+  protected set successMessage(value: string) { this.successMessageState.set(value); }
+  protected get errorMessage(): string { return this.errorMessageState(); }
+  protected set errorMessage(value: string) { this.errorMessageState.set(value); }
 
   constructor(
     private readonly tenantsApi: TenantsApiService,
@@ -168,17 +180,34 @@ export class TenantsPage {
   }
 
   protected loadTenants(): void {
+    const requestId = ++this.loadRequestId;
     this.loading = true;
     this.errorMessage = '';
 
     this.tenantsApi.list()
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        timeout(TenantsPage.RequestTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.loadRequestId) {
+            this.errorMessage = this.failureMessage(failure);
+          }
+
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.loadRequestId) {
+            this.loading = false;
+          }
+        })
+      )
       .subscribe({
         next: (result) => {
-          this.tenants = this.filterTenantsByScope(result.items);
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
+          if (!result || requestId !== this.loadRequestId) {
+            return;
+          }
+
+          this.tenants = this.filterTenantsByScope(Array.isArray(result.items) ? result.items : []);
         }
       });
   }
@@ -289,5 +318,16 @@ export class TenantsPage {
 
   private canEditTenant(tenant: TenantListItem): boolean {
     return this.authSession.isSystemAdmin() || this.authSession.user()?.tenantId === tenant.id;
+  }
+
+  private failureMessage(failure: unknown): string {
+    if (failure && typeof failure === 'object') {
+      const candidate = failure as Partial<ApiFailure>;
+      if (candidate.error && typeof candidate.error.message === 'string') {
+        return candidate.error.message;
+      }
+    }
+
+    return 'Nao foi possivel carregar as empresas. Tente atualizar a tela.';
   }
 }
