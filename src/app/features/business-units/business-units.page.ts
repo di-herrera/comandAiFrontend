@@ -9,6 +9,7 @@ import {
   BusinessUnitCreateRequest,
   BusinessUnitListItem,
   BusinessUnitWhatsAppChannel,
+  StorefrontTheme,
   WhatsAppReturnMessageCadence,
   TenantListItem
 } from '@shared/models/catalog.models';
@@ -149,6 +150,48 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
             <small>Considera sempre o último pedido confirmado do cliente na unidade.</small>
           </label>
 
+          <section class="theme-picker full-span">
+            <div class="theme-picker__heading">
+              <div>
+                <span>Tema do cardápio</span>
+                <small>Escolha uma paleta pronta para o cardápio público desta unidade.</small>
+              </div>
+            </div>
+            <div class="theme-grid">
+              @for (theme of storefrontThemes; track theme.id) {
+                <button
+                  type="button"
+                  class="theme-option"
+                  [class.selected]="form.controls.storefrontTheme.value === theme.id"
+                  [style.--theme-primary]="theme.primary"
+                  [style.--theme-hover]="theme.hover"
+                  [style.--theme-soft]="theme.soft"
+                  (click)="selectStorefrontTheme(theme.id)"
+                >
+                  <span class="theme-option__topline">
+                    <strong>{{ theme.name }}</strong>
+                    <span class="theme-swatches" aria-hidden="true">
+                      <i [style.background]="theme.primary"></i>
+                      <i [style.background]="theme.hover"></i>
+                      <i [style.background]="theme.soft"></i>
+                    </span>
+                  </span>
+                  <span class="theme-option__description">{{ theme.description }}</span>
+                  <span class="theme-preview" aria-hidden="true">
+                    <span class="theme-preview__tab">Lanches</span>
+                    <span class="theme-preview__card">
+                      <span>
+                        <strong>Produto destaque</strong>
+                        <small>A partir de R$ 24,00</small>
+                      </span>
+                      <span class="theme-preview__button">Adicionar</span>
+                    </span>
+                  </span>
+                </button>
+              }
+            </div>
+          </section>
+
           <label class="field">
             <span>Status</span>
             <select formControlName="status">
@@ -198,6 +241,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                 <th>Telefone</th>
                 <th>Endereço</th>
                 <th>Cardapio</th>
+                <th>Tema</th>
                 <th>Taxa entrega</th>
                 <th>Boas-vindas</th>
                 <th>Retorno</th>
@@ -219,6 +263,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                       <span class="muted">Nao publicado</span>
                     }
                   </td>
+                  <td data-label="Tema"><span class="status-pill">{{ themeName(unit.storefrontTheme) }}</span></td>
                   <td data-label="Taxa entrega">{{ formatCurrency(unit.fixedDeliveryFee) }}</td>
                   <td data-label="Boas-vindas">
                     @if (hasCustomWelcomeMessage(unit)) {
@@ -283,6 +328,56 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 export class BusinessUnitsPage {
   protected readonly defaultWhatsAppWelcomeMessage = 'Ola! Este e o atendimento automatico da loja. Eu posso ajudar a montar seu pedido, validar itens do cardapio, anotar entrega ou retirada e chamar uma pessoa da equipe quando for necessario. Me diga o que voce gostaria de pedir.';
   private readonly publicMenuBaseDomain = 'comandia.com.br';
+  protected readonly storefrontThemes: StorefrontThemeOption[] = [
+    {
+      id: 'indigo',
+      name: 'Índigo',
+      description: 'Destaque azul-violeta, moderno e versátil.',
+      primary: '#4F46E5',
+      hover: '#4338CA',
+      soft: '#EEF2FF'
+    },
+    {
+      id: 'rubi',
+      name: 'Rubi',
+      description: 'Rosa avermelhado com presença forte.',
+      primary: '#E11D48',
+      hover: '#BE123C',
+      soft: '#FFF1F2'
+    },
+    {
+      id: 'ambar',
+      name: 'Âmbar',
+      description: 'Dourado quente com sensação acolhedora.',
+      primary: '#B45309',
+      hover: '#92400E',
+      soft: '#FFFBEB'
+    },
+    {
+      id: 'esmeralda',
+      name: 'Esmeralda',
+      description: 'Verde fresco, leve e natural.',
+      primary: '#059669',
+      hover: '#047857',
+      soft: '#ECFDF5'
+    },
+    {
+      id: 'oceano',
+      name: 'Oceano',
+      description: 'Azul claro, limpo e confiável.',
+      primary: '#0284C7',
+      hover: '#0369A1',
+      soft: '#F0F9FF'
+    },
+    {
+      id: 'violeta',
+      name: 'Violeta',
+      description: 'Roxo vibrante com toque contemporâneo.',
+      primary: '#7C3AED',
+      hover: '#6D28D9',
+      soft: '#F5F3FF'
+    }
+  ];
   protected readonly tenantControl = new FormControl('', { nonNullable: true });
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(120)] }),
@@ -299,6 +394,7 @@ export class BusinessUnitsPage {
     whatsAppWelcomeMessage: new FormControl<string | null>(null, { validators: [Validators.maxLength(1000)] }),
     whatsAppReturnMessage: new FormControl<string | null>(null, { validators: [Validators.maxLength(1000)] }),
     whatsAppReturnMessageCadence: new FormControl<WhatsAppReturnMessageCadence>('Monthly', { nonNullable: true, validators: [Validators.required] }),
+    storefrontTheme: new FormControl<StorefrontTheme>('indigo', { nonNullable: true, validators: [Validators.required] }),
     status: new FormControl<EntityStatus>('Active', { nonNullable: true, validators: [Validators.required] })
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
@@ -441,6 +537,7 @@ export class BusinessUnitsPage {
       whatsAppWelcomeMessage: unit.whatsAppWelcomeMessage ?? null,
       whatsAppReturnMessage: unit.whatsAppReturnMessage ?? null,
       whatsAppReturnMessageCadence: unit.whatsAppReturnMessageCadence ?? 'Monthly',
+      storefrontTheme: unit.storefrontTheme ?? 'indigo',
       status: unit.status
     });
     this.isEditorOpen = true;
@@ -460,6 +557,7 @@ export class BusinessUnitsPage {
       whatsAppWelcomeMessage: null,
       whatsAppReturnMessage: null,
       whatsAppReturnMessageCadence: 'Monthly',
+      storefrontTheme: 'indigo',
       status: 'Active'
     });
   }
@@ -471,6 +569,15 @@ export class BusinessUnitsPage {
 
   protected statusLabel(status: EntityStatus): string {
     return status === 'Active' ? 'Ativa' : 'Inativa';
+  }
+
+  protected selectStorefrontTheme(theme: StorefrontTheme): void {
+    this.form.controls.storefrontTheme.setValue(theme);
+    this.form.controls.storefrontTheme.markAsDirty();
+  }
+
+  protected themeName(theme: StorefrontTheme | null | undefined): string {
+    return this.storefrontThemes.find((option) => option.id === theme)?.name ?? 'Índigo';
   }
 
   protected connectWhatsApp(unit: BusinessUnitListItem): void {
@@ -590,6 +697,7 @@ export class BusinessUnitsPage {
       whatsAppWelcomeMessage: whatsAppWelcomeMessage ? whatsAppWelcomeMessage : null,
       whatsAppReturnMessage: whatsAppReturnMessage ? whatsAppReturnMessage : null,
       whatsAppReturnMessageCadence: value.whatsAppReturnMessageCadence,
+      storefrontTheme: value.storefrontTheme,
       status: value.status
     };
   }
@@ -724,4 +832,13 @@ export class BusinessUnitsPage {
 
     return 'png';
   }
+}
+
+interface StorefrontThemeOption {
+  id: StorefrontTheme;
+  name: string;
+  description: string;
+  primary: string;
+  hover: string;
+  soft: string;
 }
