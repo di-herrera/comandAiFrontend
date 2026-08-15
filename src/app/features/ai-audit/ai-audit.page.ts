@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect } from '@angular/core';
+import { Component, effect, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, take, timeout } from 'rxjs';
 
 import { AiAuditApiService } from '@core/api/ai-audit-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
@@ -236,6 +236,7 @@ type ParsedStatusFilter = '' | 'success' | 'failure';
 export class AiAuditPage {
   private static readonly PageSize = 20;
   private static readonly MobileBreakpoint = 980;
+  private static readonly RequestTimeoutMs = 15000;
 
   protected readonly filtersForm = new FormGroup({
     parsedStatus: new FormControl<ParsedStatusFilter>('', { nonNullable: true }),
@@ -245,14 +246,39 @@ export class AiAuditPage {
     incomingMessageId: new FormControl('', { nonNullable: true })
   });
 
-  protected interactions: AiInteractionListItem[] = [];
-  protected selectedInteraction: AiInteractionListItem | null = null;
+  private readonly interactionsState = signal<AiInteractionListItem[]>([]);
+  private readonly selectedInteractionState = signal<AiInteractionListItem | null>(null);
+  private readonly loadingState = signal(false);
+  private readonly errorMessageState = signal('');
+  private readonly totalState = signal(0);
+  private requestId = 0;
   protected currentPage = 1;
-  protected total = 0;
   protected readonly pageSize = AiAuditPage.PageSize;
   protected detailModalOpen = false;
-  protected loading = false;
-  protected errorMessage = '';
+
+  protected get interactions(): AiInteractionListItem[] {
+    return this.interactionsState();
+  }
+
+  protected get selectedInteraction(): AiInteractionListItem | null {
+    return this.selectedInteractionState();
+  }
+
+  protected set selectedInteraction(value: AiInteractionListItem | null) {
+    this.selectedInteractionState.set(value);
+  }
+
+  protected get loading(): boolean {
+    return this.loadingState();
+  }
+
+  protected get errorMessage(): string {
+    return this.errorMessageState();
+  }
+
+  protected get total(): number {
+    return this.totalState();
+  }
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
@@ -299,19 +325,36 @@ export class AiAuditPage {
       return;
     }
 
-    this.loading = true;
-    this.errorMessage = '';
+    const requestId = ++this.requestId;
+    this.loadingState.set(true);
+    this.errorMessageState.set('');
 
     this.aiAuditApi.list(tenantId, businessUnitId, this.buildFilters())
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        timeout(AiAuditPage.RequestTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.requestId) {
+            this.errorMessageState.set(this.failureMessage(failure));
+          }
+
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.requestId) {
+            this.loadingState.set(false);
+          }
+        })
+      )
       .subscribe({
         next: (result) => {
-          this.interactions = result.items;
-          this.total = result.total;
-          this.selectedInteraction = this.isMobileViewport() ? null : this.interactions[0] ?? null;
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
+          if (!result || requestId !== this.requestId) {
+            return;
+          }
+
+          this.interactionsState.set(Array.isArray(result.items) ? result.items : []);
+          this.totalState.set(result.total ?? 0);
+          this.selectedInteraction = this.isMobileViewport() ? null : result.items[0] ?? null;
         }
       });
   }
@@ -443,10 +486,30 @@ export class AiAuditPage {
   }
 
   private resetInteractions(): void {
-    this.interactions = [];
+    this.requestId += 1;
+    this.interactionsState.set([]);
     this.selectedInteraction = null;
     this.detailModalOpen = false;
-    this.total = 0;
+    this.totalState.set(0);
+    this.loadingState.set(false);
+    this.errorMessageState.set('');
+  }
+
+  private failureMessage(failure: unknown): string {
+    if (this.isApiFailure(failure)) {
+      return failure.error.message;
+    }
+
+    return 'Nao foi possivel carregar a auditoria de IA. Tente atualizar a tela.';
+  }
+
+  private isApiFailure(value: unknown): value is ApiFailure {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const candidate = value as Partial<ApiFailure>;
+    return Boolean(candidate.error && typeof candidate.error.message === 'string');
   }
 
   private isMobileViewport(): boolean {

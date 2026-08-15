@@ -1,7 +1,7 @@
 ﻿import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild, effect, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, take, timeout } from 'rxjs';
 
 import { OperatorConversationsApiService } from '@core/api/operator-conversations-api.service';
 import { OperatorConversationsRealtimeService } from '@core/api/operator-conversations-realtime.service';
@@ -532,23 +532,38 @@ import { OperatorConversationDetail, OperatorConversationSummary } from '@shared
   `]
 })
 export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
+  private static readonly RequestTimeoutMs = 15000;
   @ViewChild('conversationStream') private conversationStream?: ElementRef<HTMLElement>;
 
   protected readonly messageControl = new FormControl('', { nonNullable: true });
-  protected conversations: OperatorConversationSummary[] = [];
-  protected selectedDetail: OperatorConversationDetail | null = null;
-  protected loading = false;
-  protected detailLoading = false;
+  private readonly conversationsState = signal<OperatorConversationSummary[]>([]);
+  private readonly selectedDetailState = signal<OperatorConversationDetail | null>(null);
+  private readonly loadingState = signal(false);
+  private readonly detailLoadingState = signal(false);
+  private readonly errorMessageState = signal('');
+  private readonly detailErrorMessageState = signal('');
+  protected get conversations(): OperatorConversationSummary[] { return this.conversationsState(); }
+  protected set conversations(value: OperatorConversationSummary[]) { this.conversationsState.set(value); }
+  protected get selectedDetail(): OperatorConversationDetail | null { return this.selectedDetailState(); }
+  protected set selectedDetail(value: OperatorConversationDetail | null) { this.selectedDetailState.set(value); }
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
+  protected get detailLoading(): boolean { return this.detailLoadingState(); }
+  protected set detailLoading(value: boolean) { this.detailLoadingState.set(value); }
   protected sendingMessage = false;
   protected realtimeConnected = false;
-  protected errorMessage = '';
-  protected detailErrorMessage = '';
+  protected get errorMessage(): string { return this.errorMessageState(); }
+  protected set errorMessage(value: string) { this.errorMessageState.set(value); }
+  protected get detailErrorMessage(): string { return this.detailErrorMessageState(); }
+  protected set detailErrorMessage(value: string) { this.detailErrorMessageState.set(value); }
   protected autoScrollConversation = true;
 
   private readonly actionLoadingIds = new Set<string>();
   private readonly now = signal(Date.now());
   private readonly clock = window.setInterval(() => this.now.set(Date.now()), 30000);
   private pendingConversationScroll = false;
+  private listRequestId = 0;
+  private detailRequestId = 0;
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
@@ -613,17 +628,31 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
       return;
     }
 
+    const requestId = ++this.listRequestId;
     this.loading = true;
     this.errorMessage = '';
 
     this.api.list(tenantId, businessUnitId)
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        timeout(OperatorPanelPage.RequestTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.listRequestId) {
+            this.errorMessage = this.failureMessage(failure);
+          }
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.listRequestId) {
+            this.loading = false;
+          }
+        })
+      )
       .subscribe({
         next: (result) => {
-          this.conversations = this.sort(result.items);
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
+          if (result && requestId === this.listRequestId) {
+            this.conversations = this.sort(result.items);
+          }
         }
       });
   }
@@ -857,20 +886,47 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
   }
 
   private loadDetail(conversation: OperatorConversationSummary): void {
+    const requestId = ++this.detailRequestId;
     this.detailLoading = true;
     this.errorMessage = '';
     this.detailErrorMessage = '';
 
     this.api.detail(conversation.tenantId, conversation.businessUnitId, conversation.conversationId)
-      .pipe(finalize(() => (this.detailLoading = false)))
+      .pipe(
+        timeout(OperatorPanelPage.RequestTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.detailRequestId) {
+            this.detailErrorMessage = this.failureMessage(failure);
+          }
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.detailRequestId) {
+            this.detailLoading = false;
+          }
+        })
+      )
       .subscribe({
         next: (detail) => {
-          this.selectedDetail = detail;
-          this.applySummaryUpdate(detail.summary);
-          this.scrollConversationToBottomIfNeeded(detail.messages.length > 0);
-        },
-        error: (failure: ApiFailure) => this.errorMessage = failure.error.message
+          if (detail && requestId === this.detailRequestId) {
+            this.selectedDetail = detail;
+            this.applySummaryUpdate(detail.summary);
+            this.scrollConversationToBottomIfNeeded(detail.messages.length > 0);
+          }
+        }
       });
+  }
+
+  private failureMessage(failure: unknown): string {
+    if (failure && typeof failure === 'object') {
+      const candidate = failure as Partial<ApiFailure>;
+      if (candidate.error && typeof candidate.error.message === 'string') {
+        return candidate.error.message;
+      }
+    }
+
+    return 'Nao foi possivel carregar os dados do painel. Tente atualizar a tela.';
   }
 
   private hasNewMessages(current: OperatorConversationDetail | null, next: OperatorConversationDetail): boolean {
@@ -913,6 +969,8 @@ export class OperatorPanelPage implements AfterViewChecked, OnDestroy {
   }
 
   private reset(): void {
+    this.listRequestId += 1;
+    this.detailRequestId += 1;
     this.conversations = [];
     this.selectedDetail = null;
     this.errorMessage = '';
