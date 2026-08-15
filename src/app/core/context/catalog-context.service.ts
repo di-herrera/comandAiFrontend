@@ -80,6 +80,13 @@ export class CatalogContextService {
     this.loadTenants();
   }
 
+  refreshBusinessUnits(): void {
+    const tenantId = this.selectedTenantId();
+    if (tenantId) {
+      this.loadBusinessUnits(tenantId);
+    }
+  }
+
   private loadTenants(): void {
     this.loadingTenants.set(true);
     this.errorMessage.set('');

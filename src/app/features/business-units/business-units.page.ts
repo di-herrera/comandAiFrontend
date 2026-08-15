@@ -1,17 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
-import { TenantsApiService } from '@core/api/tenants-api.service';
 import { AuthSessionService } from '@core/auth/auth-session.service';
+import { CatalogContextService } from '@core/context/catalog-context.service';
 import {
   BusinessUnitCreateRequest,
   BusinessUnitListItem,
   BusinessUnitWhatsAppChannel,
   StorefrontTheme,
-  WhatsAppReturnMessageCadence,
-  TenantListItem
+  WhatsAppReturnMessageCadence
 } from '@shared/models/catalog.models';
 import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
@@ -33,7 +32,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
               Nova unidade
             </button>
           }
-          <button class="btn" type="button" (click)="loadBusinessUnits()" [disabled]="loading || !tenantControl.value">
+          <button class="btn" type="button" (click)="loadBusinessUnits()" [disabled]="catalogContext.loadingBusinessUnits() || !tenantControl.value">
             Atualizar
           </button>
         </div>
@@ -51,9 +50,13 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
         <div class="form-grid">
           <label class="field">
             <span>Empresa</span>
-            <select [formControl]="tenantControl" [disabled]="tenantSelectionLocked()">
-              <option value="">Selecione uma empresa</option>
-              @for (tenant of tenants; track tenant.id) {
+            <select [formControl]="tenantControl" [disabled]="tenantSelectionLocked() || catalogContext.loadingTenants()">
+              @if (catalogContext.loadingTenants() && catalogContext.tenants().length === 0) {
+                <option value="">Carregando empresas...</option>
+              } @else {
+                <option value="">Selecione uma empresa</option>
+              }
+              @for (tenant of catalogContext.tenants(); track tenant.id) {
                 <option [value]="tenant.id">{{ tenant.tradeName || tenant.name }}</option>
               }
             </select>
@@ -227,7 +230,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
 
         @if (!tenantControl.value) {
           <p class="muted">Selecione uma empresa para listar unidades.</p>
-        } @else if (loading) {
+        } @else if (catalogContext.loadingBusinessUnits()) {
           <p class="muted">Carregando unidades...</p>
         } @else if (businessUnits.length === 0) {
           <p class="muted">Nenhuma unidade cadastrada para esta empresa.</p>
@@ -407,12 +410,10 @@ export class BusinessUnitsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected tenants: TenantListItem[] = [];
-  protected businessUnits: BusinessUnitListItem[] = [];
+  protected get businessUnits(): BusinessUnitListItem[] { return this.catalogContext.businessUnits(); }
   protected whatsappChannels: Record<string, BusinessUnitWhatsAppChannel> = {};
   protected editingBusinessUnitId: string | null = null;
   protected isEditorOpen = false;
-  protected loading = false;
   protected saving = false;
   protected connectingWhatsAppId: string | null = null;
   protected loadingWhatsAppStatusId: string | null = null;
@@ -420,57 +421,43 @@ export class BusinessUnitsPage {
   protected errorMessage = '';
 
   constructor(
-    private readonly tenantsApi: TenantsApiService,
     private readonly businessUnitsApi: BusinessUnitsApiService,
-    protected readonly authSession: AuthSessionService
+    protected readonly authSession: AuthSessionService,
+    protected readonly catalogContext: CatalogContextService
   ) {
-    this.loadTenants();
-    this.tenantControl.valueChanges.subscribe(() => {
+    effect(() => {
+      const tenantId = this.catalogContext.selectedTenantId();
+      if (this.tenantControl.value !== tenantId) {
+        this.tenantControl.setValue(tenantId, { emitEvent: false });
+      }
+    });
+    effect(() => {
+      const units = this.catalogContext.businessUnits();
+      this.whatsappChannels = {};
+      if (units.length > 0) {
+        this.loadWhatsAppChannels(units);
+      }
+    });
+    this.tenantControl.valueChanges.subscribe((tenantId) => {
       this.cancelEdit();
-      this.loadBusinessUnits();
+      this.catalogContext.selectTenant(tenantId);
     });
   }
 
   protected get selectedTenantName(): string {
-    const tenant = this.tenants.find((item) => item.id === this.tenantControl.value);
-    return tenant?.tradeName || tenant?.name || '';
-  }
-
-  protected loadTenants(): void {
-    this.tenantsApi.list().subscribe({
-      next: (result) => {
-        this.tenants = this.filterTenantsByScope(result.items);
-        this.syncTenantSelection();
-      },
-      error: (failure: ApiFailure) => {
-        this.errorMessage = failure.error.message;
-      }
-    });
+    return this.catalogContext.selectedTenantName();
   }
 
   protected loadBusinessUnits(): void {
-    const tenantId = this.tenantControl.value;
-    this.businessUnits = [];
+    const tenantId = this.catalogContext.selectedTenantId();
     this.whatsappChannels = {};
 
     if (!tenantId) {
       return;
     }
 
-    this.loading = true;
     this.errorMessage = '';
-
-    this.businessUnitsApi.list(tenantId)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (result) => {
-          this.businessUnits = this.filterBusinessUnitsByScope(result.items);
-          this.loadWhatsAppChannels(this.businessUnits);
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
-        }
-      });
+    this.catalogContext.refreshBusinessUnits();
   }
 
   protected submit(): void {
@@ -756,28 +743,6 @@ export class BusinessUnitsPage {
 
   protected canEditBusinessUnits(): boolean {
     return this.authSession.isSystemAdmin() || this.authSession.isCompanyAdmin();
-  }
-
-  private syncTenantSelection(): void {
-    const scopedTenantId = this.authSession.user()?.tenantId;
-    if (scopedTenantId) {
-      this.tenantControl.setValue(scopedTenantId);
-      return;
-    }
-
-    if (!this.tenantControl.value && this.tenants.length === 1) {
-      this.tenantControl.setValue(this.tenants[0].id);
-    }
-  }
-
-  private filterTenantsByScope(tenants: TenantListItem[]): TenantListItem[] {
-    const scopedTenantId = this.authSession.user()?.tenantId;
-    return scopedTenantId ? tenants.filter((tenant) => tenant.id === scopedTenantId) : tenants;
-  }
-
-  private filterBusinessUnitsByScope(units: BusinessUnitListItem[]): BusinessUnitListItem[] {
-    const scopedBusinessUnitId = this.authSession.user()?.businessUnitId;
-    return scopedBusinessUnitId ? units.filter((unit) => unit.id === scopedBusinessUnitId) : units;
   }
 
   private isWhatsAppOpen(channel: BusinessUnitWhatsAppChannel): boolean {
