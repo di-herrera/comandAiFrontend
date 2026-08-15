@@ -4,7 +4,7 @@ Este documento resume os principais modelos TypeScript do frontend.
 
 ```ts
 export type EntityStatus = 'Active' | 'Inactive';
-export type StorefrontTheme = 'indigo' | 'rubi' | 'ambar' | 'esmeralda' | 'oceano' | 'violeta';
+export type StorefrontTheme = 'indigo' | 'rubi' | 'ambar' | 'esmeralda' | 'oceano' | 'violeta' | 'rosa';
 
 export interface PagedResult<T> {
   items: T[];

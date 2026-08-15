@@ -1,7 +1,7 @@
 import { EntityStatus } from './common.models';
 
 export type WhatsAppReturnMessageCadence = 'Daily' | 'Weekly' | 'Monthly';
-export type StorefrontTheme = 'indigo' | 'rubi' | 'ambar' | 'esmeralda' | 'oceano' | 'violeta';
+export type StorefrontTheme = 'indigo' | 'rubi' | 'ambar' | 'esmeralda' | 'oceano' | 'violeta' | 'rosa';
 
 export interface TenantListItem {
   id: string;
