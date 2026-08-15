@@ -110,12 +110,15 @@ src/app/
 - Não adicionar bibliotecas novas sem necessidade clara.
 - Se uma decisão não estiver documentada, registre em `docs/decisions.md`.
 - Ao finalizar uma tarefa, rode `npm run build`.
-- Crie um PR da atividade apontando para `main`.
-- Atualize o backlog movendo a tarefa para `Review`, não para `Done`.
-- O processo só é considerado concluído quando o PR for aprovado/validado, mergeado em `main` usando squash merge, e a branch remota/local da atividade for deletada.
+- Crie um PR da atividade apontando para `develop`.
+- Depois da validação, marque o PR como pronto para revisão quando ele tiver sido aberto como draft e faça squash merge em `develop`.
+- Promova `develop` para `main` com um PR separado no mesmo ciclo de trabalho sempre que Codex tiver realizado a alteração, salvo pedido explícito do usuário para pausar antes da promoção.
+- Faça squash merge do PR de promoção para `main` após validação.
+- Atualize o backlog movendo a tarefa para `Review` quando o PR da atividade for criado e para `Done` depois que a alteração chegar em `main`.
+- O processo só é considerado concluído quando a alteração estiver mergeada em `main` usando squash merge, validada, registrada na issue/card e com a branch remota/local da atividade deletada.
 - Sempre usar squash merge para concluir PRs.
 - Sempre deletar a branch da atividade após o merge.
-- O usuário move para `Done` após revisar.
+- O usuário pode revisar antes da promoção, mas se pedir para Codex regularizar ou completar a alteração, Codex deve conduzir o fluxo até `main`.
 
 - As referencias antigas ao backlog em arquivo nao se aplicam mais; a fonte de trabalho e revisao agora sao issues/cards no GitHub.
 
@@ -127,4 +130,4 @@ src/app/
 - Garantir que as rotas básicas continuem funcionando.
 - Atualizar documentação se mudar contrato, estrutura ou decisão técnica.
 - Registrar na issue/card as notas de implementação, validações executadas e link do PR.
-- Criar PR para `main`, concluir com squash merge após validação/revisão e deletar as branches remota/local da atividade.
+- Criar PR para `develop`, concluir com squash merge após validação/revisão, promover `develop` para `main` com PR separado, concluir a promoção com squash merge, validar `main` quando aplicável e deletar as branches remota/local da atividade.
