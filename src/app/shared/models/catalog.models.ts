@@ -1,6 +1,7 @@
 import { EntityStatus } from './common.models';
 
 export type WhatsAppReturnMessageCadence = 'Daily' | 'Weekly' | 'Monthly';
+export type StorefrontTheme = 'indigo' | 'rubi' | 'ambar' | 'esmeralda' | 'oceano' | 'violeta';
 
 export interface TenantListItem {
   id: string;
@@ -30,6 +31,7 @@ export interface BusinessUnitListItem {
   whatsAppReturnMessage?: string | null;
   whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
   publicSlug?: string | null;
+  storefrontTheme: StorefrontTheme;
   status: EntityStatus;
 }
 
@@ -42,6 +44,7 @@ export interface BusinessUnitCreateRequest {
   whatsAppReturnMessage?: string | null;
   whatsAppReturnMessageCadence: WhatsAppReturnMessageCadence;
   publicSlug?: string | null;
+  storefrontTheme?: StorefrontTheme | null;
   status: EntityStatus;
 }
 
