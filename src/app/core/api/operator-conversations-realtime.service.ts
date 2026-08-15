@@ -46,12 +46,16 @@ export class OperatorConversationsRealtimeService {
       this.zone.run(() => handlers.statusChanged(false));
     });
 
-    connection.onreconnected(() => {
-      this.zone.run(() => {
-        handlers.statusChanged(true);
-        handlers.reconnected();
-      });
-      void connection.invoke('JoinBusinessUnit', tenantId, businessUnitId);
+    connection.onreconnected(async () => {
+      try {
+        await connection.invoke('JoinBusinessUnit', tenantId, businessUnitId);
+        this.zone.run(() => {
+          handlers.statusChanged(true);
+          handlers.reconnected();
+        });
+      } catch {
+        this.zone.run(() => handlers.statusChanged(false));
+      }
     });
 
     connection.onclose(() => {
@@ -61,7 +65,10 @@ export class OperatorConversationsRealtimeService {
     this.connection = connection;
     await connection.start();
     await connection.invoke('JoinBusinessUnit', tenantId, businessUnitId);
-    handlers.statusChanged(true);
+    this.zone.run(() => {
+      handlers.statusChanged(true);
+      handlers.reconnected();
+    });
   }
 
   async disconnect(): Promise<void> {
