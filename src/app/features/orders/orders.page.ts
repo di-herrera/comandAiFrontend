@@ -656,7 +656,9 @@ export class OrdersPage {
   protected currentPage = 1;
   protected total = 0;
   protected readonly pageSize = OrdersPage.PageSize;
-  protected loading = false;
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected statusUpdating = false;
   protected errorMessage = '';
   protected filtersSavedMessage = '';

@@ -146,10 +146,14 @@ export class IngredientsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected ingredients: IngredientListItem[] = [];
+  private readonly ingredientsState = signal<IngredientListItem[]>([]);
+  protected get ingredients(): IngredientListItem[] { return this.ingredientsState(); }
+  protected set ingredients(value: IngredientListItem[]) { this.ingredientsState.set(value); }
   protected editingIngredientId: string | null = null;
   protected isEditorOpen = false;
-  protected loading = false;
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -287,3 +291,4 @@ export class IngredientsPage {
 }
 
 
+import { signal } from '@angular/core';

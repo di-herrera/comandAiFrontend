@@ -229,13 +229,21 @@ export class ProductCategoriesPage {
   protected readonly existingGroupControl = new FormControl('', { nonNullable: true });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected categories: ProductCategoryListItem[] = [];
-  protected optionGroups: OptionGroup[] = [];
-  protected reusableOptionGroups: OptionGroup[] = [];
+  private readonly categoriesState = signal<ProductCategoryListItem[]>([]);
+  private readonly optionGroupsState = signal<OptionGroup[]>([]);
+  private readonly reusableOptionGroupsState = signal<OptionGroup[]>([]);
+  protected get categories(): ProductCategoryListItem[] { return this.categoriesState(); }
+  protected set categories(value: ProductCategoryListItem[]) { this.categoriesState.set(value); }
+  protected get optionGroups(): OptionGroup[] { return this.optionGroupsState(); }
+  protected set optionGroups(value: OptionGroup[]) { this.optionGroupsState.set(value); }
+  protected get reusableOptionGroups(): OptionGroup[] { return this.reusableOptionGroupsState(); }
+  protected set reusableOptionGroups(value: OptionGroup[]) { this.reusableOptionGroupsState.set(value); }
   protected selectedCategoryId = '';
   protected editingCategoryId: string | null = null;
   protected isEditorOpen = false;
-  protected loading = false;
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected loadingGroups = false;
   protected saving = false;
   protected savingGroup = false;
@@ -494,3 +502,4 @@ export class ProductCategoriesPage {
 }
 
 
+import { signal } from '@angular/core';

@@ -202,10 +202,14 @@ export class OptionGroupsPage {
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  protected optionGroups: OptionGroup[] = [];
+  private readonly optionGroupsState = signal<OptionGroup[]>([]);
+  protected get optionGroups(): OptionGroup[] { return this.optionGroupsState(); }
+  protected set optionGroups(value: OptionGroup[]) { this.optionGroupsState.set(value); }
   protected availableOptions: ProductOptionListItem[] = [];
   protected isEditorOpen = false;
-  protected loading = false;
+  private readonly loadingState = signal(false);
+  protected get loading(): boolean { return this.loadingState(); }
+  protected set loading(value: boolean) { this.loadingState.set(value); }
   protected saving = false;
   protected successMessage = '';
   protected errorMessage = '';
@@ -445,3 +449,4 @@ export class OptionGroupsPage {
 }
 
 
+import { signal } from '@angular/core';
