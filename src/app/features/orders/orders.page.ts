@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, take, timeout } from 'rxjs';
 
 import { OrdersApiService } from '@core/api/orders-api.service';
 import { CatalogContextService } from '@core/context/catalog-context.service';
@@ -201,7 +201,7 @@ interface SavedOrderFilters {
             <header class="section-heading order-detail-modal-header">
               <div>
                 <p class="eyebrow">Comanda</p>
-                <h2>{{ selectedDetail?.orderNumber || 'Detalhe do pedido' }}</h2>
+                <h2>{{ selectedDetail()?.orderNumber || 'Detalhe do pedido' }}</h2>
               </div>
               <button class="btn editor-close" type="button" (click)="closeDetailModal()" aria-label="Fechar detalhe">x</button>
             </header>
@@ -212,32 +212,35 @@ interface SavedOrderFilters {
       }
 
       <ng-template #orderDetailContent>
-        @if (detailLoading) {
+        @let detail = selectedDetail();
+        @if (detailLoading()) {
           <p class="muted">Carregando detalhe da comanda...</p>
+        } @else if (detailErrorMessage()) {
+          <p class="feedback error">{{ detailErrorMessage() }}</p>
         } @else if (!selectedOrderId) {
           <p class="muted">Selecione uma comanda para ver itens, entrega, totais e alterar status.</p>
-        } @else if (!selectedDetail) {
+        } @else if (!detail) {
           <p class="muted">Detalhe nao disponivel para a comanda selecionada.</p>
         } @else {
           <div class="section-heading">
             <div>
-              <h2>Comanda {{ selectedDetail.orderNumber }}</h2>
-              <p>{{ selectedDetail.customer.name || 'Cliente sem nome' }} - {{ selectedDetail.customer.phoneNumber }}</p>
+              <h2>Comanda {{ detail.orderNumber }}</h2>
+              <p>{{ detail.customer.name || 'Cliente sem nome' }} - {{ detail.customer.phoneNumber }}</p>
             </div>
-            <span [class]="statusPillClass(selectedDetail.status)">{{ statusLabel(selectedDetail.status) }}</span>
+            <span [class]="statusPillClass(detail.status)">{{ statusLabel(detail.status) }}</span>
           </div>
 
-          @if (selectedDetail.requiresHumanHandoff) {
-            <p class="feedback warning">Atencao humana: {{ selectedDetail.humanHandoffReason || 'pedido marcado para revisao.' }}</p>
+          @if (detail.requiresHumanHandoff) {
+            <p class="feedback warning">Atencao humana: {{ detail.humanHandoffReason || 'pedido marcado para revisao.' }}</p>
           }
 
           <section class="status-actions">
             <div>
               <p class="eyebrow">Proximo passo</p>
-              <h3>{{ nextStepLabel(selectedDetail) }}</h3>
+              <h3>{{ nextStepLabel(detail) }}</h3>
             </div>
             <div class="button-row">
-              @for (status of nextStatuses(selectedDetail); track status) {
+              @for (status of nextStatuses(detail); track status) {
                 <button
                   class="btn btn-primary btn-small"
                   type="button"
@@ -247,7 +250,7 @@ interface SavedOrderFilters {
                   {{ statusUpdating ? 'Salvando...' : actionLabel(status) }}
                 </button>
               }
-              @if (canCancel(selectedDetail)) {
+              @if (canCancel(detail)) {
                 <button
                   class="btn btn-danger btn-small"
                   type="button"
@@ -261,8 +264,8 @@ interface SavedOrderFilters {
           </section>
 
           <ol class="status-flow">
-            @for (status of flowFor(selectedDetail.fulfillmentType); track status) {
-              <li [class.done]="isStatusReached(selectedDetail.status, selectedDetail.fulfillmentType, status)" [class.current]="selectedDetail.status === status">
+            @for (status of flowFor(detail.fulfillmentType); track status) {
+              <li [class.done]="isStatusReached(detail.status, detail.fulfillmentType, status)" [class.current]="detail.status === status">
                 {{ statusLabel(status) }}
               </li>
             }
@@ -271,33 +274,33 @@ interface SavedOrderFilters {
           <dl class="detail-grid">
             <div>
               <dt>Origem</dt>
-              <dd>{{ selectedDetail.conversation.channelType || 'Canal' }} / {{ selectedDetail.conversation.channelProvider || 'provedor' }}</dd>
+              <dd>{{ detail.conversation.channelType || 'Canal' }} / {{ detail.conversation.channelProvider || 'provedor' }}</dd>
             </div>
             <div>
               <dt>Confirmado em</dt>
-              <dd>{{ formatDate(selectedDetail.readyForExecutionAtUtc || selectedDetail.createdAtUtc) }}</dd>
+              <dd>{{ formatDate(detail.readyForExecutionAtUtc || detail.createdAtUtc) }}</dd>
             </div>
             <div>
               <dt>Entrega</dt>
-              <dd>{{ fulfillmentLabel(selectedDetail.fulfillmentType) }}</dd>
+              <dd>{{ fulfillmentLabel(detail.fulfillmentType) }}</dd>
             </div>
             <div>
               <dt>Pagamento informado</dt>
-              <dd>{{ selectedDetail.paymentMethod || 'Nao informado' }}</dd>
+              <dd>{{ detail.paymentMethod || 'Nao informado' }}</dd>
             </div>
           </dl>
 
-          @if (selectedDetail.customer.deliveryAddress) {
+          @if (detail.customer.deliveryAddress) {
             <section class="detail-section">
               <h3>Endereco</h3>
-              <p>{{ selectedDetail.customer.deliveryAddress }}</p>
+              <p>{{ detail.customer.deliveryAddress }}</p>
             </section>
           }
 
           <section class="detail-section">
             <h3>Itens</h3>
             <div class="detail-items">
-              @for (item of selectedDetail.items; track item.orderItemId) {
+              @for (item of detail.items; track item.orderItemId) {
                 <article class="detail-item">
                   <div class="detail-item-header">
                     <div>
@@ -343,9 +346,9 @@ interface SavedOrderFilters {
           </section>
 
           <dl class="totals">
-            <div><dt>Subtotal</dt><dd>{{ formatCurrency(selectedDetail.subtotal) }}</dd></div>
-            <div><dt>Taxa de entrega</dt><dd>{{ formatCurrency(selectedDetail.deliveryFee) }}</dd></div>
-            <div class="total-line"><dt>Total</dt><dd>{{ formatCurrency(selectedDetail.total) }}</dd></div>
+            <div><dt>Subtotal</dt><dd>{{ formatCurrency(detail.subtotal) }}</dd></div>
+            <div><dt>Taxa de entrega</dt><dd>{{ formatCurrency(detail.deliveryFee) }}</dd></div>
+            <div class="total-line"><dt>Total</dt><dd>{{ formatCurrency(detail.total) }}</dd></div>
           </dl>
         }
       </ng-template>
@@ -600,6 +603,7 @@ export class OrdersPage {
   private static readonly FiltersStorageKey = 'comandia.admin.orders.filters';
   private static readonly MobileBreakpoint = 980;
   private static readonly PageSize = 12;
+  private static readonly DetailTimeoutMs = 15000;
   private static readonly DeliveryFlow: OrderStatus[] = [
     'OrderAccepted',
     'InExecution',
@@ -644,17 +648,19 @@ export class OrdersPage {
   protected readonly skeletonItems = [1, 2, 3];
 
   protected readonly orders = signal<OrderSummary[]>([]);
+  protected readonly selectedDetail = signal<OrderDetail | null>(null);
+  protected readonly detailLoading = signal(false);
+  protected readonly detailErrorMessage = signal('');
   protected selectedOrderId = '';
-  protected selectedDetail: OrderDetail | null = null;
   protected currentPage = 1;
   protected total = 0;
   protected readonly pageSize = OrdersPage.PageSize;
   protected loading = false;
-  protected detailLoading = false;
   protected statusUpdating = false;
   protected errorMessage = '';
   protected filtersSavedMessage = '';
   protected detailModalOpen = false;
+  private detailRequestId = 0;
 
   constructor(
     protected readonly catalogContext: CatalogContextService,
@@ -734,19 +740,36 @@ export class OrdersPage {
     }
 
     this.selectedOrderId = order.orderId;
-    this.selectedDetail = null;
-    this.detailLoading = true;
+    this.selectedDetail.set(null);
+    this.detailLoading.set(true);
+    this.detailErrorMessage.set('');
     this.errorMessage = '';
     this.detailModalOpen = this.isMobileViewport();
+    const requestId = ++this.detailRequestId;
 
     this.ordersApi.detail(tenantId, businessUnitId, order.orderId)
-      .pipe(finalize(() => (this.detailLoading = false)))
+      .pipe(
+        timeout(OrdersPage.DetailTimeoutMs),
+        take(1),
+        catchError((failure: unknown) => {
+          if (requestId === this.detailRequestId) {
+            this.selectedDetail.set(null);
+            this.detailErrorMessage.set(this.detailFailureMessage(failure));
+          }
+
+          return of(null);
+        }),
+        finalize(() => {
+          if (requestId === this.detailRequestId) {
+            this.detailLoading.set(false);
+          }
+        })
+      )
       .subscribe({
         next: (detail) => {
-          this.selectedDetail = detail;
-        },
-        error: (failure: ApiFailure) => {
-          this.errorMessage = failure.error.message;
+          if (detail && requestId === this.detailRequestId) {
+            this.selectedDetail.set(this.normalizeDetail(detail));
+          }
         }
       });
   }
@@ -756,7 +779,7 @@ export class OrdersPage {
   }
 
   protected updateStatus(status: OrderStatus): void {
-    const detail = this.selectedDetail;
+    const detail = this.selectedDetail();
     if (!detail || this.statusUpdating) {
       return;
     }
@@ -771,7 +794,7 @@ export class OrdersPage {
       .pipe(finalize(() => (this.statusUpdating = false)))
       .subscribe({
         next: (updated) => {
-          this.selectedDetail = updated;
+          this.selectedDetail.set(this.normalizeDetail(updated));
           this.loadOrders(updated.orderId);
         },
         error: (failure: ApiFailure) => {
@@ -1060,11 +1083,45 @@ export class OrdersPage {
   }
 
   private resetOrders(): void {
+    this.detailRequestId += 1;
     this.orders.set([]);
     this.selectedOrderId = '';
-    this.selectedDetail = null;
+    this.selectedDetail.set(null);
+    this.detailLoading.set(false);
+    this.detailErrorMessage.set('');
     this.total = 0;
     this.detailModalOpen = false;
+  }
+
+  private normalizeDetail(detail: OrderDetail): OrderDetail {
+    return {
+      ...detail,
+      customer: detail.customer ?? { customerId: '', name: null, phoneNumber: '' },
+      conversation: detail.conversation ?? { conversationId: '' },
+      items: (detail.items ?? []).map((item) => ({
+        ...item,
+        options: item.options ?? [],
+        removedIngredients: item.removedIngredients ?? [],
+        parts: item.parts ?? []
+      }))
+    };
+  }
+
+  private detailFailureMessage(failure: unknown): string {
+    if (this.isApiFailure(failure)) {
+      return failure.error.message;
+    }
+
+    return 'Nao foi possivel carregar o detalhe da comanda. Tente atualizar a lista.';
+  }
+
+  private isApiFailure(value: unknown): value is ApiFailure {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const candidate = value as Partial<ApiFailure>;
+    return Boolean(candidate.error && typeof candidate.error.message === 'string');
   }
 
   private isMobileViewport(): boolean {
