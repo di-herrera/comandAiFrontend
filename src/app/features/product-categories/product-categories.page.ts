@@ -239,12 +239,16 @@ export class ProductCategoriesPage {
   protected set optionGroups(value: OptionGroup[]) { this.optionGroupsState.set(value); }
   protected get reusableOptionGroups(): OptionGroup[] { return this.reusableOptionGroupsState(); }
   protected set reusableOptionGroups(value: OptionGroup[]) { this.reusableOptionGroupsState.set(value); }
-  protected selectedCategoryId = '';
+  private readonly selectedCategoryIdState = signal('');
+  protected get selectedCategoryId(): string { return this.selectedCategoryIdState(); }
+  protected set selectedCategoryId(value: string) { this.selectedCategoryIdState.set(value); }
   protected editingCategoryId: string | null = null;
   protected isEditorOpen = false;
   protected get loading(): boolean { return this.categoriesList.loading(); }
   protected set loading(value: boolean) { this.categoriesList.loading.set(value); }
-  protected loadingGroups = false;
+  private readonly loadingGroupsState = signal(false);
+  protected get loadingGroups(): boolean { return this.loadingGroupsState(); }
+  protected set loadingGroups(value: boolean) { this.loadingGroupsState.set(value); }
   protected saving = false;
   protected savingGroup = false;
   protected successMessage = '';
