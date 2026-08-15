@@ -376,6 +376,14 @@ export class BusinessUnitsPage {
       primary: '#7C3AED',
       hover: '#6D28D9',
       soft: '#F5F3FF'
+    },
+    {
+      id: 'rosa',
+      name: 'Rosa',
+      description: 'Pink vibrante, expressivo e acolhedor.',
+      primary: '#DB2777',
+      hover: '#BE185D',
+      soft: '#FDF2F8'
     }
   ];
   protected readonly tenantControl = new FormControl('', { nonNullable: true });
