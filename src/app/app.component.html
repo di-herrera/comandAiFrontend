@@ -23,9 +23,9 @@
       </button>
     </div>
 
-    <nav class="nav" id="main-navigation" aria-label="Navegacao principal">
+    <nav class="nav" id="main-navigation" aria-label="Navegação principal">
       <span class="nav-label">Base</span>
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">Inicio</a>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">Início</a>
       @if (authSession.canManageTenants()) {
         <a routerLink="/empresas" routerLinkActive="active" (click)="closeMobileMenu()">Empresas</a>
       }
@@ -33,20 +33,20 @@
         <a routerLink="/unidades" routerLinkActive="active" (click)="closeMobileMenu()">Unidades</a>
       }
       @if (authSession.canManageUsers()) {
-        <a routerLink="/usuarios" routerLinkActive="active" (click)="closeMobileMenu()">Usuarios</a>
+        <a routerLink="/usuarios" routerLinkActive="active" (click)="closeMobileMenu()">Usuários</a>
       }
 
-      <span class="nav-label">Catalogo</span>
+      <span class="nav-label">Catálogo</span>
       <a routerLink="/categorias" routerLinkActive="active" (click)="closeMobileMenu()">Categorias</a>
       <a routerLink="/produtos" routerLinkActive="active" (click)="closeMobileMenu()">Produtos</a>
       <a routerLink="/ingredientes" routerLinkActive="active" (click)="closeMobileMenu()">Ingredientes</a>
-      <a routerLink="/opcoes" routerLinkActive="active" (click)="closeMobileMenu()">Opcoes</a>
+      <a routerLink="/opcoes" routerLinkActive="active" (click)="closeMobileMenu()">Opções</a>
       <a routerLink="/grupos" routerLinkActive="active" (click)="closeMobileMenu()">Grupos</a>
-      <a routerLink="/composicao-produto" routerLinkActive="active" (click)="closeMobileMenu()">Composicao</a>
+      <a routerLink="/composicao-produto" routerLinkActive="active" (click)="closeMobileMenu()">Composição</a>
       <a routerLink="/composicoes" routerLinkActive="active" (click)="closeMobileMenu()">Itens compostos</a>
-      <a routerLink="/cardapio" routerLinkActive="active" (click)="closeMobileMenu()">Cardapio</a>
+      <a routerLink="/cardapio" routerLinkActive="active" (click)="closeMobileMenu()">Cardápio</a>
 
-      <span class="nav-label">Operacao</span>
+      <span class="nav-label">Operação</span>
       <a routerLink="/painel-operador" routerLinkActive="active" (click)="closeMobileMenu()">Painel operador</a>
       <a routerLink="/pedidos" routerLinkActive="active" (click)="closeMobileMenu()">Pedidos</a>
       <a routerLink="/auditoria-ia" routerLinkActive="active" (click)="closeMobileMenu()">Auditoria IA</a>
