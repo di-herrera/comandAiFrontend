@@ -1,6 +1,6 @@
 import { Component, effect } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, timeout } from 'rxjs';
 
 import { BusinessUnitsApiService } from '@core/api/business-units-api.service';
 import { AuthSessionService } from '@core/auth/auth-session.service';
@@ -307,7 +307,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                         (click)="connectWhatsApp(unit)"
                         [disabled]="connectingWhatsAppId === unit.id"
                       >
-                        {{ connectingWhatsAppId === unit.id ? 'Gerando...' : 'Conectar WhatsApp' }}
+                        {{ connectingWhatsAppId === unit.id ? 'Gerando...' : whatsappActionLabel(unit.id) }}
                       </button>
                       <button
                         class="btn btn-small"
@@ -417,6 +417,7 @@ export class BusinessUnitsPage {
   protected saving = false;
   protected connectingWhatsAppId: string | null = null;
   protected loadingWhatsAppStatusId: string | null = null;
+  private readonly whatsappStatusRefreshTimers: Record<string, number> = {};
   protected successMessage = '';
   protected errorMessage = '';
 
@@ -586,6 +587,7 @@ export class BusinessUnitsPage {
     this.successMessage = '';
 
     this.businessUnitsApi.connectWhatsApp(tenantId, unit.id)
+      .pipe(timeout({ each: 20_000 }))
       .pipe(finalize(() => (this.connectingWhatsAppId = null)))
       .subscribe({
         next: (channel) => {
@@ -596,6 +598,9 @@ export class BusinessUnitsPage {
           this.successMessage = this.isWhatsAppOpen(channel)
             ? 'WhatsApp conectado para a unidade.'
             : 'Instância criada. Escaneie o QR Code para conectar o WhatsApp.';
+          if (!this.isWhatsAppOpen(channel)) {
+            this.scheduleWhatsAppStatusRefresh(unit);
+          }
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
@@ -603,7 +608,7 @@ export class BusinessUnitsPage {
       });
   }
 
-  protected refreshWhatsAppStatus(unit: BusinessUnitListItem): void {
+  protected refreshWhatsAppStatus(unit: BusinessUnitListItem, fromPolling = false, pollingAttempt = 0): void {
     const tenantId = this.tenantControl.value;
     if (!tenantId) {
       return;
@@ -613,6 +618,7 @@ export class BusinessUnitsPage {
     this.errorMessage = '';
 
     this.businessUnitsApi.getWhatsAppStatus(tenantId, unit.id)
+      .pipe(timeout({ each: 15_000 }))
       .pipe(finalize(() => (this.loadingWhatsAppStatusId = null)))
       .subscribe({
         next: (channel) => {
@@ -620,9 +626,15 @@ export class BusinessUnitsPage {
             ...this.whatsappChannels,
             [unit.id]: this.mergeWhatsAppChannel(unit.id, channel)
           };
+          if (this.isWhatsAppOpen(channel)) {
+            this.clearWhatsAppStatusRefresh(unit.id);
+          } else if (fromPolling) {
+            this.scheduleWhatsAppStatusRefresh(unit, pollingAttempt);
+          }
         },
         error: (failure: ApiFailure) => {
           this.errorMessage = failure.error.message;
+          this.clearWhatsAppStatusRefresh(unit.id);
         }
       });
   }
@@ -637,11 +649,25 @@ export class BusinessUnitsPage {
       return 'Conectado';
     }
 
-    if (channel.qrCode) {
+    const status = channel.connectionStatus.toLowerCase();
+    if (channel.qrCode || status === 'qr' || status.includes('qrcode')) {
       return 'Aguardando QR Code';
     }
 
+    if (status === 'connecting' || status === 'pairing') {
+      return 'Conectando';
+    }
+
+    if (status === 'close' || status === 'closed' || status === 'disconnected') {
+      return 'Desconectado';
+    }
+
     return channel.connectionStatus || 'Pendente';
+  }
+
+  protected whatsappActionLabel(unitId: string): string {
+    const channel = this.whatsappChannels[unitId];
+    return channel && this.isWhatsAppOpen(channel) ? 'Trocar celular' : 'Conectar WhatsApp';
   }
 
   protected hasWhatsAppQrCode(unitId: string): boolean {
@@ -755,10 +781,35 @@ export class BusinessUnitsPage {
       return channel;
     }
 
+    const status = channel.connectionStatus.toLowerCase();
+    if (status !== 'connecting' && status !== 'pairing' && !status.includes('qrcode')) {
+      return { ...channel, qrCode: null, pairingCode: null };
+    }
+
     return {
       ...channel,
       qrCode: previous.qrCode
     };
+  }
+
+  private scheduleWhatsAppStatusRefresh(unit: BusinessUnitListItem, pollingAttempt = 0): void {
+    this.clearWhatsAppStatusRefresh(unit.id);
+    if (pollingAttempt >= 30) {
+      return;
+    }
+
+    this.whatsappStatusRefreshTimers[unit.id] = window.setTimeout(
+      () => this.refreshWhatsAppStatus(unit, true, pollingAttempt + 1),
+      2_000
+    );
+  }
+
+  private clearWhatsAppStatusRefresh(unitId: string): void {
+    const timer = this.whatsappStatusRefreshTimers[unitId];
+    if (timer) {
+      window.clearTimeout(timer);
+      delete this.whatsappStatusRefreshTimers[unitId];
+    }
   }
 
   private normalizeQrCodeImageSource(qrCode: string): string | null {
