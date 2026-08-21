@@ -307,7 +307,7 @@ import { ApiFailure, EntityStatus } from '@shared/models/common.models';
                         (click)="connectWhatsApp(unit)"
                         [disabled]="connectingWhatsAppId === unit.id"
                       >
-                        {{ connectingWhatsAppId === unit.id ? 'Gerando...' : 'Conectar WhatsApp' }}
+                        {{ connectingWhatsAppId === unit.id ? 'Gerando...' : whatsappActionLabel(unit.id) }}
                       </button>
                       <button
                         class="btn btn-small"
@@ -642,6 +642,11 @@ export class BusinessUnitsPage {
     }
 
     return channel.connectionStatus || 'Pendente';
+  }
+
+  protected whatsappActionLabel(unitId: string): string {
+    const channel = this.whatsappChannels[unitId];
+    return channel && this.isWhatsAppOpen(channel) ? 'Trocar celular' : 'Conectar WhatsApp';
   }
 
   protected hasWhatsAppQrCode(unitId: string): boolean {
